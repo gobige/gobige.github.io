@@ -35,9 +35,10 @@ jekyll是一个静态网页生成工具，可以配合github pages使用是你�
 2.打开cmd命令窗口，输入-gem install jekyll bundler 安装jekyll
 3.输入-jekyll -v 验证是否安装成功
 4.输入-jekyll new jekyll-website,即可看见初始化新建的一个jekyll模板,这个就是jekyll最基本的一个结构
-5.拷贝gemfile文件到你的blog仓库,打开Gemfile文件我们可以看到gem的一个源地址设置（source "https://rubygems.org"），如果访问不通，可以使用修改为[https://gems.ruby-china.org/](https://gems.ruby-china.org/)
+5.打开Gemfile文件我们可以看到gem的一个源地址设置（source "https://rubygems.org"），如果访问不通，可以使用修改为[https://gems.ruby-china.org/](https://gems.ruby-china.org/)
 6.因为新建模板是自定义minina的，我们可以选择其他模板,比如笔者选择了名为[Cayman Blog]的模板（网上有很多模板，请自行查找），
 7.访问[https://rubygems.org gem源地址](https://rubygems.org) 搜索cayman（注意：如果要使用jekyll本地构建须在源地址中找得到该gem才行）
-8.拷贝GEMFILE:里面的指令覆盖本地gemfile文件主题项  拷贝安装:里面指令到cmd命令窗口执行 clone gihub的模板文件内容
-9.进入待生成的blog目录下，cmd窗口执行 jekyll build
+8.拷贝GEMFILE:里面的指令覆盖本地gemfile文件主题项 修改_config.yml文件中主题 theme: jekyll-theme-cayman   拷贝安装:里面指令到cmd命令窗口执行 clone gihub的模板文件内容
+9.进入待生成的blog目录下，cmd窗口执行 jekyll build，会发现生成了一个_site文件夹
+10.cmd窗口执行 jekyll serve指令，浏览器访问localhost:4000  大功告成！！
 
