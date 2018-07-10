@@ -32,13 +32,55 @@ jekyll是一个静态网页生成工具，可以配合github pages使用是你�
 
 因为笔者是在windows平台上搭建的jekyll客户端，jekyll客户端可以在本地进行整个静态文件的build和publish，以及调试，所以建议可以尝试安装jekyll客户端进行静态web的调试，总结下来使用方法如下：
 1.[下载ruby+devkit组合套件](https://rubyinstaller.org/downloads/)并在本地进行安装
+![](img/devkit.png)
 2.打开cmd命令窗口，输入-gem install jekyll bundler 安装jekyll
+![](img/installjekyll.png)
 3.输入-jekyll -v 验证是否安装成功
 4.输入-jekyll new jekyll-website,即可看见初始化新建的一个jekyll模板,这个就是jekyll最基本的一个结构
 5.打开Gemfile文件我们可以看到gem的一个源地址设置（source "https://rubygems.org"），如果访问不通，可以使用修改为[https://gems.ruby-china.org/](https://gems.ruby-china.org/)
 6.因为新建模板是自定义minina的，我们可以选择其他模板,比如笔者选择了名为[Cayman Blog]的模板（网上有很多模板，请自行查找），
 7.访问[https://rubygems.org gem源地址](https://rubygems.org) 搜索cayman（注意：如果要使用jekyll本地构建须在源地址中找得到该gem才行）
 8.拷贝GEMFILE:里面的指令覆盖本地gemfile文件主题项 修改_config.yml文件中主题 theme: jekyll-theme-cayman   拷贝安装:里面指令到cmd命令窗口执行 clone gihub的模板文件内容
+![](img/choicetheme.png)
 9.进入待生成的blog目录下，cmd窗口执行 jekyll build，会发现生成了一个_site文件夹
 10.cmd窗口执行 jekyll serve指令，浏览器访问localhost:4000  大功告成！！
 
+一个基本的jekyll的静态网站目录结构如下
+.
+├── _config.yml
+├── _drafts
+|   ├── begin-with-the-crazy-ideas.textile
+|   └── on-simplicity-in-technology.markdown
+├── _includes
+|   ├── footer.html
+|   └── header.html
+├── _layouts
+|   ├── default.html
+|   └── post.html
+├── _posts
+|   ├── 2007-10-29-why-every-programmer-should-play-nethack.textile
+|   └── 2009-04-26-barcamp-boston-4-roundup.textile
+├── _data
+|   └── members.yml
+├── _site
+└── index.html
+
+每个目录解释如下
+_config.yml
+保存配置数据。很多配置选项都会直接从命令行中进行设置，但是如果你把那些配置写在这儿，你就不用非要去记住那些命令了。
+_drafts
+drafts 是未发布的文章。这些文件的格式中都没有 title.MARKUP 数据。学习如何使用 drafts.
+_includes
+你可以加载这些包含部分到你的布局或者文章中以方便重用。可以用这个标签  {% include file.ext %} 来把文件 _includes/file.ext 包含进来。
+_layouts
+layouts 是包裹在文章外部的模板。布局可以在 YAML 头信息中根据不同文章进行选择。 这将在下一个部分进行介绍。标签  {{ content }} 可以将content插入页面中。
+_posts
+这里放的就是你的文章了。文件格式很重要，必须要符合: YEAR-MONTH-DAY-title.MARKUP。 The permalinks 可以在文章中自己定制，但是数据和标记语言都是根据文件名来确定的。
+_data
+Well-formatted site data should be placed here. The jekyll engine will autoload all yaml files (ends with .yml or .yaml) in this directory. If there's a file members.yml under the directory, then you can access contents of the file through site.data.members.
+_site
+一旦 Jekyll 完成转换，就会将生成的页面放在这里（默认）。最好将这个目录放进你的 .gitignore 文件中。
+index.html and other HTML, Markdown, Textile files
+如果这些文件中包含 YAML 头信息 部分，Jekyll 就会自动将它们进行转换。当然，其他的如 .html， .markdown，  .md，或者 .textile 等在你的站点根目录下或者不是以上提到的目录中的文件也会被转换。
+Other Files/Folders
+其他一些未被提及的目录和文件如  css 还有 images 文件夹， favicon.ico 等文件都将被完全拷贝到生成的 site 中。 这里有一些使用 Jekyll 的站点，如果你感兴趣就来看看吧。
