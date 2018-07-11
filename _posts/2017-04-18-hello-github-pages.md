@@ -6,7 +6,7 @@ date: 2017-07-29
 categories: 个人博客
 author: yates
 cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
-tags: GitHub pages
+tags: githubpages
 ---
 
 很多人都想自建一个博客，在上面写写文章，分享一点东西，但是又不想为此购买服务器，写前端页面，那么有没有一个两全的解决方案呢？答案就是**github pages**
