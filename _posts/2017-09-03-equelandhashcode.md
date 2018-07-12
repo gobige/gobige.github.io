@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 'ngnix入门'
+title: 'equels和hashCode'
 subtitle: 'equels和hashCode'
 date: 2017-09-03
 categories: java底层
