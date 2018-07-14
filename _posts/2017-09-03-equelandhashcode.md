@@ -39,6 +39,11 @@ hashCode重写也有**注意事项**
 
 hashMap和hashSet的实现也是遵循上面的规则的，当哈希表中插入对象时，通过获取对象哈希码直接定位，如果该位置没有对象，则将对象插入到该位置，如果该位置已经有对象，则通过equals判断是否是同一个对象，如果是则不插入，如果不是则将对象加入到链表中
 
+
+## integer中的equals和hashCode
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/5.png)
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/6.png)
+
 ## String中的equals和hashCode
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/3.png)
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/4.png)
@@ -47,7 +52,7 @@ hashMap和hashSet的实现也是遵循上面的规则的，当哈希表中插入
 
 - String中的hashCode是缓存了的，一切为了性能
 - String的hash计算公式是**h = 31 * h + val[i]**,那么问题来了，为什么是31呢？
-    
+      
 1. 使用质数计算哈希码，由于特性，与其他数字相乘后结果唯一概率更大，哈希冲突概率更小
 2. 质数越大，哈希冲突概率越小，但是运算速度越慢，选择31是实践后择中的选择
 3. 我们都知道位运算快于其他运算，jvm会对31进行优化 31 * i == （i << 5） - i
