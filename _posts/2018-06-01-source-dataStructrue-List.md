@@ -8,6 +8,27 @@ author: yates
 cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
 tags: githubpages
 ---
+---
+layout: post
+title: 'java看源码系列-队列'
+subtitle: 'openjdk queue的实现'
+date: 2017-07-29
+categories: 个人博客
+author: yates
+cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
+tags: githubpages
+---
+
+---
+layout: post
+title: 'java看源码系列-队列'
+subtitle: 'openjdk queue的实现'
+date: 2017-07-29
+categories: 个人博客
+author: yates
+cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
+tags: githubpages
+---
 **Collection接口**
 定义了所有子类的基础方法
 - size() 集合元素数量
@@ -114,15 +135,6 @@ clone 该列表（浅度克隆）
     }
 ```  
 
-通过数组下标获取元素
-```java 
-    public E get(int index) {
-        rangeCheck(index);
-
-        return elementData(index);
-    }
-```
-
 通过数组下标获取元素 **某些情况下查询速度很快**
 ```java 
     public E get(int index) {
@@ -141,7 +153,7 @@ clone 该列表（浅度克隆）
     }
 ```
 
-删除指定位置元素 增加modcount 把index位置以右元素左移，把最后元素赋值为null **删除相对耗时**
+删除指定位置元素 增加modcount 把index位置以右元素左移，把最后元素赋值为null **删除相对耗时 这也是为什么删除，指定位置增加操作要使用迭代器来进行才能保证删除，增加的的正确性**
 ```
     public E remove(int index) {
         rangeCheck(index);
@@ -159,7 +171,7 @@ clone 该列表（浅度克隆）
     }
 ```
 
-删除某个元素 modcount+ 遍历删除，内存地址一样元素 把该元素以右元素左移
+删除某个元素 modcount+ 遍历删除，内存地址一样元素 把该元素以右元素左移 最后一个元素赋值为null
 ```
     public boolean remove(Object o) {
         if (o == null) {
@@ -191,6 +203,194 @@ clone 该列表（浅度克隆）
         size = 0;
     }
 ```
+
+复制一个列表到另一个列表 浅度克隆
+```java 
+    public boolean addAll(Collection<? extends E> c) {
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew);  // Increments modCount
+        System.arraycopy(a, 0, elementData, size, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+```
+
+复制一个列表到另一个列表的指定位置， 指定位置元素向右便移动添加列表size位置
+```java
+    public boolean addAll(int index, Collection<? extends E> c) {
+        rangeCheckForAdd(index);
+
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew);  // Increments modCount
+
+        int numMoved = size - index;
+        if (numMoved > 0)
+            System.arraycopy(elementData, index, elementData, index + numNew,
+                             numMoved);
+
+        System.arraycopy(a, 0, elementData, index, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+```
+
+移除或保留给定列表中存在于该列表的元素 （这里取巧 在原有列表上操作，不开辟新内存，节约了空间浪费）
+```java
+    public boolean removeAll(Collection<?> c) {
+        Objects.requireNonNull(c);
+        return batchRemove(c, false);
+    }
+     public boolean retainAll(Collection<?> c) {
+        Objects.requireNonNull(c);
+        return batchRemove(c, true);
+    }
+```
+
+序列化该列表，序列化期间不能对其进行操作，否者会报同步异常
+```java
+    private void writeObject(java.io.ObjectOutputStream s)
+        throws java.io.IOException{
+        // Write out element count, and any hidden stuff
+        int expectedModCount = modCount;
+        s.defaultWriteObject();
+
+        // Write out size as capacity for behavioural compatibility with clone()
+        s.writeInt(size);
+
+        // Write out all elements in the proper order.
+        for (int i=0; i<size; i++) {
+            s.writeObject(elementData[i]);
+        }
+
+        if (modCount != expectedModCount) {
+            throw new ConcurrentModificationException();
+        }
+    }
+```
+
+
+反序列化该列表，
+```java
+    private void readObject(java.io.ObjectInputStream s)
+        throws java.io.IOException, ClassNotFoundException {
+        elementData = EMPTY_ELEMENTDATA;
+
+        // Read in size, and any hidden stuff
+        s.defaultReadObject();
+
+        // Read in capacity
+        s.readInt(); // ignored
+
+        if (size > 0) {
+            // be like clone(), allocate array based upon size not capacity
+            ensureCapacityInternal(size);
+
+            Object[] a = elementData;
+            // Read in all elements in the proper order.
+            for (int i=0; i<size; i++) {
+                a[i] = s.readObject();
+            }
+        }
+    }
+```
+
+获取该列表的迭代器 每次调用该方法都会生成一个新的迭代对象
+```
+iterator()
+
+ private class Itr implements Iterator<E> {
+        int cursor;       // index of next element to return
+        int lastRet = -1; // index of last element returned; -1 if no such
+        int expectedModCount = modCount;
+
+        public boolean hasNext() {
+            return cursor != size;
+        }
+
+        @SuppressWarnings("unchecked")
+        public E next() {
+            checkForComodification();
+            int i = cursor;
+            if (i >= size)
+                throw new NoSuchElementException();
+            Object[] elementData = ArrayList.this.elementData;
+            if (i >= elementData.length)
+                throw new ConcurrentModificationException();
+            cursor = i + 1;
+            return (E) elementData[lastRet = i];
+        }
+
+        public void remove() {
+            if (lastRet < 0)
+                throw new IllegalStateException();
+            checkForComodification();
+
+            try {
+                ArrayList.this.remove(lastRet);
+                cursor = lastRet;
+                lastRet = -1;
+                expectedModCount = modCount;
+            } catch (IndexOutOfBoundsException ex) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void forEachRemaining(Consumer<? super E> consumer) {
+            Objects.requireNonNull(consumer);
+            final int size = ArrayList.this.size;
+            int i = cursor;
+            if (i >= size) {
+                return;
+            }
+            final Object[] elementData = ArrayList.this.elementData;
+            if (i >= elementData.length) {
+                throw new ConcurrentModificationException();
+            }
+            while (i != size && modCount == expectedModCount) {
+                consumer.accept((E) elementData[i++]);
+            }
+            // update once at end of iteration to reduce heap write traffic
+            cursor = i;
+            lastRet = i - 1;
+            checkForComodification();
+        }
+
+        final void checkForComodification() {
+            if (modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+        }
+    }
+```
+itr内部类有三个全局变量cursor，lastRet，expectedModCount，他的next和remove方法调用都会检查 mod的次数，也就是说 在列表在创建迭代器的后，进行列表迭代时，如果有其他线程也在对该列表做操作，那么
+那么能够快速的返回一个同步的异常
+
+ListItr内部类是itr的升级版，提供反向迭代，并且提供，set和add方法
+
+返回该列表指定区域的视图
+```java
+    public List<E> subList(int fromIndex, int toIndex) {
+        subListRangeCheck(fromIndex, toIndex, size);
+        return new SubList(this, 0, fromIndex, toIndex);
+    }
+```
+SubList内部类映射arraylist指定区域的元素，并提供set，get，size，add，remove，removerange等元素操作方法，由于并没有开辟一块新的内存，所以sublist的所有操作结果都会呈现在arraylist上面，同样sublist也有iterator，甚至sublist，而且也是同步快速返回失败的
+
+使用指定的比较器对列表进行排序 同样也是快速失败的
+```java
+    public void sort(Comparator<? super E> c) {
+        final int expectedModCount = modCount;
+        Arrays.sort((E[]) elementData, 0, size, c);
+        if (modCount != expectedModCount) {
+            throw new ConcurrentModificationException();
+        }
+        modCount++;
+    }
+```
+
 **Vector**
 Vector的继承关系图
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-06-01-source-dataStructrue-List/2.png)
