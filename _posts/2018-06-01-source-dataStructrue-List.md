@@ -1,34 +1,14 @@
 ---
 layout: post
-title: 'java看源码系列-队列'
-subtitle: 'openjdk queue的实现'
-date: 2017-07-29
+title: 'java看源码系列-列表'
+subtitle: 'openjdk arrayList vector linkList的实现'
+date: 2018-06-01
 categories: 个人博客
 author: yates
-cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
-tags: githubpages
----
----
-layout: post
-title: 'java看源码系列-队列'
-subtitle: 'openjdk queue的实现'
-date: 2017-07-29
-categories: 个人博客
-author: yates
-cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
-tags: githubpages
+cover: ''
+tags: 源码
 ---
 
----
-layout: post
-title: 'java看源码系列-队列'
-subtitle: 'openjdk queue的实现'
-date: 2017-07-29
-categories: 个人博客
-author: yates
-cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
-tags: githubpages
----
 **Collection接口**
 定义了所有子类的基础方法
 - size() 集合元素数量
@@ -395,6 +375,335 @@ SubList内部类映射arraylist指定区域的元素，并提供set，get，size
 Vector的继承关系图
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-06-01-source-dataStructrue-List/2.png)
 
+vector有三个变量
+```java
+protected Object[] elementData; // 存放元素的数组
+protected int elementCount;  // 元素个数
+protected int capacityIncrement; // 空间每次增长大小
+```
+
+构造方法
+```java
+    public Vector() {
+        this(10);
+    }
+    public Vector(int initialCapacity) {
+        this(initialCapacity, 0);
+    }
+```
+
+转换为数组形式（将列表中的数组浅度拷贝到另一个对象数组） **可以看到该方法是加了锁的，不仅这个方法，下面很多对数组进行操作的方法都是加了锁的，所以相比arraylist,vector是线程安全的**
+```java
+    public synchronized void copyInto(Object[] anArray) {
+        System.arraycopy(elementData, 0, anArray, 0, elementCount);
+    }
+```
+有趣的是vector允许设置元素的个数，如果size大于当前列表的size数，则开辟新存储空间扩展size，并赋值扩展的元素为null；若size小于当前列表size数，则保留设置size的列表数，其他的元素删除
+```java  
+public synchronized void setSize(int newSize) {
+        modCount++;
+        if (newSize > elementCount) {
+            ensureCapacityHelper(newSize);
+        } else {
+            for (int i = newSize ; i < elementCount ; i++) {
+                elementData[i] = null;
+            }
+        }
+        elementCount = newSize;
+    }
+```
+
+返回列表大小和元素个数
+```java
+    public synchronized int capacity() {
+        return elementData.length;
+    }
+    public synchronized int size() {
+        return elementCount;
+    }
+    
+```
+
+是否包含某个元素
+```java
+    public boolean contains(Object o) {
+        return indexOf(o, 0) >= 0;
+    }
+
+```
+
+设置某个位置的元素值
+```java
+    public synchronized void setElementAt(E obj, int index) {
+        if (index >= elementCount) {
+            throw new ArrayIndexOutOfBoundsException(index + " >= " +
+                                                     elementCount);
+        }
+        elementData[index] = obj;
+    }
+```
+
+删除，增加，修改数组中某个位置的元素，视图，迭代器和araylist一样的大同小异的算法，只不过**每个方法操作都是加了锁**
+```java
+ public synchronized void removeElementAt(int index) 
+ public synchronized void insertElementAt(E obj, int index) 
+ addElement(E obj)
+```
+
+
 **LinkedList**
 LinkedList的继承关系图
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-06-01-source-dataStructrue-List/3.png)
+
+首先我们来看linkList的变量
+
+使用了不同与arraylist和vector数组结构的链表结构，这样的结构使得空间使用上没有一点冗余
+```java
+transient int size = 0; // 列表大小
+transient Node<E> first; // 头部置节点
+transient Node<E> last; // 尾部节点
+```
+Node元素结构
+```java
+    private static class Node<E> {
+        E item;
+        Node<E> next;
+        Node<E> prev;
+
+        Node(Node<E> prev, E element, Node<E> next) {
+            this.item = element;
+            this.next = next;
+            this.prev = prev;
+        }
+    }
+```
+
+列表头部新增节点 **可以看见linkList也是运行节点元素值为null的**
+```java
+    public void addFirst(E e)  // 公共方法
+    private void linkFirst(E e) { // 内部私有方法 
+        final Node<E> f = first;
+        final Node<E> newNode = new Node<>(null, e, f);
+        first = newNode;
+        if (f == null)
+            last = newNode;
+        else
+            f.prev = newNode;
+        size++;
+        modCount++;
+    }
+```
+
+列表尾部新增节点
+```java
+    public boolean add(E e)   // 公共方法
+    public void addLast(E e)  // 公共方法
+    void linkLast(E e) {  // 内部私有方法 
+        final Node<E> l = last;
+        final Node<E> newNode = new Node<>(l, e, null);
+        last = newNode;
+        if (l == null)
+            first = newNode;
+        else
+            l.next = newNode;
+        size++;
+        modCount++;
+    }
+```
+
+某个节点前增加节点
+```java
+linkBefore(E e, Node<E> succ) 
+```
+
+去除首节点元素
+```java
+private E unlinkFirst(Node<E> f)  // 内部私有方法 
+removeFirst() // 公共方法
+```
+
+去除尾节点元素
+```java
+unlinkLast(Node<E> l)  // 内部私有方法 
+public E removeLast() // 公共方法
+```
+
+去除某个节点
+```java
+E unlink(Node<E> x) 
+
+```
+
+得到首节点或尾节点元素值，如果该节点不存在，则抛异常
+```java
+public E getLast() 
+public E getFirst() 
+```
+
+linkList的删除，查找方法都是遍历整个列表，进行对象地址比较，**这种方式相比arrlist和vector来说，某些情况下就很慢了，而删除，增加操作由于是链表结构，不用像arralist那样进行容量扩展和数组赋值，相对来说就比较快**
+```java
+    public boolean remove(Object o) { // 只会删除第一次碰到的该对象
+        if (o == null) {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (x.item == null) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        } else {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (o.equals(x.item)) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+```
+
+clear方法就和arraylist和vector一样的效率了
+```
+    public void clear() {
+        // Clearing all of the links between nodes is "unnecessary", but:
+        // - helps a generational GC if the discarded nodes inhabit
+        //   more than one generation
+        // - is sure to free memory even if there is a reachable Iterator
+        for (Node<E> x = first; x != null; ) {
+            Node<E> next = x.next;
+            x.item = null;
+            x.next = null;
+            x.prev = null;
+            x = next;
+        }
+        first = last = null;
+        size = 0;
+        modCount++;
+    }
+```
+
+获取某个位置的节点元素，由于是链表结构，所以查询某个位置下面节点元素值，需要遍历，时间复杂度为o(n/2)
+```
+    public E get(int index) {
+        checkElementIndex(index);
+        return node(index).item;
+    }
+    
+    Node<E> node(int index) {
+    // assert isElementIndex(index);
+
+    if (index < (size >> 1)) {
+        Node<E> x = first;
+        for (int i = 0; i < index; i++)
+            x = x.next;
+        return x;
+    } else {
+        Node<E> x = last;
+        for (int i = size - 1; i > index; i--)
+            x = x.prev;
+        return x;
+    }
+    }
+```
+
+查找某个对象元素第一次出现的所在节点位置
+```
+ public int indexOf(Object o) {
+        int index = 0;
+        if (o == null) {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (x.item == null)
+                    return index;
+                index++;
+            }
+        } else {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (o.equals(x.item))
+                    return index;
+                index++;
+            }
+        }
+        return -1;
+    }
+```
+
+
+检索节点的元素值，
+```
+    public E element() {// 获取首节点，不存在会抛出异常
+        return getFirst();
+    }
+    public E peek() { // 获取首节点，不存在不会报错（建议使用该方法）
+        final Node<E> f = first;
+        return (f == null) ? null : f.item;
+    }
+    public E peekFirst() { // 获取首节点，不存在不会报错（建议使用该方法）
+        final Node<E> f = first;
+        return (f == null) ? null : f.item;
+     }
+    public E peekLast() {// 获取尾节点，不存在不会报错（建议使用该方法）
+        final Node<E> l = last;
+        return (l == null) ? null : l.item;
+    }
+```
+
+检索并删除链表节点
+```
+    public E poll() { // 不存在不会报错（建议使用该方法）
+        final Node<E> f = first;
+        return (f == null) ? null : unlinkFirst(f);
+    }
+    public E pollFirst() {// 不存在不会报错（建议使用该方法）
+        final Node<E> f = first;
+        return (f == null) ? null : unlinkFirst(f);
+    }
+    public E pollLast() {// 不存在不会报错（建议使用该方法）
+        final Node<E> l = last;
+        return (l == null) ? null : unlinkLast(l);
+    }
+
+    public E remove() {// 不存在会抛出异常
+        return removeFirst();
+    }
+    public E pop() {
+        return removeFirst();
+    }
+
+```
+
+增加节点
+```
+    public boolean offer(E e) { // 默认头部增加
+        return add(e);
+    }
+    public void push(E e) {
+        addFirst(e);
+    }
+    public boolean offerFirst(E e) {
+        addFirst(e);
+        return true;
+    }
+    public boolean offerLast(E e) {
+        addLast(e);
+        return true;
+    }
+```
+
+获取迭代器 可指定从**任何地方**迭代 同样也是快速返回失败的
+```
+    public ListIterator<E> listIterator(int index) {
+        checkPositionIndex(index);
+        return new ListItr(index);
+    }
+```
+
+链表转换为数组结构
+```
+    public Object[] toArray() {
+        Object[] result = new Object[size];
+        int i = 0;
+        for (Node<E> x = first; x != null; x = x.next)
+            result[i++] = x.item;
+        return result;
+    }
+```
