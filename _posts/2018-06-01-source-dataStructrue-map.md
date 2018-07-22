@@ -1,10 +1,833 @@
 ---
 layout: post
-title: 'java看源码系列-队列'
-subtitle: 'openjdk queue的实现'
-date: 2017-07-29
+title: 'java看源码系列-map集合'
+subtitle: 'openjdk HashMap LinkedHashMap TreeMap hashTable的实现'
+date: 2018-06-01
 categories: 个人博客
 author: yates
-cover: 'http://on2171g4d.bkt.clouddn.com/jekyll-banner.png'
-tags: githubpages
+cover: ''
+tags: 源码
 ---
+
+
+
+**map接口定义了所需实现方法**
+int size(); 获取集合大小
+boolean isEmpty(); 集合是否为空
+boolean containsKey(Object key);
+boolean containsValue(Object value);
+V get(Object key);
+V put(K key, V value);
+V remove(Object key);
+void putAll(Map<? extends K, ? extends V> m);
+void clear();   
+boolean equals(Object o);
+int hashCode();
+
+**entry接口定义map集合元素entry所需实现方法**
+K getKey();
+V getValue();
+V setValue(V value);
+boolean equals(Object o);
+int hashCode();
+comparingByKey 实现了自身以key作为对比规则的对比器
+comparingByValue 实现了自身以value作为对比规则的对比器
+comparingByKey(Comparator<? super K> cmp)  实现了使用指定比较器比较key的比较器
+comparingByValue(Comparator<? super V> cmp)  实现了使用指定比较器比较value的比较器
+boolean equals(Object o);
+
+**AbstractMap抽象类**
+部分的实现,重写了map接口的方法 hashCode equals removeAll
+
+**hashMap类**
+
+```java
+// 拥有一个Node类型对象数组
+transient Node<K,V>[] table;
+// entry类型set集合
+transient Set<Map.Entry<K,V>> entrySet;
+// map集合大小
+transient int size;
+// map对象操作次数
+transient int modCount;
+// 下一次扩容容量
+int threshold;
+// 容量扩容增长因子
+final float loadFactor;
+```
+
+Node静态内部类，实现了entry接口,具有下列变量
+
+```java
+ static class Node<K,V> implements Map.Entry<K,V> 
+ 
+    final int hash;
+    final K key;
+    V value;
+    Node<K,V> next;
+```
+
+对key进行hash计算
+```java
+static final int hash(Object key) {
+    int h;
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}
+```
+
+构造函数 默认增长因子为0.75 默认初始化容量大小 如不指定 为0
+```java
+public HashMap(int initialCapacity, float loadFactor) {
+    if (initialCapacity < 0)
+        throw new IllegalArgumentException("Illegal initial capacity: " +
+                                           initialCapacity);
+    if (initialCapacity > MAXIMUM_CAPACITY)
+        initialCapacity = MAXIMUM_CAPACITY;
+    if (loadFactor <= 0 || Float.isNaN(loadFactor))
+        throw new IllegalArgumentException("Illegal load factor: " +
+                                           loadFactor);
+    this.loadFactor = loadFactor;
+    this.threshold = tableSizeFor(initialCapacity);
+}
+```
+
+获取给定数的大于或等于2的整数次方数
+```java
+static final int tableSizeFor(int cap) {
+    int n = cap - 1;
+    n |= n >>> 1;
+    n |= n >>> 2;
+    n |= n >>> 4;
+    n |= n >>> 8;
+    n |= n >>> 16;
+    return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+}
+```
+
+获取map大小
+```java
+public int size() {
+    return size;
+}
+```
+
+插入一个node节点， ① 先将key值**hash计算（查询会很快）**， 
+② 如果table为null或者数组没有一个node节点则调用resize进行扩容
+③ **(n - 1) & hash**请记住这个公式，通过hash值和整个table数组的大小使用与运算快速的计算出插入的node应该位于该table数组中的位置 
+④ 如果计算出来的位置**没有指针引用到任何对象**，那么调用newNode方法直接创建node节点存入该位置，这时我们会发现（**hashMap的key，value都可为null,key为null有且只有一个node对象**）
+⑤ 如果该位置已经有node对象了，通过**key是否是同一个对象或者key对象自身实现的equal方法判定是否相等**判断存入的是node对象**是否应该存入该位置** 
+⑥ 如果存入的key和该位置已存在key相等，那么**只更新该位置node对象的value（key对象在hashmap中唯一）** 
+⑦ 如果不相等则获取**该位置node对象指向的下一个节点**，判断下一个节点的**是否为null**，如果为null则将创建节点赋值key，value存入，如果不为null，则继续判断是否key值相等，相等则更新该节点value，不相等则继续查找下一节点，理论节点数量是可无穷存储的**（由此可以看出hashmap是一个数组链表的存储结构）**，但是如果链表结构过长，hashmap会使用**treeifyBin**方法将链表中的node对象**替换为treeNode对象**进行存储
+
+treeNode类结构（**就是一个红黑树的结构**）
+```java
+static final class TreeNode<K,V> extends LinkedHashMap.Entry<K,V> {
+    TreeNode<K,V> parent;  // red-black tree links
+    TreeNode<K,V> left;
+    TreeNode<K,V> right;
+    TreeNode<K,V> prev;    // needed to unlink next upon deletion
+    boolean red;
+    TreeNode(int hash, K key, V val, Node<K,V> next) {
+        super(hash, key, val, next);
+    }
+```
+
+treeifyBin方法
+```java
+ final void treeifyBin(Node<K,V>[] tab, int hash) {
+        int n, index; Node<K,V> e;
+        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+            resize();
+        else if ((e = tab[index = (n - 1) & hash]) != null) {
+            TreeNode<K,V> hd = null, tl = null;
+            do {
+                TreeNode<K,V> p = replacementTreeNode(e, null);
+                if (tl == null)
+                    hd = p;
+                else {
+                    p.prev = tl;
+                    tl.next = p;
+                }
+                tl = p;
+            } while ((e = e.next) != null);
+            if ((tab[index] = hd) != null)
+                hd.treeify(tab);
+        }
+    }
+```
+putval方法四个入参： 需要查找的**hash**值；存入**key对象**；**存入value对象**；talbe数组中node元素以**key为标识的的value对象**是否只能**赋值一次**相当的与java中的**final**修饰变量；**插入后事件** 
+ ①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳
+```java
+public V put(K key, V value) {
+                    ①
+    return putVal(hash(key), key, value, false, true);
+}
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node<K,V>[] tab; Node<K,V> p; int n, i;
+    if ((tab = table) == null || (n = tab.length) == 0)
+                    ②
+        n = (tab = resize()).length;
+                        ③
+    if ((p = tab[i = (n - 1) & hash]) == null)
+                        ④
+        tab[i] = newNode(hash, key, value, null);
+    else {
+        Node<K,V> e; K k;
+                    ⑤
+        if (p.hash == hash &&
+            ((k = p.key) == key || (key != null && key.equals(k))))
+                ⑥
+            e = p;
+        else if (p instanceof TreeNode)
+            e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+        else {
+                ⑦
+            for (int binCount = 0; ; ++binCount) {
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                    if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+        if (e != null) { // existing mapping for key
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            return oldValue;
+        }
+    }
+    ++modCount;
+    if (++size > threshold)
+        resize();
+    afterNodeInsertion(evict);
+    return null;
+}
+
+```
+
+
+根据key获取map中的node对象或treeNode对象
+```java
+// 先将给定key进行hash计算，得到hash值
+public V get(Object key) {
+    Node<K,V> e;
+    return (e = getNode(hash(key), key)) == null ? null : e.value;
+}
+// 是否包含指定key的node元素
+public boolean containsKey(Object key) {
+    return getNode(hash(key), key) != null;
+}
+    // 通过hash值
+final Node<K,V> getNode(int hash, Object key) {
+    Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
+    if ((tab = table) != null && (n = tab.length) > 0 &&
+        (first = tab[(n - 1) & hash]) != null) {
+        if (first.hash == hash && // always check first node
+            ((k = first.key) == key || (key != null && key.equals(k))))
+            return first;
+        if ((e = first.next) != null) {
+            if (first instanceof TreeNode)
+                return ((TreeNode<K,V>)first).getTreeNode(hash, key);
+            do {
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))
+                    return e;
+            } while ((e = e.next) != null);
+        }
+    }
+    return null;
+}    
+```
+
+根据key删除node或trenode节点：1先查找**table数组中node节点**是否有匹配，如果未找到在查找对应hash值位置下节点**下一节点**，如此**循环直到找到或到达链表尽头**，将找到的要**删除node节点的下一个节点**赋值给**当前table数组中位置指针**或**上一个节点的next指针**
+```java
+    public V remove(Object key) {
+        Node<K,V> e;
+        return (e = removeNode(hash(key), key, null, false, true)) == null ?
+            null : e.value;
+    }
+    
+        final Node<K,V> removeNode(int hash, Object key, Object value,
+                               boolean matchValue, boolean movable) {
+        Node<K,V>[] tab; Node<K,V> p; int n, index;
+        if ((tab = table) != null && (n = tab.length) > 0 &&
+            (p = tab[index = (n - 1) & hash]) != null) {
+            Node<K,V> node = null, e; K k; V v;
+            if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k))))
+                node = p;
+            else if ((e = p.next) != null) {
+                if (p instanceof TreeNode)
+                    node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
+                else {
+                    do {
+                        if (e.hash == hash &&
+                            ((k = e.key) == key ||
+                             (key != null && key.equals(k)))) {
+                            node = e;
+                            break;
+                        }
+                        p = e;
+                    } while ((e = e.next) != null);
+                }
+            }
+            if (node != null && (!matchValue || (v = node.value) == value ||
+                                 (value != null && value.equals(v)))) {
+                if (node instanceof TreeNode)
+                    ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
+                else if (node == p)
+                    tab[index] = node.next;
+                else
+                    p.next = node.next;
+                ++modCount;
+                --size;
+                afterNodeRemoval(node);
+                return node;
+            }
+        }
+        return null;
+    }
+```
+
+hashMap清空  赋值所有table数组元素为null
+```java
+    public void clear() {
+        Node<K,V>[] tab;
+        modCount++;
+        if ((tab = table) != null && size > 0) {
+            size = 0;
+            for (int i = 0; i < tab.length; ++i)
+                tab[i] = null;
+        }
+    }
+```
+
+hashMap查找是否包含value对象,循环数组table，嵌套循环node节点
+```java
+    public boolean containsValue(Object value) {
+        Node<K,V>[] tab; V v;
+        if ((tab = table) != null && size > 0) {
+            for (int i = 0; i < tab.length; ++i) {
+                for (Node<K,V> e = tab[i]; e != null; e = e.next) {
+                    if ((v = e.value) == value ||
+                        (value != null && value.equals(v)))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+```
+
+hashMap获取所有key的set集合(**可以看出来keySet类是hashMap的一个内部类，单我们使用它遍历，迭代的时候，其本质还是还是从hashMap的node对象数组进行操作**)
+```java
+ public Set<K> keySet() {
+        Set<K> ks = keySet;
+        if (ks == null) {
+            ks = new KeySet();
+            keySet = ks;
+        }
+        return ks;
+    }
+
+    final class KeySet extends AbstractSet<K> {
+        public final int size()                 { return size; }
+        public final void clear()               { HashMap.this.clear(); }
+        public final Iterator<K> iterator()     { return new KeyIterator(); }
+        public final boolean contains(Object o) { return containsKey(o); }
+        public final boolean remove(Object key) {
+            return removeNode(hash(key), key, null, false, true) != null;
+        }
+        public final Spliterator<K> spliterator() {
+            return new KeySpliterator<>(HashMap.this, 0, -1, 0, 0);
+        }
+        public final void forEach(Consumer<? super K> action) {
+            Node<K,V>[] tab;
+            if (action == null)
+                throw new NullPointerException();
+            if (size > 0 && (tab = table) != null) {
+                int mc = modCount;
+                for (int i = 0; i < tab.length; ++i) {
+                    for (Node<K,V> e = tab[i]; e != null; e = e.next)
+                        action.accept(e.key);
+                }
+                if (modCount != mc)
+                    throw new ConcurrentModificationException();
+            }
+        }
+    }
+```
+
+hashMap获取所有value的collelction集合(**可以看出来values类也是hashMap的一个内部类，和keyset一样**)
+```java
+  public Collection<V> values() {
+        Collection<V> vs = values;
+        if (vs == null) {
+            vs = new Values();
+            values = vs;
+        }
+        return vs;
+    }
+
+    final class Values extends AbstractCollection<V> {
+        public final int size()                 { return size; }
+        public final void clear()               { HashMap.this.clear(); }
+        public final Iterator<V> iterator()     { return new ValueIterator(); }
+        public final boolean contains(Object o) { return containsValue(o); }
+        public final Spliterator<V> spliterator() {
+            return new ValueSpliterator<>(HashMap.this, 0, -1, 0, 0);
+        }
+        public final void forEach(Consumer<? super V> action) {
+            Node<K,V>[] tab;
+            if (action == null)
+                throw new NullPointerException();
+            if (size > 0 && (tab = table) != null) {
+                int mc = modCount;
+                for (int i = 0; i < tab.length; ++i) {
+                    for (Node<K,V> e = tab[i]; e != null; e = e.next)
+                        action.accept(e.value);
+                }
+                if (modCount != mc)
+                    throw new ConcurrentModificationException();
+            }
+        }
+    }
+```
+
+
+hashMap获取由key和value组合形成的entry对象set集合(**可以看出来keySet类是hashMap的一个内部类，我们可以看到entry对象里的contains，remove,foreach,迭代本质还是还是从hashMap的node对象数组链表进行操作**)
+keyset，values和entryset遍历的时候也是会快速失败的，所以hashMap也是线程不安全的
+```java
+   public Set<Map.Entry<K,V>> entrySet() {
+        Set<Map.Entry<K,V>> es;
+        return (es = entrySet) == null ? (entrySet = new EntrySet()) : es;
+    }
+
+    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+        public final int size()                 { return size; }
+        public final void clear()               { HashMap.this.clear(); }
+        public final Iterator<Map.Entry<K,V>> iterator() {
+            return new EntryIterator();
+        }
+        public final boolean contains(Object o) {
+            if (!(o instanceof Map.Entry))
+                return false;
+            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Object key = e.getKey();
+            Node<K,V> candidate = getNode(hash(key), key);
+            return candidate != null && candidate.equals(e);
+        }
+        public final boolean remove(Object o) {
+            if (o instanceof Map.Entry) {
+                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Object key = e.getKey();
+                Object value = e.getValue();
+                return removeNode(hash(key), key, value, true, true) != null;
+            }
+            return false;
+        }
+        public final Spliterator<Map.Entry<K,V>> spliterator() {
+            return new EntrySpliterator<>(HashMap.this, 0, -1, 0, 0);
+        }
+        public final void forEach(Consumer<? super Map.Entry<K,V>> action) {
+            Node<K,V>[] tab;
+            if (action == null)
+                throw new NullPointerException();
+            if (size > 0 && (tab = table) != null) {
+                int mc = modCount;
+                for (int i = 0; i < tab.length; ++i) {
+                    for (Node<K,V> e = tab[i]; e != null; e = e.next)
+                        action.accept(e);
+                }
+                if (modCount != mc)
+                    throw new ConcurrentModificationException();
+            }
+        }
+    }
+```
+
+获取指定key的node元素，如果不存在返回默认value
+```java
+    @Override
+    public V getOrDefault(Object key, V defaultValue) {
+        Node<K,V> e;
+        return (e = getNode(hash(key), key)) == null ? defaultValue : e.value;
+    }
+```
+
+插入键，值如果不存在（key值对应node不存在或node存在，但是node的valu变量为null）
+```java
+    public V putIfAbsent(K key, V value) {
+        return putVal(hash(key), key, value, true, true);
+    }
+```
+
+删除指定key，而且value为指定的node节点 
+```java
+    @Override
+    public boolean remove(Object key, Object value) {
+        return removeNode(hash(key), key, value, true, true) != null;
+    }
+```
+
+替换指定key的node节点的value值
+```java
+    @Override
+    public V replace(K key, V value) {
+        Node<K,V> e;
+        if ((e = getNode(hash(key), key)) != null) {
+            V oldValue = e.value;
+            e.value = value;
+            afterNodeAccess(e);
+            return oldValue;
+        }
+        return null;
+    }
+```
+
+替换指定key，而且value为指定的node节点的value值
+```java
+    @Override
+    public boolean replace(K key, V oldValue, V newValue) {
+        Node<K,V> e; V v;
+        if ((e = getNode(hash(key), key)) != null &&
+            ((v = e.value) == oldValue || (v != null && v.equals(oldValue)))) {
+            e.value = newValue;
+            afterNodeAccess(e);
+            return true;
+        }
+        return false;
+    }
+```
+
+computeIfAbsent
+computeIfPresent
+compute
+merge
+forEach(BiConsumer<? super K, ? super V> action) 
+replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
+
+**LinkedHashMap类**
+继承HashMap,下面是linkedHashMap的结构
+
+```java
+    // 实现了一个新的entry类，继承hashMap的node类
+    static class Entry<K,V> extends HashMap.Node<K,V> {
+        Entry<K,V> before, after;
+        Entry(int hash, K key, V value, Node<K,V> next) {
+            super(hash, key, value, next);
+        }
+    }
+```
+
+定义了头节点和尾节点
+
+```java
+    transient LinkedHashMap.Entry<K,V> head;
+    
+    transient LinkedHashMap.Entry<K,V> tail;
+```
+
+
+定义了该链表结构的迭代排序方式 true：访问顺序 false：插入顺序
+
+```java
+    final boolean accessOrder;
+```
+
+链接指定节点到该链表尾部
+```java
+    private void linkNodeLast(LinkedHashMap.Entry<K,V> p) {
+        LinkedHashMap.Entry<K,V> last = tail;
+        tail = p;
+        if (last == null)
+            head = p;
+        else {
+            p.before = last;
+            last.after = p;
+        }
+    }
+```
+
+链接指定的entry替换链表中指定entry的位置，设置为私有方法 不可单独用，会造成闭环
+```java
+    private void transferLinks(LinkedHashMap.Entry<K,V> src,
+                               LinkedHashMap.Entry<K,V> dst) {
+        LinkedHashMap.Entry<K,V> b = dst.before = src.before;
+        LinkedHashMap.Entry<K,V> a = dst.after = src.after;
+        if (b == null)
+            head = dst;
+        else
+            b.after = dst;
+        if (a == null)
+            tail = dst;
+        else
+            a.before = dst;
+    }
+```
+
+创建一个新的entry节点
+```java
+    Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
+        LinkedHashMap.Entry<K,V> p =
+            new LinkedHashMap.Entry<K,V>(hash, key, value, e);
+        linkNodeLast(p);
+        return p;
+    }
+```
+
+替换某个节点
+```java
+    Node<K,V> replacementNode(Node<K,V> p, Node<K,V> next) {
+        LinkedHashMap.Entry<K,V> q = (LinkedHashMap.Entry<K,V>)p;
+        LinkedHashMap.Entry<K,V> t =
+            new LinkedHashMap.Entry<K,V>(q.hash, q.key, q.value, next);
+        transferLinks(q, t);
+        return t;
+    }
+
+```
+
+生成一个新的树形节点和替换一个树形节点
+```java
+    TreeNode<K,V> newTreeNode(int hash, K key, V value, Node<K,V> next) {
+        TreeNode<K,V> p = new TreeNode<K,V>(hash, key, value, next);
+        linkNodeLast(p);
+        return p;
+    }
+
+    TreeNode<K,V> replacementTreeNode(Node<K,V> p, Node<K,V> next) {
+        LinkedHashMap.Entry<K,V> q = (LinkedHashMap.Entry<K,V>)p;
+        TreeNode<K,V> t = new TreeNode<K,V>(q.hash, q.key, q.value, next);
+        transferLinks(q, t);
+        return t;
+    }
+```
+
+删除某个节点后（**配合热moveNode方法使用**）
+```java
+ void afterNodeRemoval(Node<K,V> e) { // unlink
+        LinkedHashMap.Entry<K,V> p =
+            (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
+        p.before = p.after = null;
+        if (b == null)
+            head = a;
+        else
+            b.after = a;
+        if (a == null)
+            tail = b;
+        else
+            a.before = b;
+    }
+```
+
+增加某个节点后
+```java
+    void afterNodeInsertion(boolean evict) { // possibly remove eldest
+        LinkedHashMap.Entry<K,V> first;
+        if (evict && (first = head) != null && removeEldestEntry(first)) {
+            K key = first.key;
+            removeNode(hash(key), key, null, false, true);
+        }
+    }
+```
+
+访问后节点操作（**配合访问规则下的get（key）方法使用**）
+
+```java
+     void afterNodeAccess(Node<K,V> e) { // move node to last
+        LinkedHashMap.Entry<K,V> last;
+        if (accessOrder && (last = tail) != e) {
+            LinkedHashMap.Entry<K,V> p =
+                (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
+            p.after = null;
+            if (b == null)
+                head = a;
+            else
+                b.after = a;
+            if (a != null)
+                a.before = b;
+            else
+                last = b;
+            if (last == null)
+                head = p;
+            else {
+                p.before = last;
+                last.after = p;
+            }
+            tail = p;
+            ++modCount;
+        }
+}
+```
+
+linkedHahMap构造函数 默认采用插入规则
+```java
+     */
+    public LinkedHashMap(int initialCapacity, float loadFactor) {
+        super(initialCapacity, loadFactor);
+        accessOrder = false;
+    }
+```
+
+linkedHashMap链表是否包含指定value值的节点
+```java
+    public boolean containsValue(Object value) {
+        for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
+            V v = e.value;
+            if (v == value || (value != null && value.equals(v)))
+                return true;
+        }
+        return false;
+    }
+```
+
+获取指定key的node节点value
+```java
+   public V get(Object key) {
+        Node<K,V> e;
+        if ((e = getNode(hash(key), key)) == null)
+            return null;
+        if (accessOrder)
+            afterNodeAccess(e);
+        return e.value;
+    }
+```
+
+清空linkedHashMap
+```java
+    public void clear() {
+        super.clear();
+        head = tail = null;
+    }
+```
+
+获取linkedHashMap的所有key的set集合
+```java
+public Set<K> keySet() {
+        Set<K> ks = keySet;
+        if (ks == null) {
+            ks = new LinkedKeySet();
+            keySet = ks;
+        }
+        return ks;
+    }
+
+    final class LinkedKeySet extends AbstractSet<K> {
+        public final int size()                 { return size; }
+        public final void clear()               { LinkedHashMap.this.clear(); }
+        public final Iterator<K> iterator() {
+            return new LinkedKeyIterator();
+        }
+        public final boolean contains(Object o) { return containsKey(o); }
+        public final boolean remove(Object key) {
+            return removeNode(hash(key), key, null, false, true) != null;
+        }
+        public final Spliterator<K> spliterator()  {
+            return Spliterators.spliterator(this, Spliterator.SIZED |
+                                            Spliterator.ORDERED |
+                                            Spliterator.DISTINCT);
+        }
+        public final void forEach(Consumer<? super K> action) {
+            if (action == null)
+                throw new NullPointerException();
+            int mc = modCount;
+            for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after)
+                action.accept(e.key);
+            if (modCount != mc)
+                throw new ConcurrentModificationException();
+        }
+    }
+```
+
+
+获取linkedHashMap的所有key的collection集合
+```java
+    public Collection<V> values() {
+        Collection<V> vs = values;
+        if (vs == null) {
+            vs = new LinkedValues();
+            values = vs;
+        }
+        return vs;
+    }
+
+    final class LinkedValues extends AbstractCollection<V> {
+        public final int size()                 { return size; }
+        public final void clear()               { LinkedHashMap.this.clear(); }
+        public final Iterator<V> iterator() {
+            return new LinkedValueIterator();
+        }
+        public final boolean contains(Object o) { return containsValue(o); }
+        public final Spliterator<V> spliterator() {
+            return Spliterators.spliterator(this, Spliterator.SIZED |
+                                            Spliterator.ORDERED);
+        }
+        public final void forEach(Consumer<? super V> action) {
+            if (action == null)
+                throw new NullPointerException();
+            int mc = modCount;
+            for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after)
+                action.accept(e.value);
+            if (modCount != mc)
+                throw new ConcurrentModificationException();
+        }
+    }
+```
+   
+   
+linkedHashMap获取所有entry集合
+```java
+public Set<Map.Entry<K,V>> entrySet() {
+        Set<Map.Entry<K,V>> es;
+        return (es = entrySet) == null ? (entrySet = new LinkedEntrySet()) : es;
+    }
+
+    final class LinkedEntrySet extends AbstractSet<Map.Entry<K,V>> {
+        public final int size()                 { return size; }
+        public final void clear()               { LinkedHashMap.this.clear(); }
+        public final Iterator<Map.Entry<K,V>> iterator() {
+            return new LinkedEntryIterator();
+        }
+        public final boolean contains(Object o) {
+            if (!(o instanceof Map.Entry))
+                return false;
+            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Object key = e.getKey();
+            Node<K,V> candidate = getNode(hash(key), key);
+            return candidate != null && candidate.equals(e);
+        }
+        public final boolean remove(Object o) {
+            if (o instanceof Map.Entry) {
+                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Object key = e.getKey();
+                Object value = e.getValue();
+                return removeNode(hash(key), key, value, true, true) != null;
+            }
+            return false;
+        }
+        public final Spliterator<Map.Entry<K,V>> spliterator() {
+            return Spliterators.spliterator(this, Spliterator.SIZED |
+                                            Spliterator.ORDERED |
+                                            Spliterator.DISTINCT);
+        }
+        public final void forEach(Consumer<? super Map.Entry<K,V>> action) {
+            if (action == null)
+                throw new NullPointerException();
+            int mc = modCount;
+            for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after)
+                action.accept(e);
+            if (modCount != mc)
+                throw new ConcurrentModificationException();
+        }
+    }
+```
