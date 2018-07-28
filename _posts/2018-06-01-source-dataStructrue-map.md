@@ -5,15 +5,13 @@ subtitle: 'openjdk HashMap LinkedHashMap TreeMap hashTable的实现'
 date: 2018-06-01
 categories: 个人博客
 author: yates
-cover: ''
+cover: 'www.baidu.com'
 tags: 源码
 ---
 
-
-
 **map接口定义了所需实现方法**
-int size(); 获取集合大小
-boolean isEmpty(); 集合是否为空
+int size();
+boolean isEmpty();
 boolean containsKey(Object key);
 boolean containsValue(Object value);
 V get(Object key);
@@ -111,52 +109,8 @@ public int size() {
 }
 ```
 
-插入一个node节点， ① 先将key值**hash计算（查询会很快）**， 
-② 如果table为null或者数组没有一个node节点则调用resize进行扩容
-③ **(n - 1) & hash**请记住这个公式，通过hash值和整个table数组的大小使用与运算快速的计算出插入的node应该位于该table数组中的位置 
-④ 如果计算出来的位置**没有指针引用到任何对象**，那么调用newNode方法直接创建node节点存入该位置，这时我们会发现（**hashMap的key，value都可为null,key为null有且只有一个node对象**）
-⑤ 如果该位置已经有node对象了，通过**key是否是同一个对象或者key对象自身实现的equal方法判定是否相等**判断存入的是node对象**是否应该存入该位置** 
-⑥ 如果存入的key和该位置已存在key相等，那么**只更新该位置node对象的value（key对象在hashmap中唯一）** 
-⑦ 如果不相等则获取**该位置node对象指向的下一个节点**，判断下一个节点的**是否为null**，如果为null则将创建节点赋值key，value存入，如果不为null，则继续判断是否key值相等，相等则更新该节点value，不相等则继续查找下一节点，理论节点数量是可无穷存储的**（由此可以看出hashmap是一个数组链表的存储结构）**，但是如果链表结构过长，hashmap会使用**treeifyBin**方法将链表中的node对象**替换为treeNode对象**进行存储
+putval方法四个入参： 需要查找的key的**hash值**；存入**key对象**；**存入value对象**；talbe数组中node元素以**key为标识的的value对象**是否只能**赋值一次**；这个boolean类型的参数相当的与java中的**final**修饰变量；
 
-treeNode类结构（**就是一个红黑树的结构**）
-```java
-static final class TreeNode<K,V> extends LinkedHashMap.Entry<K,V> {
-    TreeNode<K,V> parent;  // red-black tree links
-    TreeNode<K,V> left;
-    TreeNode<K,V> right;
-    TreeNode<K,V> prev;    // needed to unlink next upon deletion
-    boolean red;
-    TreeNode(int hash, K key, V val, Node<K,V> next) {
-        super(hash, key, val, next);
-    }
-```
-
-treeifyBin方法
-```java
- final void treeifyBin(Node<K,V>[] tab, int hash) {
-        int n, index; Node<K,V> e;
-        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
-            resize();
-        else if ((e = tab[index = (n - 1) & hash]) != null) {
-            TreeNode<K,V> hd = null, tl = null;
-            do {
-                TreeNode<K,V> p = replacementTreeNode(e, null);
-                if (tl == null)
-                    hd = p;
-                else {
-                    p.prev = tl;
-                    tl.next = p;
-                }
-                tl = p;
-            } while ((e = e.next) != null);
-            if ((tab[index] = hd) != null)
-                hd.treeify(tab);
-        }
-    }
-```
-putval方法四个入参： 需要查找的**hash**值；存入**key对象**；**存入value对象**；talbe数组中node元素以**key为标识的的value对象**是否只能**赋值一次**相当的与java中的**final**修饰变量；**插入后事件** 
- ①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳
 ```java
 public V put(K key, V value) {
                     ①
@@ -213,7 +167,51 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 }
 
 ```
+插入一个node节点:
+① 先将key值**hash计算（查询会很快）**， 
+② 如果table为null或者数组没有一个node节点则调用resize进行扩容(resize方法扩容会**重新计算集合中元素的位置**，重新插入，所以我们在使用hashmap作为集合进行数据的封装时候，最好是**指定集合的初始化大小**)
+③ **(n - 1) & hash**请记住这个公式，通过hash值和整个table数组的大小n使用**与运算**快速的计算出插入的node应该位于该table数组中的位置 
+④ 如果计算出来的位置**没有指针引用到任何对象**，那么调用newNode方法直接创建node节点存入该位置，这时我们会发现（**hashMap的key，value都可为null,key为null有且只有一个node对象**）
+⑤ 如果该位置已经有node对象了，通过**key是否是同一个对象或者key对象自身实现的equal方法判定是否相等**判断存入的是node对象**是否应该存入该位置** 
+⑥ 如果存入的key和该位置已存在key相等，那么**只更新该位置node对象的value（key对象在hashmap中唯一）** 
+⑦ 如果不相等则获取**该位置node对象指向的下一个节点**，判断下一个节点的**是否为null**，如果为null则将创建节点赋值key，value存入，如果不为null，则继续判断是否key值相等，相等则更新该节点value，不相等则继续查找下一节点，理论节点数量是可无穷存储的**（由此可以看出hashmap是一个数组链表的存储结构）**，但是如果链表结构过长，hashmap会使用**treeifyBin**方法将链表中的node对象**替换为treeNode对象**进行存储
 
+treeNode类结构（**就是一个红黑树的结构**）
+```java
+static final class TreeNode<K,V> extends LinkedHashMap.Entry<K,V> {
+    TreeNode<K,V> parent;  // red-black tree links
+    TreeNode<K,V> left;
+    TreeNode<K,V> right;
+    TreeNode<K,V> prev;    // needed to unlink next upon deletion
+    boolean red;
+    TreeNode(int hash, K key, V val, Node<K,V> next) {
+        super(hash, key, val, next);
+    }
+```
+
+treeifyBin方法
+```java
+ final void treeifyBin(Node<K,V>[] tab, int hash) {
+        int n, index; Node<K,V> e;
+        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+            resize();
+        else if ((e = tab[index = (n - 1) & hash]) != null) {
+            TreeNode<K,V> hd = null, tl = null;
+            do {
+                TreeNode<K,V> p = replacementTreeNode(e, null);
+                if (tl == null)
+                    hd = p;
+                else {
+                    p.prev = tl;
+                    tl.next = p;
+                }
+                tl = p;
+            } while ((e = e.next) != null);
+            if ((tab[index] = hd) != null)
+                hd.treeify(tab);
+        }
+    }
+```
 
 根据key获取map中的node对象或treeNode对象
 ```java
@@ -248,7 +246,8 @@ final Node<K,V> getNode(int hash, Object key) {
 }    
 ```
 
-根据key删除node或trenode节点：1先查找**table数组中node节点**是否有匹配，如果未找到在查找对应hash值位置下节点**下一节点**，如此**循环直到找到或到达链表尽头**，将找到的要**删除node节点的下一个节点**赋值给**当前table数组中位置指针**或**上一个节点的next指针**
+根据key删除node或trenode节点：
+1先查找**table数组中node节点**是否有匹配，如果未找到在查找对应hash值位置下节点**下一节点**，如此**循环直到找到或到达链表尽头**，将找到的要**删除node节点的下一个节点**赋值给**当前table数组中位置指针**或**上一个节点的next指针**
 ```java
     public V remove(Object key) {
         Node<K,V> e;
@@ -298,7 +297,7 @@ final Node<K,V> getNode(int hash, Object key) {
     }
 ```
 
-hashMap清空  赋值所有table数组元素为null
+hashMap清空  赋值table数组**所有元素为null**
 ```java
     public void clear() {
         Node<K,V>[] tab;
@@ -311,7 +310,7 @@ hashMap清空  赋值所有table数组元素为null
     }
 ```
 
-hashMap查找是否包含value对象,循环数组table，嵌套循环node节点
+hashMap查找是否包含value对象,循环数组table，**嵌套循环node节点**
 ```java
     public boolean containsValue(Object value) {
         Node<K,V>[] tab; V v;
@@ -455,7 +454,7 @@ keyset，values和entryset遍历的时候也是会快速失败的，所以hashMa
     }
 ```
 
-获取指定key的node元素，如果不存在返回默认value
+获取**指定key**的node元素，如果不存在返回默认value
 ```java
     @Override
     public V getOrDefault(Object key, V defaultValue) {
@@ -464,7 +463,7 @@ keyset，values和entryset遍历的时候也是会快速失败的，所以hashMa
     }
 ```
 
-插入键，值如果不存在（key值对应node不存在或node存在，但是node的valu变量为null）
+插入键，值如果不存在（key值对应**node不存在**或**node存在，但是node的value对象为null**）
 ```java
     public V putIfAbsent(K key, V value) {
         return putVal(hash(key), key, value, true, true);
@@ -509,15 +508,24 @@ keyset，values和entryset遍历的时候也是会快速失败的，所以hashMa
     }
 ```
 
-computeIfAbsent
-computeIfPresent
-compute
-merge
-forEach(BiConsumer<? super K, ? super V> action) 
-replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
+computeIfAbsent 待解析
+computeIfPresent 待解析
+compute 待解析
+merge 待解析
+forEach(BiConsumer<? super K, ? super V> action) 待解析 
+replaceAll(BiFunction<? super K, ? super V, ? extends V> function) 待解析
+HashIterator
+KeyIterator
+ValueIterator
+EntryIterator
+HashMapSpliterator
+KeySpliterator
+ValueSpliterator
+EntrySpliterator
+
 
 **LinkedHashMap类**
-继承HashMap,下面是linkedHashMap的结构
+继承HashMap,下面是linkedHashMap的结构(可以看出来LinkedHashMap完全是一个链表的结构，而且是双向链表，**查询的时候会比hashMap慢**)
 
 ```java
     // 实现了一个新的entry类，继承hashMap的node类
@@ -530,7 +538,6 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
 ```
 
 定义了头节点和尾节点
-
 ```java
     transient LinkedHashMap.Entry<K,V> head;
     
@@ -538,7 +545,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
 ```
 
 
-定义了该链表结构的迭代排序方式 true：访问顺序 false：插入顺序
+定义了该链表结构的迭代排序方式  **true：访问顺序** **false：插入顺序**
 
 ```java
     final boolean accessOrder;
@@ -558,7 +565,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
     }
 ```
 
-链接指定的entry替换链表中指定entry的位置，设置为私有方法 不可单独用，会造成闭环
+链接指定的src替换链表中指定dst的位置，设置为私有方法 不可单独用，会造成**闭环**
 ```java
     private void transferLinks(LinkedHashMap.Entry<K,V> src,
                                LinkedHashMap.Entry<K,V> dst) {
@@ -575,7 +582,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
     }
 ```
 
-创建一个新的entry节点
+创建一个新的entry节点，自动插入到尾节点
 ```java
     Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
         LinkedHashMap.Entry<K,V> p =
@@ -585,7 +592,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
     }
 ```
 
-替换某个节点
+替换p节点尾next节点
 ```java
     Node<K,V> replacementNode(Node<K,V> p, Node<K,V> next) {
         LinkedHashMap.Entry<K,V> q = (LinkedHashMap.Entry<K,V>)p;
@@ -613,7 +620,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
     }
 ```
 
-删除某个节点后（**配合热moveNode方法使用**）
+删除某个节点后（**配合热moveNode方法使用**删除e节点对前后节点的关联，对e节点前后关联的节点进行新的关联）
 ```java
  void afterNodeRemoval(Node<K,V> e) { // unlink
         LinkedHashMap.Entry<K,V> p =
@@ -641,7 +648,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
     }
 ```
 
-访问后节点操作（**配合访问规则下的get（key）方法使用**）
+访问模式访问节点后操作（**配合访问规则下的get（key）方法使用**）
 
 ```java
      void afterNodeAccess(Node<K,V> e) { // move node to last
@@ -670,7 +677,7 @@ replaceAll(BiFunction<? super K, ? super V, ? extends V> function)
 }
 ```
 
-linkedHahMap构造函数 默认采用插入规则
+linkedHahMap构造函数 默认采用**插入规则**
 ```java
      */
     public LinkedHashMap(int initialCapacity, float loadFactor) {
@@ -711,7 +718,7 @@ linkedHashMap链表是否包含指定value值的节点
     }
 ```
 
-获取linkedHashMap的所有key的set集合
+获取linkedHashMap的所有key的set集合（**其本质还是遍历linkedhashmap的entry对象获取key**）
 ```java
 public Set<K> keySet() {
         Set<K> ks = keySet;
@@ -750,7 +757,7 @@ public Set<K> keySet() {
 ```
 
 
-获取linkedHashMap的所有key的collection集合
+获取linkedHashMap的所有key的collection集合（**其本质还是遍历linkedhashmap的entry对象获取value**）
 ```java
     public Collection<V> values() {
         Collection<V> vs = values;
@@ -831,3 +838,396 @@ public Set<Map.Entry<K,V>> entrySet() {
         }
     }
 ```
+LinkedHashIterator
+LinkedKeyIterator
+LinkedValueIterator
+LinkedEntryIterator
+
+**Hashtable**
+hashTable就是一个**对元素操作加了锁的hashmap** 值得注意的是hashtable是继承的Dictionary接口
+
+hashTable变量定义
+```java
+private transient Entry<?,?>[] table; 
+private transient int count;
+private int threshold;
+private float loadFactor;
+private transient int modCount = 0;
+private transient volatile Set<K> keySet;
+private transient volatile Set<Map.Entry<K,V>> entrySet;
+private transient volatile Collection<V> values;
+```
+
+hashTable的hash算法
+```java
+(hash & 0x7FFFFFFF) % tab.length
+```
+
+获取entry对象中key和values的枚举集合（）
+```java
+public synchronized Enumeration<K> keys() {
+    return this.<K>getEnumeration(KEYS);
+}
+public synchronized Enumeration<V> elements() {
+    return this.<V>getEnumeration(VALUES);
+}
+
+// keys values等常量的定义
+private static final int KEYS = 0;
+private static final int VALUES = 1;
+private static final int ENTRIES = 2;
+private <T> Enumeration<T> getEnumeration(int type) {
+    if (count == 0) {
+        return Collections.emptyEnumeration();
+    } else {
+        return new Enumerator<>(type, false);
+    }
+}
+```
+
+插入一个键值对（可以看出hashtable **不予许插入的value和key为null**）
+
+```java
+public synchronized V put(K key, V value) {
+    // Make sure the value is not null
+    if (value == null) {
+        throw new NullPointerException();
+    }
+
+    // Makes sure the key is not already in the hashtable.
+    Entry<?,?> tab[] = table;
+    int hash = key.hashCode();
+    int index = (hash & 0x7FFFFFFF) % tab.length;
+    @SuppressWarnings("unchecked")
+    Entry<K,V> entry = (Entry<K,V>)tab[index];
+    for(; entry != null ; entry = entry.next) {
+        if ((entry.hash == hash) && entry.key.equals(key)) {
+            V old = entry.value;
+            entry.value = value;
+            return old;
+        }
+    }
+
+    addEntry(hash, key, value, index);
+    return null;
+}
+
+private void addEntry(int hash, K key, V value, int index) {
+    modCount++;
+
+    Entry<?,?> tab[] = table;
+    if (count >= threshold) {
+        // Rehash the table if the threshold is exceeded
+        rehash();
+
+        tab = table;
+        hash = key.hashCode();
+        index = (hash & 0x7FFFFFFF) % tab.length;
+    }
+
+    // Creates the new entry.
+    @SuppressWarnings("unchecked")
+    Entry<K,V> e = (Entry<K,V>) tab[index];
+    tab[index] = new Entry<>(hash, key, value, e);
+    count++;
+}
+```
+
+hashTable获取所有key的set集合,生成的set集合也是线程安全的
+```java
+ */
+public Set<K> keySet() {
+    if (keySet == null)
+        keySet = Collections.synchronizedSet(new KeySet(), this);
+    return keySet;
+}
+```
+
+hashTable获取所有values的set集合,生成的collection集合也是线程安全的
+```java
+public Collection<V> values() {
+    if (values==null)
+        values = Collections.synchronizedCollection(new ValueCollection(),
+                                                    this);
+    return values;
+}
+```
+
+hashTable的equals方法 先判断比较集合的类型，然后是集合的大小，然后集合中元素的位置和值是否一致
+```java
+public synchronized boolean equals(Object o) {
+    if (o == this)
+        return true;
+
+    if (!(o instanceof Map))
+        return false;
+    Map<?,?> t = (Map<?,?>) o;
+    if (t.size() != size())
+        return false;
+
+    try {
+        Iterator<Map.Entry<K,V>> i = entrySet().iterator();
+        while (i.hasNext()) {
+            Map.Entry<K,V> e = i.next();
+            K key = e.getKey();
+            V value = e.getValue();
+            if (value == null) {
+                if (!(t.get(key)==null && t.containsKey(key)))
+                    return false;
+            } else {
+                if (!value.equals(t.get(key)))
+                    return false;
+            }
+        }
+    } catch (ClassCastException unused)   {
+        return false;
+    } catch (NullPointerException unused) {
+        return false;
+    }
+
+    return true;
+}
+```
+
+hashTable的EntrySet，ValueCollection对象也只是hashTable的一个封装，里面的对元素进行操作的方法本质还是在**hashtable的数组链表结构**中进行操作
+
+remove  putIfAbsent replaceAll replace computeIfPresent merge等方法的逻辑基本和hashMap大同小异了
+
+
+**TreeMap**
+treeMap的定义的变量（可以看出来定义了**排序的比较器**）
+```java
+private final Comparator<? super K> comparator;
+private transient Entry<K,V> root;
+private transient int size = 0;
+private transient int modCount = 0;
+```
+
+判断是否包含指定value的entry元素 
+```java
+public boolean containsValue(Object value) {
+    for (Entry<K,V> e = getFirstEntry(); e != null; e = successor(e))
+        if (valEquals(value, e.value))
+            return true;
+    return false;
+}
+
+final Entry<K,V> getFirstEntry() {
+    Entry<K,V> p = root;
+    if (p != null)
+        while (p.left != null)
+            p = p.left;
+    return p;
+}
+
+static final boolean valEquals(Object o1, Object o2) {
+    return (o1==null ? o2==null : o1.equals(o2));
+}
+
+static <K,V> TreeMap.Entry<K,V> successor(Entry<K,V> t) {
+    if (t == null)
+        return null;
+    else if (t.right != null) {
+        Entry<K,V> p = t.right;
+        while (p.left != null)
+            p = p.left;
+        return p;
+    } else {
+        Entry<K,V> p = t.parent;
+        Entry<K,V> ch = t;
+        while (p != null && ch == p.right) {
+            ch = p;
+            p = p.parent;
+        }
+        return p;
+    }
+}
+```
+
+获取指定key的元素
+```java
+public V get(Object key) {
+    Entry<K,V> p = getEntry(key);
+    return (p==null ? null : p.value);
+}
+
+final Entry<K,V> getEntry(Object key) {
+    // Offload comparator-based version for sake of performance
+    if (comparator != null)
+        return getEntryUsingComparator(key);
+    if (key == null)
+        throw new NullPointerException();
+    @SuppressWarnings("unchecked")
+        Comparable<? super K> k = (Comparable<? super K>) key;
+    Entry<K,V> p = root;
+    while (p != null) {
+        int cmp = k.compareTo(p.key);
+        if (cmp < 0)
+            p = p.left;
+        else if (cmp > 0)
+            p = p.right;
+        else
+            return p;
+    }
+    return null;
+}
+```
+
+插入指定的键值对(如果插入集合中无根节点，则将该键值对作为根元素插入，如果有根节点，则对比是否已有指定key的元素（则将根节点与插入节点的key通过比较器进行对比），有则覆盖，无则在合适的节点上增加该节点，key看出，treemap结构是典型的**二叉树结构**，**不允许key为null且唯一**，)
+```java
+public V put(K key, V value) {
+    Entry<K,V> t = root;
+    if (t == null) {
+        compare(key, key); // type (and possibly null) check
+
+        root = new Entry<>(key, value, null);
+        size = 1;
+        modCount++;
+        return null;
+    }
+    int cmp;
+    Entry<K,V> parent;
+    // split comparator and comparable paths
+    Comparator<? super K> cpr = comparator;
+    if (cpr != null) {
+        do {
+            parent = t;
+            cmp = cpr.compare(key, t.key);
+            if (cmp < 0)
+                t = t.left;
+            else if (cmp > 0)
+                t = t.right;
+            else
+                return t.setValue(value);
+        } while (t != null);
+    }
+    else {
+        if (key == null)
+            throw new NullPointerException();
+        @SuppressWarnings("unchecked")
+            Comparable<? super K> k = (Comparable<? super K>) key;
+        do {
+            parent = t;
+            cmp = k.compareTo(t.key);
+            if (cmp < 0)
+                t = t.left;
+            else if (cmp > 0)
+                t = t.right;
+            else
+                return t.setValue(value);
+        } while (t != null);
+    }
+    Entry<K,V> e = new Entry<>(key, value, parent);
+    if (cmp < 0)
+        parent.left = e;
+    else
+        parent.right = e;
+    fixAfterInsertion(e);
+    size++;
+    modCount++;
+    return null;
+}
+
+final int compare(Object k1, Object k2) {
+    return comparator==null ? ((Comparable<? super K>)k1).compareTo((K)k2)
+        : comparator.compare((K)k1, (K)k2);
+}
+```
+
+插入指定map集合中所有元素
+```java
+public void putAll(Map<? extends K, ? extends V> map) {
+    int mapSize = map.size();
+    if (size==0 && mapSize!=0 && map instanceof SortedMap) {
+        Comparator<?> c = ((SortedMap<?,?>)map).comparator();
+        if (c == comparator || (c != null && c.equals(comparator))) {
+            ++modCount;
+            try {
+                buildFromSorted(mapSize, map.entrySet().iterator(),
+                                null, null);
+            } catch (java.io.IOException cannotHappen) {
+            } catch (ClassNotFoundException cannotHappen) {
+            }
+            return;
+        }
+    }
+    super.putAll(map);
+}
+```
+
+删除指定key的元素
+```java
+public V remove(Object key) {
+    Entry<K,V> p = getEntry(key);
+    if (p == null)
+        return null;
+
+    V oldValue = p.value;
+    deleteEntry(p);
+    return oldValue;
+}
+    
+private void deleteEntry(Entry<K,V> p) {
+modCount++;
+size--;
+
+// If strictly internal, copy successor's element to p and then make p
+// point to successor.
+if (p.left != null && p.right != null) {
+    Entry<K,V> s = successor(p);
+    p.key = s.key;
+    p.value = s.value;
+    p = s;
+} // p has 2 children
+
+// Start fixup at replacement node, if it exists.
+Entry<K,V> replacement = (p.left != null ? p.left : p.right);
+
+if (replacement != null) {
+    // Link replacement to parent
+    replacement.parent = p.parent;
+    if (p.parent == null)
+        root = replacement;
+    else if (p == p.parent.left)
+        p.parent.left  = replacement;
+    else
+        p.parent.right = replacement;
+
+    // Null out links so they are OK to use by fixAfterDeletion.
+    p.left = p.right = p.parent = null;
+
+    // Fix replacement
+    if (p.color == BLACK)
+        fixAfterDeletion(replacement);
+} else if (p.parent == null) { // return if we are the only node.
+    root = null;
+} else { //  No children. Use self as phantom replacement and unlink.
+    if (p.color == BLACK)
+        fixAfterDeletion(p);
+
+    if (p.parent != null) {
+        if (p == p.parent.left)
+            p.parent.left = null;
+        else if (p == p.parent.right)
+            p.parent.right = null;
+        p.parent = null;
+    }
+}
+}
+```
+
+
+
+
+**TreeNode** 
+
+
+
+
+总结
+
+- 增强for循环使用方便，但性能较差，不适合处理超大量级的数据。
+
+- 迭代器的遍历速度要比增强for循环快很多，是增强for循环的2倍左右。
+
+- 使用entrySet遍历的速度要比keySet快很多，是keySet的1.5倍左右。
