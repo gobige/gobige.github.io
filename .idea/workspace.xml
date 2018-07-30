@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1f7a4416-b462-4a1c-be74-e1d79bb1d1b4" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-    </list>
+    <list default="true" id="1f7a4416-b462-4a1c-be74-e1d79bb1d1b4" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -36,10 +34,10 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="ProjectPane" />
       <pane id="Scope" />
-      <pane id="PackagesPane" />
+      <pane id="ProjectPane" />
       <pane id="AndroidView" />
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -48,190 +46,6 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-  </component>
-  <component name="RestoreUpdateTree" date="Moments ago" ActionInfo="_Update">
-    <UpdatedFiles>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Updated from server" />
-        <option name="myStatusName" value="Changed on server" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="CHANGED_ON_SERVER" />
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Updated" />
-          <option name="myStatusName" value="Changed" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="false" />
-          <option name="myId" value="UPDATED" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/.gitignore</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_config.yml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-04-18-hello-github-pages.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/assets/css/app.min.css</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/assets/img/profile.png</PATH>
-        </FILE-GROUP>
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Created" />
-          <option name="myStatusName" value="Created" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="false" />
-          <option name="myId" value="CREATED" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-08-01-markdown.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-09-02-chorme-developer-compass.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-09-02-mgnix.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-09-03-annotationMore.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-09-03-equelandhashcode.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-09-05-ideatips.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-09-15-mysqlmilitaryregula.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-01-03-crossdomain.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-03-03-javamilitaryregula.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-04-15-java-serilazied.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-06-01-source-dataStructrue-List.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-06-01-source-dataStructrue-Queue.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-06-01-source-dataStructrue-map.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2018-06-01-source-dataStructrue-set.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/1.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/10.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/11.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/12.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/13.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/14.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/15.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/16.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/17.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/18.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/19.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/2.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/20.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/21.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/3.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/4.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/5.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/6.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/7.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/8.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-08-01-markdown/9.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/1.gif</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/10.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/11.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/2.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/3.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/4.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/5.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/6.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/7.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/8.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-02-chorme-developer-compass/9.gif</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-annotationMore/1.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-annotationMore/2.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-annotationMore/3.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-annotationMore/4.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-annotationMore/5.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-annotationMore/6.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-equelandhashcode/1.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-equelandhashcode/2.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-equelandhashcode/3.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-equelandhashcode/4.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-equelandhashcode/5.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2017-09-03-equelandhashcode/6.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2018-06-01-source-dataStructrue-List/1.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2018-06-01-source-dataStructrue-List/2.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/img/2018-06-01-source-dataStructrue-List/3.png</PATH>
-        </FILE-GROUP>
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Deleted" />
-          <option name="myStatusName" value="Deleted" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="true" />
-          <option name="myId" value="REMOVED_FROM_REPOSITORY" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-04-18-new-theme-h2o.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_posts/2017-07-30-mathjax-test.md</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/1494404591.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/jekyll-theme-h2o-heroPatterns.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/jekyll-theme-h2o-realhome.jpg</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/jekyll-theme-h2o-realm.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/jekyll-theme-h2o-search.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/jekyll-theme-h2o-sideBar.png</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/screenshot/jekyll-theme-h2o-themecolor.jpg</PATH>
-        </FILE-GROUP>
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Restored" />
-          <option name="myStatusName" value="Will be restored" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="false" />
-          <option name="myId" value="RESTORED" />
-        </FILE-GROUP>
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Modified" />
-        <option name="myStatusName" value="Modified" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MODIFIED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Skipped" />
-        <option name="myStatusName" value="Skipped" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="SKIPPED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged with conflicts" />
-        <option name="myStatusName" value="Will be merged with conflicts" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED_WITH_CONFLICTS" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged with tree conflicts" />
-        <option name="myStatusName" value="Merged with tree conflicts" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED_WITH_TREE_CONFLICT" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged with property conflicts" />
-        <option name="myStatusName" value="Will be merged with property conflicts" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED_WITH_PROPERTY_CONFLICT" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged" />
-        <option name="myStatusName" value="Will be merged" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Not in repository" />
-        <option name="myStatusName" value="Not in repository" />
-        <option name="mySupportsDeletion" value="true" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="UNKNOWN" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Locally added" />
-        <option name="myStatusName" value="Locally added" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="LOCALLY_ADDED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Locally removed" />
-        <option name="myStatusName" value="Locally removed" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="LOCALLY_REMOVED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Switched" />
-        <option name="myStatusName" value="Switched" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="SWITCHED" />
-      </FILE-GROUP>
-    </UpdatedFiles>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -299,44 +113,45 @@
       <option name="presentableId" value="Default" />
       <updated>1532915222327</updated>
       <workItem from="1532915223764" duration="106000" />
+      <workItem from="1532915381960" duration="100000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="106000" />
+    <option name="totallyTimeSpent" value="206000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <layout>
-      <window_info anchor="right" id="Palette" />
+      <window_info anchor="right" id="Palette" order="3" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="right" id="Palette&#9;" />
-      <window_info id="Image Layers" />
-      <window_info anchor="right" id="Capture Analysis" />
-      <window_info anchor="bottom" id="Event Log" side_tool="true" />
-      <window_info anchor="right" id="Maven Projects" />
-      <window_info anchor="bottom" id="Database Changes" show_stripe_button="false" />
+      <window_info anchor="right" id="Palette&#9;" order="3" />
+      <window_info id="Image Layers" order="2" />
+      <window_info anchor="right" id="Capture Analysis" order="3" />
+      <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
+      <window_info anchor="right" id="Maven Projects" order="3" />
+      <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Run" order="2" />
-      <window_info anchor="bottom" id="Version Control" />
-      <window_info active="true" anchor="bottom" id="Thumbnails" visible="true" weight="0.32936078" />
-      <window_info anchor="bottom" id="Terminal" />
-      <window_info id="Capture Tool" />
-      <window_info id="Designer" />
+      <window_info anchor="bottom" id="Version Control" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="7" />
+      <window_info id="Capture Tool" order="2" />
+      <window_info id="Designer" order="2" />
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25" />
-      <window_info anchor="bottom" id="Statistic" />
-      <window_info anchor="right" id="Database" />
+      <window_info anchor="bottom" id="Statistic" order="7" />
+      <window_info anchor="right" id="Database" order="3" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info id="UI Designer" />
-      <window_info anchor="right" id="Theme Preview" />
+      <window_info id="UI Designer" order="2" />
+      <window_info anchor="right" id="Theme Preview" order="3" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
-      <window_info id="Favorites" side_tool="true" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info active="true" anchor="bottom" id="Thumbnails" order="7" visible="true" weight="0.32936078" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
