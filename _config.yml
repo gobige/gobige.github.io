@@ -49,9 +49,9 @@ postPatterns: 'circuitBoard'
 # SNS settings 配置社交网站
 # url: email, weibo, zhihu, twitter, instagram, juejin, github, douban, facebook, dribble, uicn, jianshu, medium, linkedin
 sns:
-  weibo: '//weibo.com/lovecolcol'
-  juejin: '//juejin.im/user/57a6f434165abd006159b4cc'
-  instagram: '//www.instagram.com/steveliaocn'
+  weibo: '//weibo.com/'
+  juejin: '//juejin.im'
+  instagram: '//www.instagram.com'
   github: '//github.com/gobige'
 
 # Tags 设置标签
@@ -73,7 +73,6 @@ kramdown:
 RSS: false
 
 # Permalink
-# See: https://github.com/kaeyleo/jekyll-theme-H2O/issues/35
 permalink: /:year/:month/:day/:title.html
 
 # Plugins
