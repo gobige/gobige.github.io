@@ -10,29 +10,29 @@ tags: 源码
 ---
 
 **map接口定义了所需实现方法**
-int size();
-boolean isEmpty();
-boolean containsKey(Object key);
-boolean containsValue(Object value);
-V get(Object key);
-V put(K key, V value);
-V remove(Object key);
-void putAll(Map<? extends K, ? extends V> m);
-void clear();   
-boolean equals(Object o);
-int hashCode();
+- int size();
+- boolean isEmpty();
+- boolean containsKey(Object key);
+- boolean containsValue(Object value);
+- V get(Object key);
+- V put(K key, V value);
+- V remove(Object key);
+- void putAll(Map<? extends K, ? extends V> m);
+- void clear();   
+- boolean equals(Object o);
+- int hashCode();
 
 **entry接口定义map集合元素entry所需实现方法**
-K getKey();
-V getValue();
-V setValue(V value);
-boolean equals(Object o);
-int hashCode();
-comparingByKey 实现了自身以key作为对比规则的对比器
-comparingByValue 实现了自身以value作为对比规则的对比器
-comparingByKey(Comparator<? super K> cmp)  实现了使用指定比较器比较key的比较器
-comparingByValue(Comparator<? super V> cmp)  实现了使用指定比较器比较value的比较器
-boolean equals(Object o);
+- K getKey();
+- V getValue();
+- V setValue(V value);
+- boolean equals(Object o);
+- int hashCode();
+- comparingByKey 实现了自身以key作为对比规则的对比器
+- comparingByValue 实现了自身以value作为对比规则的对比器
+- comparingByKey(Comparator<? super K> cmp)  实现了使用指定比较器比较key的比较器
+- comparingByValue(Comparator<? super V> cmp)  实现了使用指定比较器比较value的比较器
+- boolean equals(Object o);
 
 **AbstractMap抽象类**
 部分的实现,重写了map接口的方法 hashCode equals removeAll
