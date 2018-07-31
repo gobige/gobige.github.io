@@ -32,16 +32,124 @@ tags: 排序算法
 思路：假设有n个值，第一次从n1作为待排序值，排序n1前面的值，第二次n2作为待排序值，排序n2前面的值;，第三次n3作为待排序值，排序n3前面的值；以此类推，代码如下：
 ```java
 public static int[] directSort(int[] arr) {
-    for (int i = 1; i < arr.length; i++) {
-        int waitSortVal = arr[i];
+        for (int i = 1; i < arr.length; i++) {
+            int waitSortVal = arr[i];
 
-        for (int j = 0; j < i; j++) {
-            if (arr[j] < waitSortVal) {
-                for (int k = i; k > j; k--) {
-                    arr[k] = arr[k-1];
+            for (int j = 0; j < i; j++) {
+                if (arr[j] > waitSortVal) {
+                    for (int k = i; k > j; k--) {
+                        arr[k] = arr[k-1];
+                    }
+                    arr[j] = waitSortVal;
+                    break;
                 }
-                arr[j] = waitSortVal;
-                break;
+            }
+        }
+
+        return arr;
+    }
+```
+
+#### 二分法插入排序
+思路：二分法插入排序的思想和直接插入一样，只是找到插入位置的方式不同，通过在已排完序中使用二分法查找插入位置，可以减少比较的次数。
+```java
+public static int[] dichotomyInsertionSort(int[] arr) {
+    for (int i = 0; i < arr.length; i++) {
+        int temp = arr[i];
+        int left = 0;
+        int right = i - 1;
+        int mid = 0;
+        while (left <= right) {
+            mid = (left + right) / 2;
+            if (temp < arr[mid]) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        for (int j = i - 1; j >= left; j--) {
+            arr[j + 1] = arr[j];
+        }
+        if (left != i) {
+            arr[left] = temp;
+        }
+    }
+
+
+    return arr;
+}
+```
+
+#### 希尔排序
+希尔排序是选择一个小于数组大小n增量d，每隔d位的数字分为一组进行排序，然后继续选择一个小于之前增量的值继续分组排序，直到增量变为1
+
+```java
+public static int[] shellSort(int[] arr) {
+    int incre = arr.length;
+    while (true) {
+        incre = incre / 2;
+
+        // 分组
+           for (int x = 0; x < incre; x++) {
+            // 每组排序
+            for (int i = x; i < arr.length; i = i + incre) {
+                int waitSortVal = arr[i];
+
+                // 每组进行插入排序
+                for (int j = x; j < i; j = j + incre) {
+                    if (arr[j] > waitSortVal) {
+                        // 位移插入位置右边的数字
+                        for (int k = i; k > j; k = k - incre) {
+                            arr[k] = arr[k - incre];
+                        }
+                        arr[j] = waitSortVal;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (incre == 1) {
+            break;
+        }
+    }
+
+    return arr;
+}
+```
+
+#### 选择排序
+思路：每次从数组中取出最小的一个数字放到另一个数组中，同时删除获取的这个数字（优化方案：只在一个数组中进行该排序）
+
+```java
+    public static int[] selectSort(int[] arr) {
+        for (int i = 0; i < arr.length; i++) {
+            int minIndex = i;
+            for (int j = i; j < arr.length; j++) {
+                if (arr[j] < arr[minIndex]) {
+                    minIndex = j;
+                }
+            }
+            int temp = arr[i];
+            arr[i] = arr[minIndex];
+            arr[minIndex] = temp;
+        }
+
+        return arr;
+    }
+```
+
+#### 冒泡排序
+思路：在一个数组中，从第一个值开始，与下一位进行对比，如果大于下一位，则进行位置交换；然后继续下一位的对比，整个过程就像气泡从水底向水面游动，到水面时气泡时最大的,故此得名。
+```java
+public static int[] bubbleSort(int[] arr) {
+    int temp;
+    for (int i = 0; i < arr.length; i++) {
+        for (int j = 0; j < arr.length - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
             }
         }
     }
@@ -50,5 +158,8 @@ public static int[] directSort(int[] arr) {
 }
 ```
 
-#### 二分法插入排序
-思路：二分法插入排序的思想和直接插入一样，只是找到插入位置的方式不同，通过在已排完序中使用二分法查找插入位置，可以减少比较的次数。
+#### 快速排序
+思路：从数组中选择一个值作为基准数值，比该值大的分配到右边，比该值小的分配到左边，然后对左右两边的继续进行找基准数值，递归实现该方法
+```java
+
+```
