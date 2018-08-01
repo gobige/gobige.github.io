@@ -1044,7 +1044,7 @@ static <K,V> TreeMap.Entry<K,V> successor(Entry<K,V> t) {
 }
 ```
 
-获取指定key的元素
+获取指定key的元素(如果treemap有指定**比较器**，则用给定的比较器进行树的遍历，直到找到相应key的节点对象或无法找到指定key的节点对象，我们指定二叉树的平衡性决定了树的查找的速度，而treeMap使用了**红黑树**)
 ```java
 public V get(Object key) {
     Entry<K,V> p = getEntry(key);
@@ -1215,16 +1215,6 @@ if (replacement != null) {
 }
 }
 ```
-
-
-
-
-**TreeNode** 
-
-
-
-
-总结
 
 - 增强for循环使用方便，但性能较差，不适合处理超大量级的数据。
 

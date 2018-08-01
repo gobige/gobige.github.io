@@ -32,5 +32,36 @@ tags: 源码
 
 **HashSet类**
 继承AbstractSet,实现了set接口的方法
-hashset的
+hashset其实就是HashMap的一个封装
+```java
+private transient HashMap<E,Object> map;
+private static final Object PRESENT = new Object();
+```
+
+HashSet集合增加一个元素(把元素插入HashMap当中的key中，从而保证了set集合元素是**唯一的**，且**允许唯一且为null**)
+```java
+public boolean add(E e) {
+    return map.put(e, PRESENT)==null;
+}
+```
+
+**LinkedHashSet**
+LinkedHashSet类继承HashSet
+
+**TreeSet**
+TreeSet的变量定义
+```java
+private transient NavigableMap<E,Object> m;
+private static final Object PRESENT = new Object();
+```
+
+构造函数（可以看出实质是实例化了一个hashmap对象）
+```java
+public TreeSet() {
+    this(new TreeMap<E,Object>());
+}
+```
+
+总结：hashSet LinkedHashSet TreeSet 大致都是在以hashMap为基础上封装的一种新的集合，所以只要看懂了hashMap实现也就看懂了hashSet的实现
+
 
