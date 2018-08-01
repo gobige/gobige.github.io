@@ -159,7 +159,54 @@ public static int[] bubbleSort(int[] arr) {
 ```
 
 #### 快速排序
+先来了解几个概念
+- 递归:程序调用自身的编程技巧称为递归。递归条件调用栈的概念和函数的关系,递归函数也用到了调用栈,
+- 分而治之(D&C算法)工作原理:1找出简单的基线条件 2确定如何缩小问题规模,使其符合基线条件优雅的解决方法
+
 思路：从数组中选择一个值作为基准数值，比该值大的分配到右边，比该值小的分配到左边，然后对左右两边的继续进行找基准数值，递归实现该方法
+```java
+public static void quickSort(int[] arrays, int start, int end) {
+    // 如果每一轮基准排序结束后返回
+	if(start > end){
+		return;
+	}
+
+    int base = arrays[start];
+	int i = start,j = end;
+    int temp;
+    // 保证调用不会内存泄露
+    while (start < end) {
+        // 从最右边开始查找如果比基准书小则结束查找，锁定位置
+        while (base <= arrays[end] && start < end) {
+            end--;
+        }
+        // 从最左边开始查找如果比基准数大则结束查找，锁定位置
+        while (base >= arrays[start] && start < end) {
+            start++;
+        }
+        // 交换比基准数大的和小的数值位置
+        if (start < end) {
+            temp = arrays[start];
+            arrays[start] = arrays[end];
+            arrays[end] = temp;
+        }
+    }
+
+    // 基准数归位
+    arrays[i] = arrays[start];
+    arrays[start] = base;
+
+    // 递归遍历
+    quickSort(arrays,i,start - 1);
+    quickSort(arrays,start + 1,j);
+}
+```
+
+#### 堆排序
+堆：堆是具有以下性质的完全二叉树：每个结点的值都大于或等于其左右孩子结点的值，称为大顶堆；或者每个结点的值都小于或等于其左右孩子结点的值，称为小顶堆。
+
+思路：堆排序的基本思想是：将待排序序列构造成一个大顶堆，此时，整个序列的最大值就是堆顶的根节点。将其与末尾元素进行交换，此时末尾就为最大值。然后将剩余n-1个元素重新构造成一个堆，这样会得到n个元素的次小值。如此反复执行，便能得到一个有序序列了
+
 ```java
 
 ```
