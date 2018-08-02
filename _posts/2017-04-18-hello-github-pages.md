@@ -25,9 +25,9 @@ tags: githubpages
 3. 去dns运营商**绑定**域名到ip（域名到域名）的解析
 
 ### 接入**jekyll**使你的博客更美观
-**jekyll**是一个静态网页生成工具，可以配合**github pages**使用是你的blog更美观;
-[github给出的官方使用jekyll主题文档->](https://help.github.com/articles/about-jekyll-themes-on-github/)
+**jekyll**是一个静态网页生成工具，可以配合**github pages**使用是你的blog更美观
 
+[github给出的官方使用jekyll主题文档->](https://help.github.com/articles/about-jekyll-themes-on-github/)
 [jekyll给出的官方使用文档 →](https://jekyllrb.com/docs/home/)
 
 - 首先请自行百度**jekyll主题**下载zip包，或者找到该主题的git地址,**clone**该主题，复制该主题的文件到你自己git仓库web项目根目录下面,push到github,访问即可看到效果.（其实这样就很简单的在blog上集成了主题）
@@ -91,7 +91,7 @@ tags: githubpages
 drafts 是未发布的文章。这些文件的格式中都没有 title.MARKUP 数据。学习如何使用 drafts.
 
 **_layouts**
-layouts 是包裹在文章外部的模板。布局可以在YAML头信息中根据不同文章进行选择。这将在下一个部分进行介绍。标签  {{ content }} 可以将content插入页面中。
+layouts 是包裹在文章外部的模板。布局可以在YAML头信息中根据不同文章进行选择。
 
 **_posts**
 这里放的就是你的文章了。文件格式很重要，必须要符合: YEAR-MONTH-DAY-title.MARKUP。 The permalinks 可以在文章中自己定制，但是数据和标记语言都是根据文件名来确定的。
