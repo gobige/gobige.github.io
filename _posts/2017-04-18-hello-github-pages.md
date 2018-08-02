@@ -72,8 +72,6 @@ _config.yml
 保存配置数据。很多配置选项都会直接从命令行中进行设置，但是如果你把那些配置写在这儿，你就不用非要去记住那些命令了。
 _drafts
 drafts 是未发布的文章。这些文件的格式中都没有 title.MARKUP 数据。学习如何使用 drafts.
-_includes
-你可以加载这些包含部分到你的布局或者文章中以方便重用。可以用这个标签  '{% include file.ext %}' 来把文件 _includes/file.ext 包含进来。
 _layouts
 layouts 是包裹在文章外部的模板。布局可以在 YAML 头信息中根据不同文章进行选择。 这将在下一个部分进行介绍。标签  {{ content }} 可以将content插入页面中。
 _posts
