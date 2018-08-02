@@ -285,9 +285,89 @@ private static void merge(int arrays[], int left, int right, int mid, int[] temp
 思路：TODO
 
 #### 桶排序
-思路：TODO
+思路：桶排序将[0,1)区间划分为n个相同的大小的子区间，这些子区间被称为桶；每个桶单独进行计数排序，然后再遍历每个桶。
+既然要将数值入桶，那么入值的算法是什么呢？
+max - min = n * width;
+max:数组最大值，min：数组最小值；n：桶个数；width：每个桶的宽度
 
-#### 计数排序
+每个数值x的桶中位置
+index = (x - min) / width = (x - min) / (max - min) * n;
+当n取数组长度时
+index = (x - min) / (max - min) * Array.length
+当n= (max-min)/Array.length
+index = (x - min) / (max - min) * (max-min) / Array.length = (x - min) / Array.length;
+
+
+```java
+public static void bucketSort(int[] A) {
+    //1. 构造桶
+    //1.1 确定桶的个数n
+    int n = A.length;
+    //1.2 声明并初始化一个List，存放链表；
+    List<ArrayList<Integer>> Blist = new ArrayList<>(n);
+    for(int i = 0; i < n; i++)
+        Blist.add(new ArrayList<Integer>(5));
+    //2.将数组中的元素放到桶中
+    //2.1 确定元素的最值
+    int max = Integer.MIN_VALUE;
+    int min = Integer.MAX_VALUE;
+    for(int a : A){
+        max = Math.max(max, a);
+        min = Math.min(min, a);
+    }
+    //2.2 确定每个元素放入桶的编号并放进去
+    for(int i : A){
+        //2.2.1 确定桶的编号
+        int len = A.length;
+        //加1是为了保证inde< A.length，防止程序抛出IndexOutofBoundsEx;
+        int index = (int)((i-min) / (max-min+1.0) * A.length); 
+        //2.2.2 放入对应的桶中
+        Blist.get(index).add(i);
+    }
+    //3.桶内排序
+    for(int i = 0; i < Blist.size(); i++){
+        java.util.Collections.sort(Blist.get(i));
+    }
+    //4.合并数据
+    int j = 0;
+    for(ArrayList<Integer> arr : Blist){
+        for(int i : arr){
+            A[j++] = i;
+        }
+    }
+}
+
+
+public static void bucketSort(int[] arr){
+    int max = Integer.MIN_VALUE;
+    int min = Integer.MAX_VALUE;
+    for(int i = 0; i < arr.length; i++){
+        max = Math.max(max, arr[i]);
+        min = Math.min(min, arr[i]);
+    }
+
+    //桶数
+    int bucketNum = (max - min) / arr.length + 1;
+    ArrayList<ArrayList<Integer>> bucketArr = new ArrayList<>(bucketNum);
+    for(int i = 0; i < bucketNum; i++){
+        bucketArr.add(new ArrayList<Integer>());
+    }
+
+    //将每个元素放入桶
+    for(int i = 0; i < arr.length; i++){
+        int num = (arr[i] - min) / (arr.length);
+        bucketArr.get(num).add(arr[i]);
+    }
+
+    //对每个桶进行排序
+    for(int i = 0; i < bucketArr.size(); i++){
+        Collections.sort(bucketArr.get(i));
+    }
+
+    System.out.println(bucketArr.toString());
+}
+```
+#### 计数排序（针对正整数）
 思路：
 计算数组每个数值出现的次数，放入一个临时数组中temp1，数组下标为数组的值，数组值为出现个数；
 计算数组每个数值比他小的数值数量，放入又一个临时数组中temp2，数组下标为比他小数值数量，数值为计算的数值；
