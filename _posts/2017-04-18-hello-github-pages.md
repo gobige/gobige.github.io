@@ -27,7 +27,8 @@ tags: githubpages
 ### 接入**jekyll**使你的博客更美观
 **jekyll**是一个静态网页生成工具，可以配合**github pages**使用是你的blog更美观
 
-[github给出的官方使用jekyll主题文档->](https://help.github.com/articles/about-jekyll-themes-on-github/)
+[github给出的官方使用jekyll主题文档 →](https://help.github.com/articles/about-jekyll-themes-on-github/)
+
 [jekyll给出的官方使用文档 →](https://jekyllrb.com/docs/home/)
 
 - 首先请自行百度**jekyll主题**下载zip包，或者找到该主题的git地址,**clone**该主题，复制该主题的文件到你自己git仓库web项目根目录下面,push到github,访问即可看到效果.（其实这样就很简单的在blog上集成了主题）
