@@ -282,7 +282,92 @@ private static void merge(int arrays[], int left, int right, int mid, int[] temp
 ```
 
 #### 基数排序
-思路：TODO
+思路：基数排序和计数排序类型，都是分类排序，特点在于基数排序，对一组数组，将所有数值补位一样长度的值，进行个位对比排序，然后进行十位对比排序，...，直到最高位排序完成
+```java
+/**
+ * 基数排序
+ * @param arrays
+ * @return
+ */
+public static int[] cardinalitySort(int[] arrays) {
+	int digit = findMaxNumberOfDigitsFromArray(arrays);
+
+	;
+	return sortCore(arrays, 0, digit);
+}
+
+private static int[] sortCore(int[] array, int digit, int maxLength) {
+	if (digit >= maxLength) {
+		return array;
+	}
+
+	final int radix = 10; // 基数
+	int arrayLength = array.length;
+	int[] count = new int[radix];
+	int[] bucket = new int[arrayLength];
+
+	// 统计将数组中的数字分配到桶中后，各个桶中的数字个数
+	for (int i = 0; i < arrayLength; i++) {
+		count[getDigit(array[i], digit)]++;
+	}
+
+	// 将各个桶中的数字个数，转化成各个桶中最后一个数字的下标索引
+	for (int i = 1; i < radix; i++) {
+		count[i] = count[i] + count[i - 1];
+	}
+
+	// 将原数组中的数字分配给辅助数组 bucket
+	for (int i = arrayLength - 1; i >= 0; i--) {
+		int number = array[i];
+		int d = getDigit(number, digit);
+		bucket[count[d] - 1] = number;
+		count[d]--;
+	}
+
+	return sortCore(bucket, digit + 1, maxLength);
+}
+
+/*
+ * 获取 x 这个数的 d 位数上的数字
+ * 比如获取 123 的 0 位数,结果返回 3
+ *
+ * @param x
+ * @param d
+ * @return
+ */
+private static int getDigit(int x, int d) {
+	int a[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+	return ((x / a[d]) % 10);
+}
+
+/**
+ * 找出待排序数组中数值最大位数
+ * @param arrays
+ * @return
+ */
+private static int findMaxNumberOfDigitsFromArray(int[] arrays) {
+	 if (arrays != null && arrays.length > 0) {
+		 int max = arrays[0];
+		 for (int i : arrays) {
+			 if (i > max) {
+				 max = i;
+			 }
+		 }
+		return getNumberOfDigits(max);
+	 } else {
+		 return 0;
+	 }
+ }
+
+/**
+ * 获取整数位数
+ * @param num
+ * @return
+ */
+private static int getNumberOfDigits(int num) {
+	 return String.valueOf(num).length();
+ }
+```
 
 #### 桶排序
 思路：桶排序将[0,1)区间划分为n个相同的大小的子区间，这些子区间被称为桶；每个桶单独进行计数排序，然后再遍历每个桶。
@@ -367,7 +452,7 @@ public static void bucketSort(int[] arr){
     System.out.println(bucketArr.toString());
 }
 ```
-#### 计数排序（针对正整数）
+#### 计数排序（针对正整数,比较耗空间）
 思路：
 计算数组每个数值出现的次数，放入一个临时数组中temp1，数组下标为数组的值，数组值为出现个数；
 计算数组每个数值比他小的数值数量，放入又一个临时数组中temp2，数组下标为比他小数值数量，数值为计算的数值；
