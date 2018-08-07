@@ -81,7 +81,7 @@ System.out.println("list sum is " + sum4);
 ```
 结果：
 
-![此处输入图片的描述](http://www.muyibeyond.cn/img/20172018-06-18-java_stream/1.png)
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-06-18-java_stream/1.png)
 
 
 ### 并行流
