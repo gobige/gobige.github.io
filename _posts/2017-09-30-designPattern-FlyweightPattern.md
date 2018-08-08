@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '设计模式之原型模式'
+title: '设计模式之享元模式'
 subtitle: '享元模式'
 date: 2017-09-30
 categories: 设计模式

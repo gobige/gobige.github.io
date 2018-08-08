@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '设计模式之原型模式'
+title: '设计模式之过滤器模式'
 subtitle: '过滤器模式'
 date: 2017-09-26
 categories: 设计模式

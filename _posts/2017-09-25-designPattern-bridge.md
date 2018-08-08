@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '设计模式之原型模式'
+title: '设计模式之桥接模式'
 subtitle: '桥接模式'
 date: 2017-09-25
 categories: 设计模式

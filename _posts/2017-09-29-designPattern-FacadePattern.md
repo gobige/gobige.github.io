@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '设计模式之原型模式'
+title: '设计模式之外观模式'
 subtitle: '外观模式'
 date: 2017-09-28
 categories: 设计模式
