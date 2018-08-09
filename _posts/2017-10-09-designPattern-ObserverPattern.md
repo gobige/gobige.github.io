@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '设计模式之备忘录模式'
+title: '设计模式之观察者模式'
 subtitle: '观察者模式'
 date: 2017-10-09
 categories: 设计模式
