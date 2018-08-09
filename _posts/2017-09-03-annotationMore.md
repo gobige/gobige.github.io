@@ -106,7 +106,7 @@ FunctionalConsumer functionalConsumer = new FunctionalConsumer();
 ###注解的提取
 标注为生命周期在运行时状态的注解可以通过反射来提取，如下：
 
-```
+```java
 @MyIF(author = "muyibeyond",desc = "test anotation class")
 public class AnnotationTest {
 	@MyIF(author = "muyibeyond",desc = "test anotation method")
