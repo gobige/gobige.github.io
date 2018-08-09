@@ -44,7 +44,8 @@ tags: jdk
     * 注解类可以没有成员，没有成员的注解称为标识注解。
             
 - 使用注解的语法：@<注解名>(<成员名1>=<成员值1>,<成员名1>=<成员值1>,…)
-    ![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-annotationMore/2.png)
+
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-annotationMore/2.png)
 
 ### Java中常见的注解
 ####@Override
