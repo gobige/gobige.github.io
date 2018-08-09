@@ -78,8 +78,7 @@ public interface Bar {
 
 因此，下面的对象可以用lambda表达式代替
 
-```
-
+```java
 class FunctionalConsumer {
     public void consumeFoo(Foo foo) {
         System.out.println(foo.doSomething());
