@@ -13,7 +13,11 @@ tags: jdk
 java的基类Object提供了equals和hashCode方法，前者判断连个对象是否相等，后者用于计算对象的哈希码
 ## equals
 object类中equals中是这样写的
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/1.png)
+```java
+public boolean equals(Object obj) {
+    return (this == obj);
+}
+```
 该实现采用了 区分度最高的算法，只要连个对象不是同一个对象就返回false
 
 equals方法可以重写，但是要遵守**约定**
@@ -26,7 +30,9 @@ equals方法可以重写，但是要遵守**约定**
 
 ## hashCode
 object类中hashCode中是这样写的
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/2.png)
+```java
+public native int hashCode();
+```
 可以看出是本地方法，实际上是将该对象在**内存中的地址作为哈希码**返回，可以保证不同对象哈希码不一样
 
 hashCode重写也有**注意事项**
@@ -41,12 +47,60 @@ hashMap和hashSet的实现也是遵循上面的规则的，当哈希表中插入
 
 
 ## integer中的equals和hashCode
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/5.png)
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/6.png)
+```java
+public boolean equals(Object obj) {
+    if (obj instanceof Integer) {
+        return value == ((Integer)obj).intValue();
+    }
+    return false;
+}
+public static int hashCode(int value) {
+    return value;
+}
+```
 
 ## String中的equals和hashCode
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/3.png)
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-09-03-equelandhashcode/4.png)
+```java
+public boolean equals(Object var1) {
+    if (this == var1) {
+        return true;
+    } else {
+        if (var1 instanceof String) {
+            String var2 = (String)var1;
+            int var3 = this.value.length;
+            if (var3 == var2.value.length) {
+                char[] var4 = this.value;
+                char[] var5 = var2.value;
+
+                for(int var6 = 0; var3-- != 0; ++var6) {
+                    if (var4[var6] != var5[var6]) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+public int hashCode() {
+    int var1 = this.hash;
+    if (var1 == 0 && this.value.length > 0) {
+        char[] var2 = this.value;
+
+        for(int var3 = 0; var3 < this.value.length; ++var3) {
+            var1 = 31 * var1 + var2[var3];
+        }
+
+        this.hash = var1;
+    }
+
+    return var1;
+}
+```
 
 通过代码可以看出
 
