@@ -53,6 +53,7 @@ tags: mysql
 - 自增列或全局ID做InnoDB主键
 - 尽量不用外键（有额外开销，逐行操作，导致其他表锁定，高并发死锁）
 - 优先覆盖索引
+- 关联查询不同表查询字段若使用索引，字段类型应该一样
 
 ### SQL类军规
 
@@ -68,7 +69,7 @@ tags: mysql
 - 减少Count(*)
 - 计数统计：redis，双向更新，
 - 非实时统计：尽量单独统计表，定期重算
-- Limit高效分页，SELECT * FROM message WHERE id > 9527 (or sub select) limit 10（limit 9527,10 因为LIMIT 偏移量越大，越慢）
+- Limit高效分页，SELECT * FROM message WHERE id > 9527 (or sub select) limit 10（如果使用limit 9527,10 因为LIMIT 偏移量越大，越慢）
 - 使用Union ALL 而不用Union（union有去重开销）
 - 高并发不建议两个表以上join
 - 分解链接，保证高并发（可缓存大量早期数据，可使用多个myisam表，对大表的小ID IN()，联接引用同一个表多次）
@@ -78,6 +79,7 @@ tags: mysql
 - Load Data导入数据，比Insert快20倍（成批装载比单行装载快，不用每次刷新缓存；无索引装载比索引装载比索引装载快）
 - 打散大批量更新，尽量凌晨操作，执行过程sleep
 - 尽量不用insert...select（延迟；同步出错）
+
 ### 约定类军规
 
 - 隔离线上线下
@@ -85,6 +87,19 @@ tags: mysql
 - 永远不在程序段显式加锁
 - 表字符集统一使用UTF8MB4
 
+
+### limit高效分页
+- 子查询优化法
+    - 先找出第一条数据，然后大于这条数据的id就是要获取的数据
+    - 注意：数据必须是连续的，不能带有where等筛选条件
+- 倒排表优化法
+    - 建立索引，用一张表维护页数，高效连接得到数据
+    - 注意：只适合数据固定情况，数据不能删除，维护页表困难
+- 反向查找优化法
+    - 当偏移超过一半记录数时候，先用排序，这样便宜就反转了
+    - 注意：order by优化比较麻烦，要增加索引，索引影响数据修改效率，偏移大于总记录数一半
+- limit限制优化法
+    - 把limit偏移量限制低于某个数，超过这个数等于没数据
 
 - 字段中存储日期 如果必要使用UNIX_TIMESTAMP()转化为int存储日期时间，取出时间FROM_UNIXTIME
 
@@ -135,4 +150,29 @@ set global long_query_time=1;
 6)查看慢查询日志
 tail -50 D:/green/mysql-5.7.9/data/yates-PC-slow.log
 
-Explain对sql执行进行分析  using filesort  using tempory
+---------------------------------------------------
+Explain对sql执行进行分析 
+- select_type 查询类型
+	- SIMPLE, 表示此查询不包含 UNION 查询或子查询
+	- PRIMARY, 表示此查询是最外层的查询
+	- UNION, 表示此查询是 UNION 的第二或随后的查询
+	- DEPENDENT UNION, UNION 中的第二个或后面的查询语句, 取决于外面的查询
+	- UNION RESULT, UNION 的结果
+	- SUBQUERY, 子查询中的第一个SELECT
+	- DEPENDENT SUBQUERY: 子查询中的第一个SELECT, 取决于外面的查询. 即子查询依赖于外层查询的结果
+- type 常用类型
+	- system: 表中只有一条数据. 这个类型是特殊的const类型
+	- const: 针对主键或唯一索引的等值查询扫描, 最多只返回一行数据. 
+	- eq_ref: 此类型通常出现在多表的 join 查询, 表示对于前表的每一个结果, 都只能匹配到后表的一行结果，查询效率较高
+	- ref: 此类型通常出现在多表的 join 查询, 针对于非唯一或非主键索引, 或者是使用了最左前缀规则索引的查询
+	- range: 表示使用索引范围查询, 通过索引字段范围获取表中部分数据记录. 这个类型通常出现在<>,>,>=,<,<=,IS NULL,<=>,BETWEEN,IN()操作中
+	- index: 表示全索引扫描(full index scan)
+	- ALL: 表示全表扫描
+- possible_keys 可能用到索引
+- key 用到索引
+- key_len 使用了索引字节数，可以从这个字段看出索引是否被完全使用（比如 ：复合索引中每个用到的索引key值相加）
+- rows 查询需要扫描的行数
+- Extra
+	- Using filesort   MySQL 需额外的排序操作, 不能通过索引顺序达到排序效果，通常表示这个查询性能不ok
+	- Using index 覆盖索引扫描", 表示查询在索引树中就可查找所需数据 性能通常不错
+	- Using temporary 会用到临时表，排序，分组，多表join时会出现这种情况
