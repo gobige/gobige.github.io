@@ -102,3 +102,182 @@ JMM承诺保证happend-before的关系，不仅为程序员提供了足够强的
     6. join()规则：如果线程A执行操作ThreadB.join()并成功返回，那么线程B中的任意操作happens-before于线程A从ThreadB.join()操作成功返回
     7. 程序中断规则：对线程interrupted()方法的调用先行于被中断线程的代码检测到中断时间的发生。
     8. 对象finalize规则：一个对象的初始化完成（构造函数执行结束）先行于发生它的finalize()方法的开始。
+
+	
+	
+### 三大性质
+- 原子性 一个操作不可中断，要么全部成功，要么全部失败
+- 有序性 操作执行顺序不可变
+- 可见性 可见性是指当一个线程修改了共享变量后，其他线程能够立即得知这个修改
+
+**java中8种具有原子性操作**
+
+- lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态；
+- unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定
+- read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用；
+- load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本
+- use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作；
+- assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作；
+- store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用；
+- write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中
+
+- java内存模型只是要求上述两个操作是顺序执行的并不是连续执行的
+- monitorenter和monitorexit指令对应lock和unlock操作，更上一层是synchronized满足操作原子性
+
+
+### 并发的基础 synchronized
+synchronized关键字可以使用在方法，代码块上，应用在实例方法和静态方法分别锁的是该类的实例对象和类对象（尽管new多个实例，但他们仍然是同一个类锁住）
+
+**synchronized底层实现**
+在java的锁机制中，在java或者类
+
+### 并发的基础 volatile
+1. 将当前处理器缓存行的数据写回系统内存；
+2. 这个写回内存的操作会使得其他CPU里缓存了该内存地址的数据无效
+
+在生成汇编代码时会在volatile修饰的共享变量进行写操作的时候会多出Lock前缀的指令
+
+如果对声明了volatile的变量进行写操作，JVM就会向处理器发送一条Lock前缀的指令，将这个变量所在缓存行的数据写回到系统内存，同时实现缓存一致性协议，每个处理器通过嗅探在总线上传播的数据来检查自己缓存的值是不是过期了
+
+运算结果并不依赖于变量的当前值，或者能够确保只有一个线程修改变量的值；
+变量不需要与其他的状态变量共同参与不变约束
+
+### final
+java中变量，可以分为**成员变量**以及方法**局部变量**
+
+- 类变量：必须要在静态初始化块中指定初始值或者声明该类变量时指定初始值，而且只能在这两个地方之一进行指定；
+- 实例变量：必要要在非静态初始化块，声明该实例变量或者在构造器中指定初始值，而且只能在这三个地方进行指定。
+- final局部变量由程序员进行显式初始化，如果final局部变量已经进行了初始化则后面就不能再次进行更改
+- final修饰基本数据类型变量时，不能对基本数据类型变量重新赋值，因此基本数据类型变量不能被改变。而对于引用类型变量而言，它仅仅保存的是一个引用，final只保证这个引用类型变量所引用的地址不会发生改变，即一直引用这个对象，但这个对象属性是可以改变的
+-  父类的final方法是不能够被子类重写的
+- final方法是可以被重载的
+- 当一个类被final修饰时，表名该类是不能被子类继承的
+- 八个包装类和String类都是不可变类
+- 写final域的重排序规则禁止对final域的写重排序到构造函数之外,在对象引用为任意线程可见之前，对象的final域已经被正确初始化过了，而普通域就不具有这个保障
+- 在一个线程中，初次读对象引用和初次读该对象包含的final域，JMM会禁止这两个操作的重排序
+- 在一个线程中，初次读对象引用和初次读该对象包含的final域，JMM会禁止这两个操作的重排序
+- 针对引用数据类型，final域写针对编译器和处理器重排序增加了这样的约束：在构造函数内对一个final修饰的对象的成员域的写入，与随后在构造函数之外把这个被构造的对象的引用赋给一个引用变量，这两个操作是不能被重排序的
+- 在构造函数，不能让这个被构造的对象被其他线程可见，也就是说该对象引用不能在构造函数中“逸出”
+
+### 漫谈juc
+lock：类似于1.5之前的synchronize，失去了像synchronize关键字隐式加锁解锁的便捷性，但是拥有了锁获取和释放的可操作性；以及可中断的获取锁，超时获取锁等同步特性
+
+**同步器aqs**
+同步器是用来构建锁和其他同步组件的基础框架，依赖一个int成员变量来表示同步状态以及通过一个FIFO队列构成等待队列。
+
+**同步队列**
+
+当共享资源被某个线程占有，其他请求该资源的线程将会阻塞，从而进入同步队列，AQS的同步队列通过链表实现
+
+AQS的队列实现由一个Node静态内部类
+
+```java
+volatile int waitStatus;// 节点状态
+volatile Node prev;// 前置节点
+volatile Node next// 后置节点
+volatile Thread thread;// 当前加入队列线程节点
+Node nextWaiter;// 当前队列下一执行节点
+```
+
+**同步器中的独占锁**
+AQS提供了一个acquire方法来获取独占锁
+
+```java
+public final void acquire(int arg) {
+    if (!tryAcquire(arg) && acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+    selfInterrupt();
+}
+```
+调用acquire方法**成功，返回;失败，将当前线程加入同步队列**
+
+```java
+    private Node addWaiter(Node mode) {
+        Node node = new Node(Thread.currentThread(), mode);
+        // Try the fast path of enq; backup to full enq on failure
+        Node pred = tail;
+        if (pred != null) {
+            node.prev = pred;
+            if (compareAndSetTail(pred, node)) {
+                pred.next = node;
+                return node;
+            }
+        }
+        enq(node);
+        return node;
+    }
+
+
+  private final boolean compareAndSetHead(Node update) {
+        return unsafe.compareAndSwapObject(this, headOffset, null, update);
+    }
+
+    /**
+     * CAS tail field. Used only by enq.
+     */
+    private final boolean compareAndSetTail(Node expect, Node update) {
+        return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
+    }
+
+
+private Node enq(final Node node) {
+    for (;;) {
+        Node t = tail;
+        if (t == null) { // Must initialize
+            if (compareAndSetHead(new Node()))
+                tail = head;
+        } else {
+            node.prev = t;
+            if (compareAndSetTail(t, node)) {
+                t.next = node;
+                return t;
+            }
+        }
+    }
+}
+
+
+    final boolean acquireQueued(final Node node, int arg) {
+        boolean failed = true;
+        try {
+            boolean interrupted = false;
+            for (;;) {
+                final Node p = node.predecessor();
+                if (p == head && tryAcquire(arg)) {
+                    setHead(node);
+                    p.next = null; // help GC
+                    failed = false;
+                    return interrupted;
+                }
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                    parkAndCheckInterrupt())
+                    interrupted = true;
+            }
+        } finally {
+            if (failed)
+                cancelAcquire(node);
+        }
+    }
+```
+锁是面向使用者，它定义了使用者与锁交互的接口，隐藏了实现细节；同步器是面向锁的实现者，它简化了锁的实现方式，屏蔽了同步状态的管理，线程的排队，等待和唤醒等底层操作
+
+
+
+**同步组件**
+同步组件的实现依赖于同步器AQS，在同步组件实现中，使用AQS的方式被推荐定义继承AQS的静态内存类；
+AQS采用模板方法进行设计，AQS的protected修饰的方法需要由继承AQS的子类进行重写实现，当调用AQS的子类的方法时就会调用被重写的方法；
+AQS负责同步状态的管理，线程的排队，等待和唤醒这些底层操作，而Lock等同步组件主要专注于实现同步语义；
+在重写AQS的方式时，使用AQS提供的getState(),setState(),compareAndSetState()方法进行修改同步状态
+
+AQS提供的模板方法可以分为3类：
+
+- 独占式获取与释放同步状态；
+- 共享式获取与释放同步状态；
+- 查询同步队列中等待线程情况；
+
+同步组件实现者的角度：
+
+- 通过可重写的方法：独占式：tryAcquire()(独占式获取同步状态），tryRelease()（独占式释放同步状态）；共享式：tryAcquireShared()(共享式获取同步状态)，tryReleaseShared()(共享式释放同步状态)；告诉AQS怎样判断当前同步状态是否成功获取或者是否成功释放。同步组件专注于对当前同步状态的逻辑判断，从而实现自己的同步语义。
+
+AQS的角度
+
+- 而对AQS来说，只需要同步组件返回的true和f-alse即可，因为AQS会对true和false会有不同的操作，true会认为当前线程获取同步组件成功直接返回，而false的话就AQS也会将当前线程插入同步队列
