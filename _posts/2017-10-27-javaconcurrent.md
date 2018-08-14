@@ -160,24 +160,130 @@ java中变量，可以分为**成员变量**以及方法**局部变量**
 - 在构造函数，不能让这个被构造的对象被其他线程可见，也就是说该对象引用不能在构造函数中“逸出”
 
 ### 漫谈juc
-lock：类似于1.5之前的synchronize，失去了像synchronize关键字隐式加锁解锁的便捷性，但是拥有了锁获取和释放的可操作性；以及可中断的获取锁，超时获取锁等同步特性
+lock：类似于1.5之前的synchronize，
 
-**同步器aqs**
-同步器是用来构建锁和其他同步组件的基础框架，依赖一个int成员变量来表示同步状态以及通过一个FIFO队列构成等待队列。
+**lock和synchronize的区别**
 
-**同步队列**
+- 失去了像synchronize关键字隐式加锁解锁的便捷性，但是拥有了锁获取和释放的可操作性
+- 以及可中断的获取锁，超时获取锁等同步特性
+- synchronize同步块碰到异常会自动释放锁，而lock必须使用unlock主动释放锁
 
-当共享资源被某个线程占有，其他请求该资源的线程将会阻塞，从而进入同步队列，AQS的同步队列通过链表实现
-
-AQS的队列实现由一个Node静态内部类
+**Lock接口定义的方法**
 
 ```java
-volatile int waitStatus;// 节点状态
-volatile Node prev;// 前置节点
-volatile Node next// 后置节点
-volatile Thread thread;// 当前加入队列线程节点
-Node nextWaiter;// 当前队列下一执行节点
+void lock();
+void lockInterruptibly();
+boolean tryLock();
+boolean tryLock(long time, TimeUnit unit);
+void unlock();
+Condition newCondition();
 ```
+
+**ReentrantLock**
+
+reentrantlock实现了lock方法，而整个锁的基础实现靠的是Sync这个内部类
+
+```java
+private final Sync sync;
+```
+
+而Sync是继承的AbstractQueuedSynchronizer类，也就是我们常说的AQS.
+
+**AQS同步器**
+AQS同步器是用来构建锁和其他同步组件的基础框架，依赖一个int成员变量来表示同步状态以及通过一个FIFO队列构成同步队列
+
+**同步队列**
+当共享资源被某个线程占有，其他请求该资源的线程将会阻塞，从而进入同步队列，AQS的同步队列通过链表实现
+
+**同步组件**
+所有同步组件的实现都依赖于aqs，需要继承AQS的静态内部类，重写aqs的提供的可重写方法，调用模板方法；aqs只负责同步状态的管理，线程的排队，等待和唤醒这些底层操作，并提供getState(),setState(),compareAndSetState()方法修改同步状态
+
+**aqs可重写方法**
+```java
+    protected int tryAcquireShared(int arg); // 共享式获取同步状态
+	protected boolean tryAcquire(int arg);// 独占式获取同步状态
+	protected boolean tryRelease(int arg);// 独占式释放同步状态
+	protected boolean tryReleaseShared(int arg);// 共享式释放同步状态
+	protected boolean isHeldExclusively();当前同步器是否在独占模式下被线程占用
+```
+
+**aqs模板方法**
+```java
+    public final void acquire(int arg); // 独占式获取同步状态
+	public final void acquireInterruptibly(int arg);// 独占式获取同步状态,响应中断
+	public final boolean tryAcquireNanos(int arg, long nanosTimeout);// 独占式获取同步状态,响应中断，增加超时效果
+	public final void acquireShared(int arg);// 共享式获取同步状态
+	public final void acquireSharedInterruptibly(int arg);// 共享式获取同步状态,响应中断
+	public final boolean tryAcquireSharedNanos(int arg, long nanosTimeout);// 共享式获取同步状态,响应中断,增加超时效果
+	public final boolean release(int arg);// 独占式释放同步状态
+	public final boolean releaseShared(int arg);// 共享式释放同步状态
+	public final Collection<Thread> getQueuedThreads(); // 查询同步队列中等待线程集合
+	
+```
+
+**实现者的角度**
+
+- 通过可重写的方法,告诉AQS怎样判断当前同步状态是否成功获取或者是否成功释放。同步组件专注于对当前同步状态的逻辑判断，从而实现自己的同步语义。
+
+**AQS的角度**
+
+- 而对AQS来说，只需要同步组件返回的true和f-alse即可，因为AQS会对true和false会有不同的操作，true会认为当前线程获取同步组件成功直接返回，而false的话就AQS也会将当前线程插入同步队列
+
+
+我们接下来看aqs的源码，来深入理解一下
+
+AQS的**队列**实现由一个Node静态内部类
+```java
+static final class Node {
+        static final Node SHARED = new Node();
+        static final Node EXCLUSIVE = null;
+
+        static final int CANCELLED =  1;// 节点从同步队列中取消
+        static final int SIGNAL    = -1;// 后继节点的线程处于等待状态，如果当前节点释放同步状态会通知后继节点，使得后继节点的线程能够运行
+        static final int CONDITION = -2;// 当前节点进入等待队列中
+      
+        static final int PROPAGATE = -3;// 表示下一次共享式同步状态获取将会无条件传播下去
+
+		volatile int waitStatus;// 节点状态
+		volatile Node prev;// 前置节点
+		volatile Node next// 后置节点
+		volatile Thread thread;// 当前加入队列线程节点
+		Node nextWaiter;// 当前队列下一执行节点
+		
+		private transient volatile Node head;// 头指针
+		private transient volatile Node tail;// 尾指针
+		
+        final boolean isShared() {
+            return nextWaiter == SHARED;
+        }
+
+        final Node predecessor() throws NullPointerException {
+            Node p = prev;
+            if (p == null)
+                throw new NullPointerException();
+            else
+                return p;
+        }
+
+        Node() {    // Used to establish initial head or SHARED marker
+        }
+
+        Node(Thread thread, Node mode) {     // Used by addWaiter
+            this.nextWaiter = mode;
+            this.thread = thread;
+        }
+
+        Node(Thread thread, int waitStatus) { // Used by Condition
+            this.waitStatus = waitStatus;
+            this.thread = thread;
+        }
+    }
+```
+
+- 节点的数据结构，即AQS的静态内部类Node,节点的等待状态等信息；
+- 同步队列是一个双向队列，AQS通过持有头尾指针管理同步队列；
+
+
 
 **同步器中的独占锁**
 AQS提供了一个acquire方法来获取独占锁
@@ -188,44 +294,46 @@ public final void acquire(int arg) {
     selfInterrupt();
 }
 ```
-调用acquire方法**成功，返回;失败，将当前线程加入同步队列**
+
+通过我们重写的tryacqure方法获取独占锁，如果失败将当前线程加入同步队列
 
 ```java
-    private Node addWaiter(Node mode) {
-        Node node = new Node(Thread.currentThread(), mode);
-        // Try the fast path of enq; backup to full enq on failure
-        Node pred = tail;
-        if (pred != null) {
-            node.prev = pred;
-            if (compareAndSetTail(pred, node)) {
-                pred.next = node;
-                return node;
-            }
-        }
-        enq(node);
-        return node;
-    }
+private Node addWaiter(Node mode) {
+	Node node = new Node(Thread.currentThread(), mode);
+	// 判断当前同步队列尾节点是否为null
+	Node pred = tail;
+	if (pred != null) {
+		// 将该节点的前置节点设为当前尾节点，进行cas校验，成功加入同步队列，设置尾节点的后置节点为当前节点
+		node.prev = pred;
+		if (compareAndSetTail(pred, node)) {
+			pred.next = node;
+			return node;
+		}
+	}
+	enq(node);// 尾节点为null
+	return node;
+}
 
 
-  private final boolean compareAndSetHead(Node update) {
-        return unsafe.compareAndSwapObject(this, headOffset, null, update);
-    }
+private final boolean compareAndSetHead(Node update) {
+	return unsafe.compareAndSwapObject(this, headOffset, null, update);
+}
 
-    /**
-     * CAS tail field. Used only by enq.
-     */
-    private final boolean compareAndSetTail(Node expect, Node update) {
-        return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
-    }
+private final boolean compareAndSetTail(Node expect, Node update) {
+	return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
+}
 
 
 private Node enq(final Node node) {
+	// 这里会如果CAS失败会进行不断的自旋操作
     for (;;) {
         Node t = tail;
-        if (t == null) { // Must initialize
+        if (t == null) { 
+			// 将当前节点进行cas校验，成功加入同步队列，设置首尾节点
             if (compareAndSetHead(new Node()))
                 tail = head;
         } else {
+			// 将该节点的前置节点设为当前尾节点，进行cas校验，成功加入同步队列，设置尾节点的后置节点为当前节点
             node.prev = t;
             if (compareAndSetTail(t, node)) {
                 t.next = node;
@@ -235,53 +343,117 @@ private Node enq(final Node node) {
     }
 }
 
-
-    final boolean acquireQueued(final Node node, int arg) {
-        boolean failed = true;
-        try {
-            boolean interrupted = false;
-            for (;;) {
-                final Node p = node.predecessor();
-                if (p == head && tryAcquire(arg)) {
-                    setHead(node);
-                    p.next = null; // help GC
-                    failed = false;
-                    return interrupted;
-                }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
-                    interrupted = true;
-            }
-        } finally {
-            if (failed)
-                cancelAcquire(node);
-        }
-    }
 ```
-锁是面向使用者，它定义了使用者与锁交互的接口，隐藏了实现细节；同步器是面向锁的实现者，它简化了锁的实现方式，屏蔽了同步状态的管理，线程的排队，等待和唤醒等底层操作
+
+加入队列后的线程又怎么获取独占锁呢？继续来看
+
+```java
+final boolean acquireQueued(final Node node, int arg) {
+	boolean failed = true;
+	try {
+		boolean interrupted = false;
+		// 这里相当于每一个处于队列当中的节点都不断的进行自旋操作
+		for (;;) {
+			// 获取该节点的前置节点
+			final Node p = node.predecessor();
+			// 该节点前置节点是不是头节点而且获取独占锁成功
+			if (p == head && tryAcquire(arg)) {
+				// 设置当前节点为头节点
+				setHead(node);
+				// 设置下一个节点为null，便于jvm回收当前节点
+				p.next = null; // help GC
+				failed = false;
+				return interrupted;
+			}
+			// 如果获取锁失败
+			if (shouldParkAfterFailedAcquire(p, node) &&
+				parkAndCheckInterrupt())
+				interrupted = true;
+		}
+	} finally {
+		if (failed)
+			cancelAcquire(node);
+	}
+}
+
+
+private void setHead(Node node) {
+	head = node;
+	node.thread = null;
+	node.prev = null;
+}
+
+
+private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+	int ws = pred.waitStatus;
+	if (ws == Node.SIGNAL)
+		return true;
+	if (ws > 0) {
+		do {
+			node.prev = pred = pred.prev;
+		} while (pred.waitStatus > 0);
+		pred.next = node;
+	} else {
+		// 使用CAS将节点状态由INITIAL设置成SIGNAL，表示当前线程阻塞
+		compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
+	}
+	return false;
+}
 
 
 
-**同步组件**
-同步组件的实现依赖于同步器AQS，在同步组件实现中，使用AQS的方式被推荐定义继承AQS的静态内存类；
-AQS采用模板方法进行设计，AQS的protected修饰的方法需要由继承AQS的子类进行重写实现，当调用AQS的子类的方法时就会调用被重写的方法；
-AQS负责同步状态的管理，线程的排队，等待和唤醒这些底层操作，而Lock等同步组件主要专注于实现同步语义；
-在重写AQS的方式时，使用AQS提供的getState(),setState(),compareAndSetState()方法进行修改同步状态
 
-AQS提供的模板方法可以分为3类：
+private final boolean parkAndCheckInterrupt() {
+	LockSupport.park(this);
+	return Thread.interrupted();
+}
+	
 
-- 独占式获取与释放同步状态；
-- 共享式获取与释放同步状态；
-- 查询同步队列中等待线程情况；
+private void cancelAcquire(Node node) {
+	// Ignore if node doesn't exist
+	if (node == null)
+		return;
 
-同步组件实现者的角度：
+	node.thread = null;
 
-- 通过可重写的方法：独占式：tryAcquire()(独占式获取同步状态），tryRelease()（独占式释放同步状态）；共享式：tryAcquireShared()(共享式获取同步状态)，tryReleaseShared()(共享式释放同步状态)；告诉AQS怎样判断当前同步状态是否成功获取或者是否成功释放。同步组件专注于对当前同步状态的逻辑判断，从而实现自己的同步语义。
+	// Skip cancelled predecessors
+	Node pred = node.prev;
+	while (pred.waitStatus > 0)
+		node.prev = pred = pred.prev;
 
-AQS的角度
+	// predNext is the apparent node to unsplice. CASes below will
+	// fail if not, in which case, we lost race vs another cancel
+	// or signal, so no further action is necessary.
+	Node predNext = pred.next;
 
-- 而对AQS来说，只需要同步组件返回的true和f-alse即可，因为AQS会对true和false会有不同的操作，true会认为当前线程获取同步组件成功直接返回，而false的话就AQS也会将当前线程插入同步队列
+	// Can use unconditional write instead of CAS here.
+	// After this atomic step, other Nodes can skip past us.
+	// Before, we are free of interference from other threads.
+	node.waitStatus = Node.CANCELLED;
 
+	// If we are the tail, remove ourselves.
+	if (node == tail && compareAndSetTail(node, pred)) {
+		compareAndSetNext(pred, predNext, null);
+	} else {
+		// If successor needs signal, try to set pred's next-link
+		// so it will get one. Otherwise wake it up to propagate.
+		int ws;
+		if (pred != head &&
+			((ws = pred.waitStatus) == Node.SIGNAL ||
+			 (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
+			pred.thread != null) {
+			Node next = node.next;
+			if (next != null && next.waitStatus <= 0)
+				compareAndSetNext(pred, predNext, next);
+		} else {
+			unparkSuccessor(node);
+		}
+
+		node.next = node; // help GC
+	}
+}
+
+```
 
 ### ReentrantLock
 ReentrantLock **重入锁**，支持重入性，表示能够对共享资源重复加锁，当前线程获取该锁再次获取不会被阻塞（线程重入，计数+1；释放锁时，也要释放重入的次数）；ReentrantLock通过构造方法也可支持**公平锁和非公平锁**，公平锁每次都是从同步队列中的第一个节点获取到锁，而非公平性锁则不一定，有可能刚释放锁的线程能再次获取到锁（降低上下文切换，降低性能开销，保证系统最大的吞吐量）
