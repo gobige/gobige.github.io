@@ -32,6 +32,8 @@ tags: mysql
 2. 实现runable接口
 3. 实现callable接口
 
+**CAS**
+全称compare and set，是实现乐观锁的核心概念，通过内存共享变量实际值V，共享变量预期旧值O，共享变量修改后预期新值E，若V = O,则说明该共享变量没有被修改过，可以用E去替换O，若V != O说明变量已被修改过，重新刷新共享变量值，再次重试CAS操作直到成功或阻塞或中断；但是CAS会面临ABA的问题
 
 **线程状态转换**
 new：初始状态，线程被构建，还没调用start（）方法
@@ -1598,9 +1600,217 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 
 看了代码不明觉厉，为什么ThreadLocal会导致内存溢出的问题，比如：我们常见的线程池，线程用完后都会放入池中，不会回收，等待下一次连接使用，这样就不会频繁的线程创建，销毁，导致性能的消耗，但是线程中的threadLocal变量在使用后很多时候是没有remove的，里面的value对象在thread里面entry数组是还有引用的，根据jvm GC原理，具有可达性可能，而这部分只有threadLocal进行remove或者线程销毁后，失去引用才会回收
 
+针对threadLocal会造成的内存泄漏问题,threadLocal也有一些措施，在set值时
+```java
+private void set(ThreadLocal<?> key, Object value) {
+
+	Entry[] tab = table;
+	int len = tab.length;
+	int i = key.threadLocalHashCode & (len-1);
+
+	for (Entry e = tab[i];
+		 e != null;
+		 e = tab[i = nextIndex(i, len)]) {
+		ThreadLocal<?> k = e.get();
+
+		if (k == key) {
+			e.value = value;
+			return;
+		}
+
+		if (k == null) {
+			replaceStaleEntry(key, value, i);
+			return;
+		}
+	}
+
+	tab[i] = new Entry(key, value);
+	int sz = ++size;
+	if (!cleanSomeSlots(i, sz) && sz >= threshold)
+		rehash();
+}
+
+//  遇到key为null的对象进行清理
+private void replaceStaleEntry(ThreadLocal<?> key, Object value,
+							   int staleSlot) {
+	Entry[] tab = table;
+	int len = tab.length;
+	Entry e;
+
+	int slotToExpunge = staleSlot;
+	for (int i = prevIndex(staleSlot, len);
+		 (e = tab[i]) != null;
+		 i = prevIndex(i, len))
+		if (e.get() == null)
+			slotToExpunge = i;
+
+	for (int i = nextIndex(staleSlot, len);
+		 (e = tab[i]) != null;
+		 i = nextIndex(i, len)) {
+		ThreadLocal<?> k = e.get();
+
+		if (k == key) {
+			e.value = value;
+
+			tab[i] = tab[staleSlot];
+			tab[staleSlot] = e;
+
+			// Start expunge at preceding stale entry if it exists
+			if (slotToExpunge == staleSlot)
+				slotToExpunge = i;
+			cleanSomeSlots(expungeStaleEntry(slotToExpunge), len);
+			return;
+		}
+
+		if (k == null && slotToExpunge == staleSlot)
+			slotToExpunge = i;
+	}
+
+	tab[staleSlot].value = null;
+	tab[staleSlot] = new Entry(key, value);
+
+	if (slotToExpunge != staleSlot)
+		cleanSomeSlots(expungeStaleEntry(slotToExpunge), len);
+}
+
+// cleanSomeSlots方法检测并清除脏entry
+private boolean cleanSomeSlots(int i, int n) {
+    boolean removed = false;
+    Entry[] tab = table;
+    int len = tab.length;
+    do {
+        i = nextIndex(i, len);
+        Entry e = tab[i];
+        if (e != null && e.get() == null) {
+            n = len;
+            removed = true;
+            i = expungeStaleEntry(i);
+        }
+    } while ( (n >>>= 1) != 0);
+    return removed;
+}
+```
 
 **threadLocalMap的结构**
 
 threadLocalMap和hashmap这些map不一样的地方是threadLocalMap只是普通的散列表，通过**开放定址法**解决hash冲突（threadLocal的hash算法分布式比较均匀的），而hashmap是使用**分离链表法**解决hash冲突
 
 - 开发定址法 关键字散列到的数组单元已经被另外一个关键字占用的时候，就会尝试在数组中寻找其他的单元，直到找到一个空的单元
+
+
+### BlockingQueue
+当队列容器已满，生产者线程会被阻塞，直到队列未满；当队列容器为空时，消费者线程会被阻塞，直至队列非空时为止
+
+```java
+put：当阻塞队列容量已经满时，往阻塞队列插入数据的线程会被阻塞，直至阻塞队列已经有空余的容量可供使用；
+offer(E e, long timeout, TimeUnit unit)：若阻塞队列已经满时，同样会阻塞插入数据的线程，直至阻塞队列已经有空余的地方，与put方法不同的是，该方法会有一个超时时间，若超过当前给定的超时时间，插入数据的线程会退出；
+删除数据
+
+take()：当阻塞队列为空时，获取队头数据的线程会被阻塞；
+poll(long timeout, TimeUnit unit)：当阻塞队列为空时，获取数据的线程会被阻塞，另外，如果被阻塞的线程超过了给定的时长，该线程会退出
+```
+
+BlockingQueue的实现类
+
+- ArrayBlockingQueue 数组实现的有界队列，创建后容量不可变，可作为有界数据缓冲区，队列满了插入数据和队列空了消费数据都会造成线程的阻塞，同样支持公平和非公平，公平的话会降低吞吐量
+- LinkedBlockingQueue 链表实现的有界阻塞队列，默认容量等于Integer.MAX_VALUE
+- PriorityBlockingQueue 支持优先级的无界阻塞队列，可以指定排序的规则，
+- SynchronousQueue 每个插入操作都要等待另一个线程进行删除操作
+- LinkedTransferQueue 链表结构的无界阻塞队列 
+- LinkedBlockingDeque 链表结构有界双端队列
+- DelayQueue 无界阻塞队列，只有当数据对象的延迟时间到达时才能入队
+
+### ThreadPoolExecutor
+
+线程池的出现降低了线程创建和销毁所带来的消耗2提升了连接后数据的响应速度3管理了线程，避免无限制的创建线程
+
+一个完整的线程池任务调用链 任务调用-》核心线程池获取资源（线程有余，返回，执行）-》阻塞队列（队列有余，加入队列，返回）-》线程池（=线程有余，分配，返回）=》按照线程饱和策略执行
+
+ThreadPoolExecutor构造方法入参
+- corePoolSize 核心线程池大小
+- maximumPoolSize 线程池最大容量
+- keepAliveTime 空闲线程存活时长，特指除核心线程外线程
+- unit 时间单位
+- BlockingQueue<Runnable> workQueue 阻塞队列
+- ThreadFactory threadFactory 创建线程工厂类
+- RejectedExecutionHandler handler 线程饱和策略 
+- shutdownNow 停止所有正在执行和未执行任务，并且返回未执行任务列表
+- shutdown 中断所有没有执行任务
+- isTerminated 所有线程是否都关闭成功
+
+**线程池线程的配置**
+- cpu密集型任务：cpu数量 + 1
+- IO密集型任务：2 * cpu数量
+- 需要按优先级执行任务：使用PriorityBlockingQueue队列
+- 等待长时间返回结果任务：尽量多配制线程池
+
+### ScheduledThreadPoolExecutor
+执行延迟任务，相比Timer只能使用一个线程，可配置多线程执行，可配置延迟任务，并且可返回任务结果FutureTask
+
+### futrueTask
+- 获取任务执行结果的异步任务  具有未启动，启动中，已完成三个状态；
+- 通过get获取任务状态，但是会阻塞当前线程，直到任务中断或结束，才会返回结果
+- 通过cancel方法取消任务，未启动状态：任务永远不会执行；已启动状态：cancel(true) 中断线程，阻止任务执行，cancel(false)，中断还未执行任务；已完成状态：返回false
+
+
+### JUC提供的原子操作类
+
+这些原子操作类都是使用乐观锁CAS实现，有AtomicBoolean，AtomicInteger，AtomicLong，AtomicIntegerArray，AtomicLongArray，AtomicReferenceArray
+
+### CountDownLatch 和 CyclicBarrier
+
+CountDownLatch设定一个计数器，当调用该对象计算器为0时，被countdownLltch阻塞的线程才会继续执行
+- await() 调用该方法的线程等到CountDownLatch计算器为0时才继续执行
+- await(long timeout, TimeUnit unit) 超时继续执行
+- countDown()：使CountDownLatch计算器-1
+- ong getCount()：获取当前CountDownLatch计算器值
+
+CyclicBarrier
+
+- await() 调用该方法的线程阻塞，直到CyclicBarrier要求的阻塞线程数量达到
+
+- await(long timeout, TimeUnit unit) 超时继续执行
+
+- int getNumberWaiting() 获取被阻塞的线程数量
+
+- boolean isBroken() 查询阻塞等待的线程是否被中断
+
+- void reset() 初始化屏障（再来一次）
+
+- **CountDownLatch强调一个线程等待多个线程事件达成；CyclicBarrier强调多个线程等待多个线程某个事件达成 2. CyclicBarrier提供方法更多，可在多个线程某个事件达成的时候执行barrierAction事件 3. CountDownLatch是不能复用的，而CyclicLatch是可以复用的**
+
+
+### Semaphore
+
+Semaphore可以理解为信号量，可支持公平/非公平，经常拿来做流量控制
+- void acquire() 当前线程获取semaphore信号量，Semaphore信号量-1，如果获取Semaphore信号量当前不足则阻塞等待直至能够获取为止
+
+- void acquire(int permits) 获取多个信号量
+
+- void release() 释放信号量
+
+- void release(int permits) 释放多个信号量
+
+- boolean tryAcquire() 获取信号量，获取成功返回ture，失败false
+
+- boolean tryAcquire(int permits) 获取多个信号量，获取成功返回ture，失败false
+
+- boolean tryAcquire(long timeout, TimeUnit unit) 在指定时间内获取信号量，获取成功返回ture，失败false
+
+- boolean tryAcquire(int permits, long timeout, TimeUnit unit) 在指定时间内获取多个信号量，获取成功返回ture，失败false
+
+- int availablePermits() 返回当前还剩余信号量数量
+
+- int getQueueLength() 返回正在等待获取信号量的线程数
+
+- boolean hasQueuedThreads() 是否有线程正在等待获取信号量
+
+- Collection<Thread> getQueuedThreads() 获取所有正在等待信号量的线程集合
+
+
+### Exchanger
+用于两个线程共同到达某个事件时交换线程数据
+
+- exchange(V x)  交换线程数据
+
+- exchange(V x, long timeout, TimeUnit unit) 超时交换线程数据
