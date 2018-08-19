@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 'jvm内存管理及内存回收'
+title: 'jvm内存管理及算法'
 subtitle: 'jvm内存数据管理及GC算法的'
 date: 2017-03-06
 categories: jvm
@@ -11,6 +11,7 @@ tags: jvm
 
 
 ### java内存管理之数据区域划分
+
 ![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/1.png)
 
 **运行时数据区域**
