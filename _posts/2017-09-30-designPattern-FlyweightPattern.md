@@ -6,7 +6,7 @@ date: 2017-09-30
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 享元模式
+tags: 设计模式
 ---
 
 ### 结构型模式

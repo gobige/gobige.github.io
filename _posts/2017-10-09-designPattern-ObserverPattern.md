@@ -6,7 +6,7 @@ date: 2017-10-09
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 观察者模式
+tags: 设计模式
 ---
 
 ### 行为型模式

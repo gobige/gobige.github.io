@@ -3,10 +3,10 @@ layout: post
 title: '设计模式之访问者模式'
 subtitle: '访问者模式'
 date: 2017-10-14
-categories: 访问者模式
+categories: 设计模式
 author: yates
 cover: ''
-tags: 访问者模式
+tags: 设计模式
 ---
 
 ### 行为型模式

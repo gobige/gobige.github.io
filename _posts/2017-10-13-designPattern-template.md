@@ -3,10 +3,10 @@ layout: post
 title: '设计模式之模板模式'
 subtitle: '模板模式'
 date: 2017-10-13
-categories: 模板模式
+categories: 设计模式
 author: yates
 cover: ''
-tags: 模板模式
+tags: 设计模式
 ---
 
 ### 行为型模式

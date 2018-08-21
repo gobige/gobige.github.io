@@ -6,7 +6,7 @@ date: 2017-09-24
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 适配器模式
+tags: 设计模式
 ---
 
 

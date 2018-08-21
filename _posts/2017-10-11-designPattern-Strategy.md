@@ -3,10 +3,10 @@ layout: post
 title: '设计模式之策略模式'
 subtitle: '策略模式'
 date: 2017-10-12
-categories: 策略模式
+categories: 设计模式
 author: yates
 cover: ''
-tags: 策略模式
+tags: 设计模式
 ---
 
 ### 行为型模式

@@ -6,7 +6,7 @@ date: 2017-09-22
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 建造者模式
+tags: 设计模式
 ---
 
 

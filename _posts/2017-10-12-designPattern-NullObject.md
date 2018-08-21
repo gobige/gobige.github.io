@@ -6,7 +6,7 @@ date: 2017-10-11
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 空对象模式
+tags: 设计模式
 ---
 
 ### 行为型模式

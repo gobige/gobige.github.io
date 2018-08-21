@@ -6,7 +6,7 @@ date: 2017-09-26
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 过滤器模式
+tags: 设计模式
 ---
 
 

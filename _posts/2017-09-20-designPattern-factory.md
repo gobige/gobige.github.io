@@ -6,7 +6,7 @@ date: 2017-09-20
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'
-tags: 工厂模式
+tags: 设计模式
 ---
 
 ### 设计模式设计原则
