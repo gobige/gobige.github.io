@@ -10,7 +10,7 @@ tags: jdk
 ---
 ### 前言
 
-java的基类Object提供了equals和hashCode方法，前者判断连个对象是否相等，后者用于计算对象的哈希码
+java的基类Object提供了equals和hashCode方法，前者判断两个对象是否相等，后者用于计算对象的哈希码
 ## equals
 object类中equals中是这样写的
 ```java
@@ -18,7 +18,7 @@ public boolean equals(Object obj) {
     return (this == obj);
 }
 ```
-该实现采用了 区分度最高的算法，只要连个对象不是同一个对象就返回false
+该实现采用了 区分度最高的算法，只要两个对象不是同一个对象就返回false
 
 equals方法可以重写，但是要遵守**约定**
 
