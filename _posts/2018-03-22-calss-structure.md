@@ -76,7 +76,7 @@ javap工具可以输出class文件中的常量表信息
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/25.png)
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/26.png)
 
-- code属性
+- code属性（code）
 ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/27.png)
     - attribute_name_index：属性值名称索引
     - attribute_lentgh属性长度
@@ -84,9 +84,57 @@ javap工具可以输出class文件中的常量表信息
     - max_locals局部变量表所需存储空间（以slot为基础单位对应32位bit，可重用）
     - code_length代表字节码长度
     - code存储字节码指令一系列字节流，每个字节码u1类型，可存储256条指令，已定义200多条指令
+    - 异常表
+      ![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/28.png)
+如果当字节码在start_pc行和第end_pc行之间出现了类型catch_type或者子类的异常，则转到handler_pc行继续处理，当catch_type值为0时，代表任意清苦都要转到handler_pc处处理
 
 java虚拟机执行字节码是基于栈的体系结构
 
-- 异常表
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/28.png)
-如果当字节码在start_pc行和第end_pc行之间出现了类型catch_type或者子类的异常，则转到handler_pc行继续处理，当catch_type值为0时，代表任意清苦都要转到handler_pc处处理
+- 异常属性（exceptions）
+
+异常属性是个属性表同一级的属性，主要作用是列举出方法中可能抛出的受检查异常
+
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/29.png)
+number_of_exceptions项表示方法可能抛出异常数量；exception_index_table表示每一种受检查异常，指向常量池汇总的索引
+
+- linenumbertable属性
+
+用于描述java源码行号与字节码行号之间关系。我们平常的日志中抛异常时出现的行号，以及debug时的断点位置都来源此
+
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/30.png)
+line_number_table_length表示line_nubmer_info数量，line_nubmer_info含有start_pc和line_number数据项，分别表示字节码行号和java源码行号
+
+- localVariableTable属性
+
+用于描述栈帧中局部变量表中变量和java源码中定义的变量之间的关系，我们通过ide编写代码是方法的参数名称就来源于此
+
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/31.png)
+
+local_ variable_ info中的start_pc，length数据项，分别表示局部变量生命周期开始的字节码偏移量和作用范围长度；name_ index 和 descriptor_ index表示局部变量的名称的常量索引和局部变量描述符；index表示局部变量在栈帧局部变量表中slot位置
+
+LocalVariableTypeTable是泛型引入后用来作为泛型类型的特征说明
+
+- sourcefile属性
+用于记录生成这个class文件源码文件名称。sourceFile属性表中有sourceFile_index数据项指向源码文件名中常量池索引
+
+- ConstantValue属性
+通知jvm自动为静态变量赋值。如果同时使用final和static修辞变量，而且变量数据类型时基本类型或string的话，就生成constantvalue属性进行初始化；表中含有constantvalue_index数据项表示常量池中一个字面量的引用。
+
+- InnerClasses属性
+用于记录内部类和外部类之间的关联；表中包含number_of_classes和inner_classes数据项，分别表示内部类数量和具体内部类索引
+
+![此处输入图片的描述](http://www.muyibeyond.cn/img/2018-03-19-jvm/30.png)
+inner_ class_ info_ index 和 outer_ class_ info_ index分别表示内部类和外部类的符号引用
+inner_ name_ index和inner_ class_ access_ flags表示内部类名称索引，内部类访问标志
+
+- Deprecated及Synthetic属性
+这两个属性都是布尔类型的属性，只存在或不存在，前者表示某个类，方法，字段被表示不推荐使用；后者表示该字段或方法不是java源码直接产生而是由编译器添加
+
+- StackMapTable属性
+用于在jdk1.6之后的字节码验证阶段新类型验证器
+
+- Signature属性
+用于表示被泛型修辞的类，变量和方法，弥补java因为擦除带来的运行期无法获取到泛型信息
+
+- BootstrapMethods属性
+用于保存动态指令引用的引导方法限定符，如果常量池中出现CONSTANT_ InvokeDynamic_ info类型常量，那么这个类文件中必须存在一个该属性
