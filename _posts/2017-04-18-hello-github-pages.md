@@ -35,10 +35,10 @@ tags: githubpages
 
 * 因为笔者是在windows平台上搭建的jekyll客户端，jekyll客户端可以在本地进行整个静态文件的build和publish，以及调试，所以建议可以尝试安装jekyll客户端进行静态web的调试，总结下来使用方法如下：
 1. [下载ruby+devkit组合套件](https://rubyinstaller.org/downloads/)并在本地进行安装
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-04-18-hello-github-pages/1.png)
+![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-04-18-hello-github-pages/1.png)
 
 2. 打开cmd命令窗口，输入-gem install jekyll bundler 安装jekyll
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-04-18-hello-github-pages/2.png)
+![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-04-18-hello-github-pages/2.png)
 
 3. 输入-jekyll -v 验证是否安装成功
 
@@ -51,8 +51,8 @@ tags: githubpages
 7. 访问[https://rubygems.org gem源地址](https://rubygems.org) 搜索cayman（注意：如果要使用jekyll本地构建须在源地址中找得到该gem才行）
 
 8. 拷贝GEMFILE:里面的指令覆盖本地gemfile文件主题项 修改_config.yml文件中主题 theme: jekyll-theme-cayman   拷贝安装:里面指令到cmd命令窗口执行 clone gihub的模板文件内容
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-04-18-hello-github-pages/3.png)
-![此处输入图片的描述](http://www.muyibeyond.cn/img/2017-04-18-hello-github-pages/4.png)
+![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-04-18-hello-github-pages/3.png)
+![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-04-18-hello-github-pages/4.png)
 
 9. 进入待生成的blog目录下，cmd窗口执行 jekyll build，会发现生成了一个_site文件夹
 

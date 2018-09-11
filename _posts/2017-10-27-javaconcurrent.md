@@ -69,7 +69,7 @@ java运行时数据区域如下
 
 线程共享变量获取
 
-[此处输入图片的描述](http://www.muyibeyond.cn/img/2017-10-27-javaconcurrent/1.png)
+[此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-10-27-javaconcurrent/1.png)
 
 CPU的处理速度和主存的读写速度不是一个量级的，为了平衡这种巨大的差距，每个CPU都会有缓存，通常是三级缓存，L1,L2,L3;L1是最接近CPU的，容量最小，速度最快，每个核上有两个L1Cache，一个存数据 L1d Cache，一个存指令 L1i Cache)。L2 Cache大一些，速度要慢一些，一般情况下每个核上都有一个独立的L2Cache；L3Cache是三级缓存中最大的一级，同时也是最慢的一级，在同一个CPU插槽之间的核共享一个L3Cache
 
@@ -84,7 +84,7 @@ CPU的处理速度和主存的读写速度不是一个量级的，为了平衡�
 在不改变程序执行结果的前提下，cpu和编译器会对代码编译后的指令和代码进行重排序，从而提高执行效率
 
 代码执行过程
-[此处输入图片的描述](http://www.muyibeyond.cn/img/2017-10-27-javaconcurrent/1.png)
+[此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-10-27-javaconcurrent/1.png)
 
 **happens-before规则**
 指的是两个操作之间的**执行顺序**，一个操作位于另一个操作之前发生，这两个操作可以同一个线程，也可以不是同一个线程。
