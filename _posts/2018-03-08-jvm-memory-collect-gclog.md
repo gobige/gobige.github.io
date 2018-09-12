@@ -12,18 +12,18 @@ tags: jvm
 ### 垃圾收集器
 Serial：单线程收集器，GC时会采用StopWorld方式挂起所有执行线程，新生代采用复制，清除算法；老年代标记-整理算法 优点：单线程中简单高效
 
-![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/4.png)
+![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/4.png)
 
 ParNew：Serial收集器的多线程版本
-![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/5.png)
+![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/5.png)
 
 Parallel Scavenge收集器：新生代收集器，主要目的是达到一个控制的**吞吐量**（cpu运行用户代码/cpu总耗时），-XX:+UseAdaptiveSizePolicy开启GC自适应调节策略（根据最大吞吐量自动调节新生代，eden，survival的大小）
 
 Serial Old：Serial控制器老年代版本，使用标记整理算法
-![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/6.png)
+![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/6.png)
 
 Parallel Old：ParallelScavenge收集器老年代版本，使用标记整理算法
-![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/7.png)
+![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/7.png)
 
 
 CMS
@@ -32,7 +32,7 @@ CMS
 2. 并发标记（进行GCRootTracing过程，用户线程可同时工作）
 3. 重新标记（修正并发标记期间，用户程序继续运作导致标记产生变动的标记记录，一般比初试标记长，比并发标记短）
 4. 并发清除
-![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/8.png)
+![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/8.png)
 
 缺点：1 CMS收集器对CPU资源敏感，因为和用户线程同时工作，导致应用程序变慢，总吞吐量会降低，默认回收线程数（cpu数量+3)/4；2 无法处理浮动垃圾，3 标记-清除造成空间碎片，会造成提前full GC
 
@@ -45,7 +45,7 @@ G1收集器：是一款支持并行和并发，充分利用多CPU,多核优势�
 - 最终标记（修正并发标记期间，用户程序继续运作导致标记产生变动的标记记录，需停顿线程，可并行执行）
 - 筛选回收（对各个region回收价值和成本进行排序，根据用户所期望GC停顿时间指定回收计划）
 
-![请输入图片地址](http://muyibeyond.cn/img/2018-03-19-jvm/9.png)
+![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/9.png)
 
 ### GC日志的理解
 下面是一段GC日志
