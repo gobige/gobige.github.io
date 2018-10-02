@@ -3,10 +3,10 @@ layout: post
 title: '深入理解计算机系统-计算机漫游'
 subtitle: '读书笔记系列深入理解计算机系统之计算机系统漫游'
 date: 2018-04-08
-categories: jvm
+categories: 计算机系统
 author: yates
 cover: ''
-tags: jvm
+tags: 计算机系统
 ---
 
 # 前言

@@ -3,10 +3,10 @@ layout: post
 title: '深入理解计算机系统-信息的表示和处理'
 subtitle: '读书笔记系列深入理解计算机系统之信息的表示和处理''
 date: 2018-04-10
-categories: jvm
+categories: 计算机系统
 author: yates
 cover: ''
-tags: jvm
+tags: 计算机系统
 ---
 
 # 前言
