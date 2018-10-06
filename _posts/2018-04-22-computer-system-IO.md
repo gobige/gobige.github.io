@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '深入理解计算机系统-高速缓存器'
+title: '深入理解计算机系统-系统及IO'
 subtitle: '读书笔记系列深入理解计算机系统之IO'
 date: 2018-04-22
 categories: 计算机系统
