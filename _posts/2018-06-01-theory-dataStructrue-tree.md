@@ -2,7 +2,7 @@
 layout: post
 title: '常用数据结构-树'
 subtitle: '二叉树，完全二叉树，平衡二叉树，二叉查找树，红黑树，B+ B- B*,LSM树的原理'
-date: 2018-06-07
+date: 2018-06-01
 categories: 数据结构
 author: yates
 cover: ''
