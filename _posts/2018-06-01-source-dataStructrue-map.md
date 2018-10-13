@@ -6,7 +6,7 @@ date: 2018-06-01
 categories: 个人博客
 author: yates
 cover: 'www.baidu.com'
-tags: 源码
+tags: source
 ---
 
 **map接口定义了所需实现方法**
