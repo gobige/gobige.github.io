@@ -2,7 +2,7 @@
 layout: post
 title: '开发中的跨域问题'
 subtitle: ''
-date: 2017-03-03
+date: 2018-01-03
 categories: 其他
 author: yates
 cover: 'http://cctv.com'

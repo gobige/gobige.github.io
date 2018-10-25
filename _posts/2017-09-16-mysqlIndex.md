@@ -2,7 +2,7 @@
 layout: post
 title: 'MySQL索引'
 subtitle: 'mysql一些索引相关知识'
-date: 2017-09-21
+date: 2017-09-16
 categories: mysql
 author: yates
 cover: 'http://cctv.com'

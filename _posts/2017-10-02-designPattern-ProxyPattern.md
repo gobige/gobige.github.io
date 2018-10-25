@@ -2,7 +2,7 @@
 layout: post
 title: '设计模式之代理模式'
 subtitle: '代理模式'
-date: 2017-09-30
+date: 2017-10-2
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'

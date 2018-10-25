@@ -2,7 +2,7 @@
 layout: post
 title: '设计模式之中介者模式'
 subtitle: '中介者模式'
-date: 2017-10-03
+date: 2017-10-07
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'

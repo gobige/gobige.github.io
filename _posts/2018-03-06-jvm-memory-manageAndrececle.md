@@ -2,7 +2,7 @@
 layout: post
 title: 'jvm内存管理及算法'
 subtitle: 'jvm内存数据管理及GC算法的'
-date: 2017-03-06
+date: 2018-03-06
 categories: jvm
 author: yates
 cover: 'http://cctv.com'

@@ -2,7 +2,7 @@
 layout: post
 title: '设计模式之策略模式'
 subtitle: '策略模式'
-date: 2017-10-12
+date: 2017-10-11
 categories: 设计模式
 author: yates
 cover: ''

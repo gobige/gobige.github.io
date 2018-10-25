@@ -2,7 +2,7 @@
 layout: post
 title: '设计模式之空对象模式'
 subtitle: '空对象模式'
-date: 2017-10-11
+date: 2017-10-12
 categories: 设计模式
 author: yates
 cover: 'http://cctv.com'

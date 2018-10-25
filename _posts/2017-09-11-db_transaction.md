@@ -2,7 +2,7 @@
 layout: post
 title: '关于数据库事务的知识'
 subtitle: '数据库事务特性，隔离级别...'
-date: 2017-09-23
+date: 2017-09-11
 categories: 数据库
 author: yates
 cover: 'http://cctv.com'
