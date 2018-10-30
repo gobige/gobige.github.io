@@ -61,7 +61,7 @@ class BallCache {
 
     public static void loadCache() {
         hashtable.put("footBall",new FootBall());
-        hashtable.put("basketBall",new FootBall());
+        hashtable.put("basketBall",new BasketBall());
     }
 
 }
