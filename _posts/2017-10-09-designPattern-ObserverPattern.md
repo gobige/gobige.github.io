@@ -95,7 +95,7 @@ class Subject {
 }
 
 /**
- * 被观察者
+ * 观察者
  */
 abstract class Observer {
     protected Subject subject;
