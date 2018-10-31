@@ -37,12 +37,12 @@ tags: mysql
 
 **线程状态转换**
 
-new：初始状态，线程被构建，还没调用start（）方法
-runnable：运行状态，**就绪**和**运行**统称运行中
-blocked：阻塞状态，线程获取资源受阻
-waiting：等待状态，线程进入等待状态，需要其他线程通知
-time_waiting；超时等待，在waiting指定时间后自行返回
-terminated：终止状态，当前线程已经执行完毕
+- new：初始状态，线程被构建，还没调用start（）方法
+- runnable：运行状态，**就绪**和**运行**统称运行中
+- blocked：阻塞状态，线程获取资源受阻
+- waiting：等待状态，线程进入等待状态，需要其他线程通知
+- time_waiting；超时等待，在waiting指定时间后自行返回
+- terminated：终止状态，当前线程已经执行完毕
 
 **java中线程状态操作**
 
