@@ -49,9 +49,11 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
 
 **更改文件权限**
 
-chgrp 属组名 文件名  -更改文件属组
-chown 属主名 文件名  -更改文件属主
-chmod xyz 文件或目录 -更改文件权限 xyz分别代表owner，group，ohters的权限，以数字赋值，权限rwx对应数字权限分别是4,2,1 比如 chmod 777 testfile
+- 更改文件属组，chgrp 属组名 文件名  
+- 更改文件属主 chown 属主名 文件名  
+- 更改文件权限 chmod xyz 文件或目录
+
+ xyz分别代表owner，group，ohters的权限，以数字赋值，权限rwx对应数字权限分别是4,2,1 比如 chmod 777 testfile
 
 **常用文件操作(增删改)指令**
 
@@ -121,7 +123,7 @@ yum remove <package> 删除软件包命令
 **网络相关**
 
 - ifconfig 显示或设置本机网络设备
-- netstat -i 显示万科列表
+- netstat -i 显示网卡列表
 - telnet 远程登录主机
 - ping 检查主机连通性
 
