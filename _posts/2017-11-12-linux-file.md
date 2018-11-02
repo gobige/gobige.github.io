@@ -115,6 +115,8 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
     - df -h 显示磁盘容量以较为容易方式展示
 
 yum check-update 查看可更新软件列表
+rpm -qa |grep <name> 查看是否存在安装
+yum list <name> 检索包含name的列表
 yum install <package> 安装指定软件命令
 yum update <package> 更新指定软件
 yum remove <package> 删除软件包命令
@@ -161,3 +163,10 @@ yum remove <package> 删除软件包命令
 - unzip 解压文件
 - dump 备份文件
 - restore 还原备份文件
+
+**linux插件**
+lrzsz是一款在linux里可代替ftp上传和下载的程序：  yum install lrzsz  -y  
+
+**配置相关**
+echo $PATH  显示系统环境变量配置
+export PATH=$PATH:/usr/{name} 添加新的系统环境变量
