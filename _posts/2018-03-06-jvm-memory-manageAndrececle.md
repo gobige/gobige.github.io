@@ -12,7 +12,7 @@ tags: jvm
 
 ### java内存管理之数据区域划分
 
-![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/1.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/1.png)
 
 **运行时数据区域**
 java虚拟机在程序运行中会将内存划分为不同的数据区域，这些区域有着不同的用处和不同的生存时间
@@ -33,9 +33,9 @@ java虚拟机在程序运行中会将内存划分为不同的数据区域，这�
 java通过在栈上的reference数据（执行对象的指针）来操作堆上的具体对象
 
 - 句柄：java堆开辟一块区域作为句柄池，句柄存储对象实例数据和类型数据各种具体地址，此时栈中reference存储的是句柄地址，GC对象物理地址改变时，这种方式只需修改句柄的中对象地址
-![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/2.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/2.png)
 - 直接指针：栈中reference存储的是对象地址，这种方式节省了一次指针定位时间开销
-![请输入图片地址](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/3.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/3.png)
 
 ### java对象存活判断
 - 引用计数器算法：给对象加一个引用计数器，每当一个地方引用，计数器加1，当失效时，计数器-1，当计数器为0时进行GC，优点：简单，高效。缺点：无法判断对象相互问题

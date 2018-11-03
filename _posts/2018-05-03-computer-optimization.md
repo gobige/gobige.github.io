@@ -23,7 +23,7 @@ tags: 计算机系统
 例如对于两个指针p和q的数据进行两次相加，计算值依赖于p和q是否指向内存中同一个位置，编译器不能确定时，就假设什么情况都有肯能，限制优化策略
 同样的还有方法重复调用的时候等等
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/35.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/35.png)
 
 程序优化第一步，消除不必要的工作，让代码尽可能有效的执行所期望的任务。包括消除不必要的函数调用，条件测试和内存引用。
 第二步，利用处理器提供指令级并行能力，
@@ -36,20 +36,20 @@ tags: 计算机系统
 - 循环的低效率，一个函数A在实现内部调用另一个函数B作为一个for循环的条件，每次循环都必须对测试条件进行求值。在函数B的值返回不会随着循环进行而改变时，当循环次数足够大时会大大影响程序的运行效率
 优化前：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/31.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/31.png)
 
 优化后：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/32.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/32.png)
 
 - 减少过程调用
 优化后：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/33.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/33.png)
 
 - 消除不必要的内存引用
 优化后：
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/34.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/34.png)
 
 大量晶体管集成到一块芯片上，现代微处理器采用了复杂的硬件，程序性能得到最大化。在代码级上，似乎是一次执行一条指令，每条指令包括从寄存器或内存取值，执行操作，并把结果存回到一个寄存器和内存位置。实际处理器中，同时对多条指令求值，称为**指令级并行**
 
@@ -59,9 +59,9 @@ tags: 计算机系统
 
 - 提高并行性
     - 多个积累变量：对于一个可结合和可交换的合并运算，可以通过将一组合并运算**分割成两个或更多**部分，并在最后合并结果提高性能。
-    ![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/36.png)
+    ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/36.png)
     - 重新结合变换：改变原属向量合并的顺序，例如乘法和加法的结合，减少计算中关键路径上操作的数量，更好的利用单元的流水线能力得到更好的性能。（浮点运算不保证时可结合的）
-       ![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/37.png)
+       ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/37.png)
 
 **一些限制**
 

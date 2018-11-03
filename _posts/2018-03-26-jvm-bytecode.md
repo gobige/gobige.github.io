@@ -20,7 +20,7 @@ jvm指令由一个字节长度，代表某个特定操作含义的数字（操�
 - 优势
     - 尽可能获得了短小精干的编译代码，保证高传输效率
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2018-03-19-jvm/33.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/33.png)
 opcode代表支持的操作，其他列表示支持的操作类型
 
 ### 加载和存储指令

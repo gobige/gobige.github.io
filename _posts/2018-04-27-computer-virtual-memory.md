@@ -32,12 +32,12 @@ tags: 计算机系统
     - 未缓存的：未缓存在物理内存汇总的已分配页
 - 物理页 物理内存被划分为物理页
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/24.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/24.png)
 
 **页表**
 同任何缓存一样，虚拟内存必须有某种方法判定一个虚拟页**是否缓存**在DRAM中某个地方。以及缓存时虚拟页存放的**物理页**中和不缓存时虚拟页存放物理地址，缓存替换牺牲页，页表将虚拟页映射到物理页
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/25.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/25.png)
 
 **页命中**
 如果在通过PTE读取在虚拟内存时，直接通过PTE读取物理内存读取，如上图VP2，称为页命中
@@ -48,17 +48,17 @@ tags: 计算机系统
 **分配页面**
 分配一个新的虚拟内存页时，如下图VP5在磁盘上创建空间并更新PTE5
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/26.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/26.png)
 
 整个运行过程中程序引用的不同页面总数可能会超过物理内存总的大小，局部性原则保证了在任意时刻，程序将区域在一个较小的活动页面集合上工作，这个集合叫做工作集。在初始开销，工作集页面会调度到内存中，接下来对工作集引用将导致命中。
 
 操作系统为每个进程提供了一个独立的页表，因而也就是独立的虚拟地址空间。作为内存管理的工具，VM简化了链接和加载，代码和数据共享，以及应用程序的内存分配。并且保证了内存的安全，不允许一个进程修改它的制度代码，不允许它读或修改任何内核中代码和数据结构，不允许它读或者写其他进程的私有内存，不允许它修改任何与其他进程共享的虚拟页面。
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/27.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/27.png)
 
 **多级页表**
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/28.png) 
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/28.png) 
 
 **地址翻译**
 
@@ -70,8 +70,8 @@ Linux通过虚拟内存区域与一个磁盘上对象关联起来，对象类型
 - 匿名文件：一个区域可以映射一个匿名文件，匿名文件由内核创建，包含全是二进制零。
 
 **进程间共享对象**
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/29.png) 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/30.png) 
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/29.png) 
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/30.png) 
 
 **动态内存分配**
 

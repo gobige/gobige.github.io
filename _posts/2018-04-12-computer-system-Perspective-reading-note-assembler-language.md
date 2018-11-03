@@ -15,7 +15,7 @@ tags: 计算机系统
 x86-64一直是intel的机器语言首选，其前身是IA32,32位机器的随机访问存储器只有4GB的空间，这对于现在是完全不够的。
 
 intel处理器复杂性年鉴
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/5.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/5.png)
 
 摩尔定律：芯片上的晶体管数量每年都会翻一番。
 
@@ -33,11 +33,11 @@ intel处理器复杂性年鉴
 - 反汇编器使用的指令命名规则和GCC生成汇编代码使用有细微差别
 
 intel用字表示16位数据类型，32位为双字，64位为四字
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/6.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/6.png)
 
 ## 访问信息
 一个x86-64中央处理单元包含一组16个存储64位值的通用目的寄存器，这些寄存器用来存储整数数据和指针。如图：
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/7.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/7.png)
 
 **操作数指示符**
 大多数指令有**一个或多个操作数**，指示执行一个操作中要使用的**源数据**，以及放置结果的目的位置。源数据值可以以常数给出，或从寄存器，内存中读出，结果存放在寄存器或内存中。各种不同操作数可能性被分为三种类型，第一种是**立即数**，ATT格式中用$表示；第二种是**寄存器**，分别对应上面所说的8,16,32,64位寄存器作为一个操作数，用r表示任意寄存器；第三种是**内存引用**，他会根据计算出来的地址访问某个内存地址。用符号Mb[addr]表示从地质addr的b个字节引用。
@@ -45,12 +45,12 @@ intel用字表示16位数据类型，32位为双字，64位为四字
 **数据传送指令**
 最频繁使用的指令是将数据从一个位置复制到另一个位置的指令。
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/8.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/8.png)
 上述数据传送指令，源操作数是一个立即数，存储在寄存器或内存中；目的操作数是一个位置（寄存器或内存地址）。寄存器大小根据指令最后一个字符与上述寄存器匹配相同大小，mov指令只会更新目的操作数指定寄存器字节或内存位置。唯一例外是movl指令会把寄存器高位4字节设置为0.
 
 将较小的源值复制到较大的目的时使用指令：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/10.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/10.png)
 
 **压入和弹出栈数据**
 ... TODO

@@ -54,7 +54,7 @@ tags: source
 **ArrayList**
 ArrayList的继承关系图
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2018-06-01-source-dataStructrue-List/1.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-06-01-source-dataStructrue-List/1.png)
 
 arrayList数据结构是对象数组
 ```java
@@ -373,7 +373,7 @@ SubList内部类映射arraylist指定区域的元素，并提供set，get，size
 
 **Vector**
 Vector的继承关系图
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2018-06-01-source-dataStructrue-List/2.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-06-01-source-dataStructrue-List/2.png)
 
 vector有三个变量
 ```java
@@ -453,7 +453,7 @@ public synchronized void setSize(int newSize) {
 
 **LinkedList**
 LinkedList的继承关系图
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2018-06-01-source-dataStructrue-List/3.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-06-01-source-dataStructrue-List/3.png)
 
 首先我们来看linkList的变量
 

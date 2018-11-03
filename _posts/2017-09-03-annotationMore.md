@@ -13,7 +13,7 @@ tags: jdk
 本文将介绍注解的基本结构，语法；使用场景；怎么自定义注解；java中常见的注解等知识
 	    
 ### 注解的基本语法
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-09-03-annotationMore/1.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/1.png)
     
 - 注解使用@interface关键字定义
         
@@ -40,20 +40,20 @@ tags: jdk
 - 可以看到方法体内有name，values等成员变量（成员以无参无异常的方式声明，成员变量可以用default指定一个默认值的）
     * 成员类型是受限制的，合法的类型包括基本的数据类型以及String，Class，Annotation,Enumeration等
     * 如果注解只有一个成员，则成员名必须取名为value()，在使用时可以忽略成员名和赋值号（=）
-    ![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-09-03-annotationMore/3.png)
+    ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/3.png)
     * 注解类可以没有成员，没有成员的注解称为标识注解。
             
 - 使用注解的语法：@<注解名>(<成员名1>=<成员值1>,<成员名1>=<成员值1>,…)
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-09-03-annotationMore/2.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/2.png)
 
 ### Java中常见的注解
 ####@Override
 我们都知道，java三大特性的继承中，方法是可以覆盖的，如图：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-09-03-annotationMore/4.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/4.png)
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-09-03-annotationMore/5.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/5.png)
 
 所有类都隐式从object继承，testAno类**目的是覆盖**object的equals方法,但是得到的结果却是错误的，因为我们**重写**object的equals方法时制定了一个非object类型参数，从而引发了这个方法**重载**，而不是重写的效果，当我们引入@Override注解后，会在编译的时候提示报错的信息，因此我么可以使用该注解来确保子类的方法也覆盖超类中的非最终具体方法或抽象方法以及接口方法
     
@@ -152,7 +152,7 @@ public class AnnotationTest {
 
 运行结果：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/2017-09-03-annotationMore/6.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/6.png)
 
 ### 注解的使用场景
 那么应该在什么地方使用注解呢？我们来看看官方的解释

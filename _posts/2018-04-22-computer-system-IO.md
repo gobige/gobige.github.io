@@ -62,11 +62,11 @@ java，c等语言基于Unix I/O的实现，提供了比Unix I/O更高级别的�
 
 物理上而言，网络是一个按照地理远近组成层次系统。最低层是LAN（局域网），最流行**局域网**技术是**以太网**，一个以太网段包括一些电缆（双绞线）和一个叫做集线器的小盒子，每根电缆由相同的最大**位带宽**，一端连接主机适配器，另一端连接集线器一个端口，集线器将收到的数据复制到其他端口进行发送。每个主机适配器都有全球唯一48位地址，每个主机发送以**帧**为单位的数据到这个网段上其他任何主机，**帧**包括一些固定数量**头部，标识源和目的，帧长度，有效载荷**，每个主机适配器都能看到这个帧，但只有目的主机读取它。
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/20.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/20.png)
 
 以太网段通过电缆和网桥连接位较大的局域网，称为**桥接以太网**
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/21.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/21.png)
 
 在更高层次中，多个不兼容局域网可通过叫做**路由器**特殊计算机连接起来，组成**互联网络**
 
@@ -79,7 +79,7 @@ java，c等语言基于Unix I/O的实现，提供了比Unix I/O更高级别的�
 
 主机和路由器通过相同协议在不兼容局域网间传送数据，如图：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/22.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/22.png)
 
 1. 位于主机A的客户端进行系统调用，将数据从虚拟地址空间复制到内核缓冲区
 2. 主机A的协议软件在传输数据前附加**网络包头和LAN1帧头**，创建LAN1的帧。LAN1帧头寻址到路由器，然后传送帧到适配器。LAN1帧有效载荷时互联网包，而互联网包有效载荷是实际用户数据。
@@ -98,7 +98,7 @@ java，c等语言基于Unix I/O的实现，提供了比Unix I/O更高级别的�
 
 ip地址很难记住，我们通常使用域名来代替。域名集合形成一个层次结构
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/23.png) 
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/23.png) 
 
 因特网定义了域名集合和IP地址间映射，很久以前是通过HOSTS.TXT文本文件手工维护。以后通过分布世界范围内的数据库DNS
 进行维护，每个DNS由上百万主机条目。

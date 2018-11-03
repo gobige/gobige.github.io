@@ -37,7 +37,7 @@ tags: linux
 
 我们可以通过ls -l来查看当前目录下的文件和目录权限情况
 
-![请输入图片地址](http://muyibeyond.cn/img/2017-11-12-linux-relation/1.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/1.png)
 
 linux文件权限以分组划分，组下面有用户，用户和组对应关系是多对多
 

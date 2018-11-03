@@ -22,7 +22,7 @@ tags: 计算机系统
 
 每个组的高速缓存行只有一行。当cpu执行读内存字w指令，首先向L1请求这个字，如果L1中有w的副本，直接返回给cpu，否则**缓存不命中**，L1向内存请求包含w的块的副本，请求块获取达到，存储在一个高速缓存行中，并返回给cpu字w，整个过程分为三步**1组选择2行匹配3字抽取**
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/19.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/19.png)
 
 
 - 组选择，高速缓存**从w字地址抽取s个组索引位**，索引位代表到达数组的索引。

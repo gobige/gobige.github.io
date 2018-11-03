@@ -24,14 +24,14 @@ DRAM将每个位存储为对一个电容的充电，每个单元由一个电容�
 **传统DRAM**
 DRAM芯片中单元（位）被分成d个超单元，每个超单元由W个DRAM单元组成。超单元被组织成一个r行c列的长方形阵列.如图：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/11.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/11.png)
 这是一个16x8的DRAM芯片组织，16个超单元，每个单元8位。信息通过**引脚**流入流出，每个引脚携带一个位。下图由2个地址引脚，8个数据引脚，其他控制信息引脚未给出。每个DRAM芯片被连接**内存控制器**的电路，这个电路一次传送w位到每个DRAM芯片或从芯片读取w位。
 
 首先，通过传送2位addr地址获取指定行所有超单元信息，复制到**内部缓冲区**，然后传送2位指定列从内部缓冲区获取指定超单元信息，通过data引脚传送出去，做成行列结构而不是一行可以节省2个引脚，但是需要两次传送addr信息。
 
 **内存模块**
 DRAM芯片封装在内存模块中，插到主板的扩展槽上，i7使用240引脚双列直插内存，以64位块作为块传送数据到内存控制器。如图：
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/12.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/12.png)
 
 该模块用了8个64Mbit的8Mx8DRAM芯片，总共64MB数据，每个超单元存储8位，总共8个芯片8个超单元64位数据，按照高低位排序传输。
 
@@ -49,7 +49,7 @@ DRAM芯片封装在内存模块中，插到主板的扩展槽上，i7使用240�
 
 数据通过总线在处理器和DRAM主存之间传输。传输过程可分为读事务，写事务。如图：
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/13.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/13.png)
 I/O桥接器负责系统总线电子信号和内存总线电子信号之间的转换
 
 ## 磁盘存储
@@ -57,7 +57,7 @@ I/O桥接器负责系统总线电子信号和内存总线电子信号之间的�
 
 ### 磁盘构造
 磁盘时由盘片构成，每个盘片有两面或称为表面，表面覆盖磁性记录材料。盘中间有可以旋转的主轴，盘片依靠主轴每分钟5400~15000转。磁盘表面由一组称为磁道的同心圆组成，每个磁道划分为一组扇区，每个扇区包含相等数量的数据位（通常512字节），扇区之间由间隙分隔，间隙不存储数据位。描述多个盘片构造经常用柱面来描述，柱面是所有盘片表面上到主轴中心的距离相等的磁道的集合。如图：
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/14.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/14.png)
 
 ### 磁盘容量
 磁盘容量由以下因素决定：
@@ -70,7 +70,7 @@ I/O桥接器负责系统总线电子信号和内存总线电子信号之间的�
 
 ### 磁盘操作
 磁盘用读/写头来读写存储在磁性表面的位，读写头连接一个传送臂一端，通过机械臂沿半径前后移动，读写头可以到达盘面任何位置，这种运动称为**寻道**，多个盘片每个盘面都有一个独立读写头，读写头垂直排列，一致行动，任何时候都位于同一柱面上。如图：
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/15.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/15.png)
 
 读写头和盘面之间高度约为0.1微米，每一粒细小微尘都会使其停下来，所谓**读/写头冲撞**，为此，磁盘总是密封包装的。
 
@@ -110,11 +110,11 @@ CPU使用一种**内存映射I/O**来向I/O设备发射命令。在使用**内�
 SSD是一种基于闪存的技术。SSD封装到I/O总线上的USB或SATA插槽，一个SSD由一个或多个闪存芯片和闪存翻译层组成。
 闪存芯片代替传统旋转磁盘机械驱动器；闪存翻译层是一个硬件/固件设备，对应磁盘控制器。
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/16.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/16.png)
 
 如上图：一个闪存由B个块组成，每个块由P（32~128）页，一页大小512字节~4KB,每个块16KB~512KB。数据以页为单位读写。每个页只有在所属块被擦除（全置为1）才能重新写。大约100000次重复写后块就会损坏，永久不能使用。
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/17.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/17.png)
 随机写很慢原因
 
 1. 擦除块需要相对长时间 ms级 
@@ -135,7 +135,7 @@ SSD是一种基于闪存的技术。SSD封装到I/O总线上的USB或SATA插槽�
 
 ## 存储器层次结构
 
-![此处输入图片的描述](http://pev96mxgw.bkt.clouddn.com/img/computer-system-Perspective/18.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/18.png)
 
 **存储器层次结构中心思想**：位于k层的**更小更快设备**作为位于k+1层**更大更慢的存储设备**的缓存。在任何时候第k层缓存包含第k+1层块的一个**子集的副本**。
 
