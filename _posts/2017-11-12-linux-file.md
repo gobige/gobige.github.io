@@ -169,4 +169,4 @@ lrzsz是一款在linux里可代替ftp上传和下载的程序：  yum install lr
 
 **配置相关**
 echo $PATH  显示系统环境变量配置
-export PATH=$PATH:/usr/{name} 添加新的系统环境变量
+export PATH=$PATH:/usr/{name} 添加新的系统环境变量(当前窗口临时添加，etc/profil文件添加才能永久添加，然后使用source指令生效配置)
