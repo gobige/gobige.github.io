@@ -3,10 +3,10 @@ layout: post
 title: 'java并发'
 subtitle: 'java并发的一些知识'
 date: 2017-10-27
-categories: mysql
+categories: java并发
 author: yates
 cover: 'http://cctv.com'
-tags: mysql
+tags: java并发
 ---
 
 ### 一些概念

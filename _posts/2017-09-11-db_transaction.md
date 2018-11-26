@@ -3,10 +3,10 @@ layout: post
 title: '关于数据库事务的知识'
 subtitle: '数据库事务特性，隔离级别...'
 date: 2017-09-11
-categories: 数据库
+categories: mysql
 author: yates
 cover: 'http://cctv.com'
-tags: database
+tags: mysql
 ---
 
 ### 数据库事务之ACID
