@@ -45,3 +45,21 @@ select * from information_schema.innodb_trx where TIME_TO_SEC(timediff(now(),trx
 - 索引下推，5.6版本以后引入的索引下推，在索引遍历的过程中，对索引中包含的字段先做判断，直接过滤掉不满足条件的记录，减少回表次数
 
 - 重建主键索引（删除，创建）都会将整个表重建，而且这个表上的其他非主键索引也会失效，可以使用alter table engine = innodb代替
+
+
+### 全局锁，表级锁，行级锁
+全局锁sql：Flush tables with read lock;常用于全库逻辑备份，备份时不加锁会造成多表操作时事务的不一致性，比如转账，购买业务场景
+其他全局锁方法
+1：mysql自带的mysqldump逻辑备份工具只适用于使用事务引擎的库表 （–single-transaction参数）
+2：set global readonly=true （如果执行过程中客户端断开，数据库会一直保持readonly状态，而ftwrl不会，2通常用于判断主从库的逻辑）
+
+表级锁
+- lock tables T read/write，除了限制别的线程读写外，也限定了本线程接下来的操作对象（thread1 lock table1 read，table2 write；那么thread2 对 t1，t2读写都不可进行；自身线程不能对T1做write操作）
+- MDL,访问表时自动加上，mysql5.5以后在对一个表做增删改查时，加MDL读锁；当对结构做变更操作时，加MDL写锁。
+	- 读锁之间不互斥
+	- 读写锁和写锁之间互斥
+在热点查询表中执行DDL，很有可能造成整个数据库挂掉，原因是执行DDL线程阻塞后面的请求，而如果DDL线程前面的请求一直不释放MDL锁的话，客户端的不断重试，生成新session，数据库线程爆满。这种情况在做DDL时，先将长事务kill掉
+事务中的 MDL 锁，在语句执行开始时申请，但是语句结束后并不会马上释放，而会等到整个事务提交后再释放。
+
+
+解锁：unlock tables
