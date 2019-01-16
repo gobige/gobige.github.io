@@ -65,6 +65,19 @@ innodb_flush_log_at_trx_commit 设置成1，表示每次事务的redo log都直�
 
 **server层由binlog做归档日志**,记录所有的逻辑操作，所有引擎都可以使用，以前写的日志不会覆盖，写在**redolog pre 和redolog commit**之间，两阶段提交能够保证了数据存储的有效性。binlog有两种模式，**记sql语句和记录行行内容前后的状态**
 
+**redo log和bin log写入发生异常及恢复**
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/5.png)
+
+如图:一条数据在写入的时候binlog和redolog的写入过程
+- 如果mysql奔溃发生A时刻,在redolog prepare阶段,写binlog之前,那么奔溃恢复时事务自然会回滚
+- 如果mysql奔溃发生在B时刻,在binlog写完,redolog还没有提交时,那么通过以下规则判断
+	- 如果redolog事务完整,已经有了commit标识,那么直接提交
+	-  如果redolog没有提交只有完整prepare,若binlog如果完整,则提交;反之binlog不完整则回滚
+
+那么mysql通过什么值得binlog是否完整的呢?1statement的binlog,最后会有commit;2row格式的binlog,最后会有一个XID event. mysql5.6.2版本后还引入了binlog-checksum参数,用于验证内容正确性
+redolog和binlog通过什么关联?通过XID标识关联,binlog在写入后就会从从库取出来,所以主库也要通过redolog提交这个事务,从而保证数据一致性.
+
+
 **数据库恢复**：
 1首先找到最近的一次全量备份
 2从上次开发备份时间开始，将备份的binlog依次取出来，进行重放。
@@ -288,12 +301,8 @@ count(id),count(col),count(1)等有不同的性能,在分析性能差别时,有�
 **其他统计记录的方式**
 把计数放redis里面:由于**两个不同的存储构成的系统,不支持分布式事务,无法拿到精确一致的视图**.不能保证计数和mysql表里数据精确一致.
 
-
-
-
-
-
-
-
+**order by实现流程**
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/6.png)
+mysql排序可能会在内存中进行,也可能会使用外部排序,取决于 sort_buffer_size设置的大小,如果需要排序的数据大小于这个设置值,则在内存中进行;大于则将数据分成该设置值大小的外部文件,分别排序,最后合并
 
 
