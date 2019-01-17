@@ -301,8 +301,90 @@ count(id),count(col),count(1)等有不同的性能,在分析性能差别时,有�
 **其他统计记录的方式**
 把计数放redis里面:由于**两个不同的存储构成的系统,不支持分布式事务,无法拿到精确一致的视图**.不能保证计数和mysql表里数据精确一致.
 
+
 **order by实现流程**
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/6.png)
-mysql排序可能会在内存中进行,也可能会使用外部排序,取决于 sort_buffer_size设置的大小,如果需要排序的数据大小于这个设置值,则在内存中进行;大于则将数据分成该设置值大小的外部文件,分别排序,最后合并
+上述mysql排序可能在**内存**中进行,也可能会使用**外部排序**,取决于 sort_buffer_size设置的大小,如果需要排序的数据小于这个设置值,则在内存中进行;大于则将数据分成该设置值大小的外部文件,分别排序,最后合并
+
+ 
+检查排序是否使用了临时文件
+```java
+/* 打开 optimizer_trace，只对本线程有效 */
+SET optimizer_trace='enabled=on'; 
+
+/* @a 保存 Innodb_rows_read 的初始值 */
+select VARIABLE_VALUE into @a from  performance_schema.session_status where variable_name = 'Innodb_rows_read';
+
+/* 执行语句 */
+select city, name,age from t where city='杭州' order by name limit 1000; 
+
+/* 查看 OPTIMIZER_TRACE 输出 */
+SELECT * FROM `information_schema`.`OPTIMIZER_TRACE`\G
+
+/* @b 保存 Innodb_rows_read 的当前值 */
+select VARIABLE_VALUE into @b from performance_schema.session_status where variable_name = 'Innodb_rows_read';
+
+/* 计算 Innodb_rows_read 差值 */
+select @b-@a;
+
+```
 
 
+**如果排序返回字段过多**
+如果排序后返回的字段很多,会导致,排序文件和内存占用过大,那么就要使用其他算法.
+```java
+SET max_length_for_sort_data = 16;
+```
+我们设置了排序的行长度不能超过16,如图,上述返回的字段超过了16,那么放入sort_buffer的字段就只有name和主键id,流程变成如下:
+1. 初始化sort_buffer,放入两个字段,name和id
+2. 从索引city取出第一个满足条件的主键id
+3. 通过主键id回表取出整行,取name,id字段,存入sort_buffer
+4. 从索引取符合条件的下一个主键id
+5. 重复3,4步骤
+6. 对sort_buffer数据按name排序
+7. 遍历排序,取前1000行
+8. 再次回表通过id取出其他字段数据
+
+这个过程称为**rowid排序**,其中8不需要服务端再存入内存,而是直接返回给客户端
+
+**如果内存够，就要多利用内存，尽量减少磁盘访问,采用全字段排序,否则使用rowid排序**
+
+**所有order by都会排序是mysql使用排序算法吗**
+如果我们建一个联合索引,如(city,name)那么上述的sql后面应用索引得到4步骤数据就已经是排好序的数据了
+
+**取随机数**
+mysql中我们使用rand()获取随机数,他的流程如下:
+1. 创建临时表,是哟功能memory引擎,表里有两个字段,一个是R,一个W.这个表没有索引
+2. 按主键顺序取出所有word,调用rand()函数生成一个大于0小于1的随机小数,将随机小数和word存入R和W中.
+3. 在临时表上按照字段R排序.
+4. 初始化sort_buffer,sort_buffer中也有两个字段,一个是double,另一个整形.
+5. 将临时表一行一行取出R和**位置信息**放入sort_buffer中
+6. 在sort_buffer中根据R排序,并取出所需数据位置信息
+
+流程如如图:
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/7.png)
+
+**先通过原理分析出扫描行数,再通过慢查日志,验证结论,是一种很好的方法**
+
+**mysql定位一行数据的方式**
+
+- 对于有主键的innodb表,主键就是定位方式.
+- 对于没有主键的innodb表,自动生成的rowid就是定位方式.
+- 针对memory引擎的组织表,可以认为就是一个数组,数组下标就是定位方式
+
+我们把这种定位方式成为**rowId排序**,也就是上述的orderBy使用到的方式,而在rand函数执行,内存临时表排序时也使用了rowid排序方法
+
+临时表也可以使用**磁盘**,tmp_table_size限制内存临时表大小,默认为16M.
+
+有时候我们使用rand函数后后面还跟了个limit N,而这时mysql不会使用磁盘的归并排序,因为我们只需limit数量的数据,所以排序所有的数据不是mysql所希望的,这时采用**优先队列排序**,以N行数据为一个单位,拿单位边界外数据与单位内数据进行对比,一个遍历后单位内数据是我们所需得到的limit数据.(limit数据如果过于大,超过sort_buffer_size大小的话,就只能使用归并排序算法).
+
+**更具效率的排序方式**
+算法1
+
+- 取这个表的主键id最大值M和最小值N
+- 用随机函数生成一个最大值到最小值之间的数X=(M-N)*rand()+N
+- 取不小于X的第一个ID的行
+
+这个算法有个bug,就是如果id不连续,很有可能会得到一个**空洞**的数据
+
+算法2
