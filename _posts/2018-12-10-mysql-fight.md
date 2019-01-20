@@ -49,7 +49,7 @@ tags: mysql
 
 
 ## myql数据库的数据更新技术-WAL
-再生产中,想恢复某个数据时间点的数据,除了通过备份数据外,还可通过redo log和binlog进行重放
+在生产中,想恢复某个数据时间点的数据,除了通过备份数据外,还可通过redo log和binlog进行重放
 
 **redo log 和binlog**
 mysql更新操作采用**WAL(write-ahead logging)**技术，使用 **redo log**，先将更新写入日志，空闲时在写入磁盘，表示记录这个数据页做了什么改动
