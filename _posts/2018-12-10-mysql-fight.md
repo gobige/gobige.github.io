@@ -449,3 +449,19 @@ select * from t sys.innodb_lock_waits where locked_table=`'test'.'t'`
 sessionB在sessionA开启事务后update，如果更新100w次，那么就会生成100w个回滚日志。在第一个sql执行时就会依次执行uodolog，在100w次后，才将1结果返回
 
 对于**查询条件字段**长度**大于**表结构**定义字段**长度的，mysql会截断该查询条件，然后进行查询，回表，返回
+
+
+ ### mysql临时提高性能的方案
+ **短连接风暴**
+ 
+短连接模式中,每一次连接只会执行很少的sql语句,当数据库处理慢的时候,短时间并发上去之后,连接数上去后,之后的请求都会被提示"too many connections"的错误.但是又不能无限的增加max_connections的上限(相应的会增加系统负载,资源消耗,权限验证等逻辑).
+
+1. 在max_connections中有很多连接都是空闲的,可以通过设置wait_timout被动**剔除空闲连接**
+2. 主动kill空闲连接,
+    - 通过show processlist,查看处于**sleep**中的线程
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/14.png)
+如图:有两个空闲连接,这两个空闲连接,有的是**事务中的空闲连接**,有的是**事务外空闲连接**,我们优先kill掉**事务外空闲连接**.
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/15.png)
+如图:通过上述sql查询处于事务中的连接为4,然后使用kill connection id执行kill.
+
+被kill掉的客户端在下一次请求时会收到**Lost connection to MySQL server during query** 报错
