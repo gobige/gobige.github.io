@@ -465,3 +465,13 @@ sessionB在sessionA开启事务后update，如果更新100w次，那么就会生
 如图:通过上述sql查询处于事务中的连接为4,然后使用kill connection id执行kill.
 
 被kill掉的客户端在下一次请求时会收到**Lost connection to MySQL server during query** 报错
+
+### 幻读
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/18.png)
+
+如图:seesionA在T1,T3,T5阶段查询出来d=5返回的记录数都不一样,然而只有1,1,5这条记录,也就是session C **插入**的这条记录被称为**幻读**
+
+我们所知,mysql数据innodb引擎**默认**事务隔离级别是**可重复读**,在可重复读隔离级别下,**普通查询**是**快照读**,是不会看到别的事务插入的数据的.因为上述select都是**for update** 都是**当前读**,拿到的最新的数据.因此幻读是在**新插入**数据和**当前读**情况下才出现
+
+**幻读的影响**
+**语义被破坏**,如上图在T1时刻,for update对5,5,5数据进行了加锁,而sessionB的操作破坏了sessionA想对所有d=5的记录加锁声明;**数据一致性**,如果我们在sessionA   T1时刻加一条语句,update t set d=100 where d=5;update的加锁语义和select...for update是一致的,
