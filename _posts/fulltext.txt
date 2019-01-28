@@ -61,7 +61,30 @@ SELECT * FROM full_text_test WHERE MATCH(title,content) AGAINST ("-英格兰1:");
 
 -- 分词，全文索引以词为基础的，MySQL默认的分词是所有非字母和数字的特殊符号都是分词符
 
+**倒排索引**
+常规的索引是**文档到关键词**的映射;倒排索引是**关键词到文档**的映射,倒排索引被称为**反向索引**.全文索引就是倒排索引.当表上存在全文索引时,就会隐式建立一个名为FTS_DOC_ID的列,并在其上创建一个唯一索引,用于**标识分词**出现的记录行.
 
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/17.png)
+是**word+list**的结构.**text**代表分词;**documents**代表分词出现的位置;以键值对的形式出现,键为**FTS_DOC_ID**;值为**文档中的位置**.对应list.其中word保存在**Auxiliary Table**中,总共有六张,每张表根据word的latin编码分区.
+
+**FTS Index Cache(全文检索索引缓存)**
+
+- 在**事务提交**的时候将分词写入到**FTS Index Cache**中
+- 批量更新到Auxiliary Table，为了提高性能**不会插入一条数据立刻更新**到Auxiliary Table。进行批量更新的几种情况：
+    - 全文检索**索引缓存已满**，默认大小为32M，可以通过修改innodb_ft_cache_size来改变FTS Index Cache的大小
+    - **关闭数据库**的时候，将FTS Index Cache中的数据库会同步到磁盘上的Auxiliary Table中
+    - 当对全文检索**进行查询**时，首先会将在FTS Index Cache中对应的字段合并到Auxiliary Table中，然后再进行查询
+    - 当数据库突然宕机时，可能会导致一些FTS Index Cache中的数据未同步到Auxiliary Table上。数据库**重启时**，当用户对表**进行全文检索**时，InnoDB存储引擎会自动读取未完成的文档，然后进行分词操作，在将分词的结果放入到FTS Index Cache中。innodb_ft_cache_size的大小会影响恢复的时间
+
+- FTS Index Cache为红黑树结构，会根据(word,ilist)进行排序插入
+
+**DML操作**
+
+- **插入操作**较为简单,当往表中插入记录时,提交事务时会对全文索引上的列进行分词存储到FTS Index Cache,最后在批量更新到Auxiliary Table中
+- **删除操作**,当提交删除数据的事务后,不会删除Auxiliary Table表中数据,而只会删除FTS Index Cache中数据.对于Auxiliary Table中被删除的记录，InnoDB存储引擎会记录其FTS Document Id，并将其保存在DELETED Auxiliary Table中。可以通过OPTIMIZE TABLE手动删除索引中的记录。
+- 查找操作
+分为两步。第一步：根据检索词搜集符合条件的FTS_DOC_ID，在搜集满足条件的FTS_DOC_ID首先读取delete表中记录的FTS_DOC_ID，这些FTS_DOC_ID随后被用做过滤
+第二步：根据FTS_DOC_ID找到对应的记录，找到的记录是根据相关性大小降序返回的
 
 
 
