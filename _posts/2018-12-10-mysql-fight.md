@@ -451,22 +451,6 @@ sessionB在sessionA开启事务后update，如果更新100w次，那么就会生
 对于**查询条件字段**长度**大于**表结构**定义字段**长度的，mysql会截断该查询条件，然后进行查询，回表，返回
 
 
- ### mysql临时提高性能的方案
- **短连接风暴**
- 
-短连接模式中,每一次连接只会执行很少的sql语句,当数据库处理慢的时候,短时间并发上去之后,连接数上去后,之后的请求都会被提示"too many connections"的错误.但是又不能无限的增加max_connections的上限(相应的会增加系统负载,资源消耗,权限验证等逻辑).
-
-1. 在max_connections中有很多连接都是空闲的,可以通过设置wait_timout被动**剔除空闲连接**
-2. 主动kill空闲连接,
-    - 通过show processlist,查看处于**sleep**中的线程
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/14.png)
-如图:有两个空闲连接,这两个空闲连接,有的是**事务中的空闲连接**,有的是**事务外空闲连接**,我们优先kill掉**事务外空闲连接**.
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/15.png)
-如图:通过上述sql查询处于事务中的连接为4,然后使用kill connection id执行kill.
-
-被kill掉的客户端在下一次请求时会收到**Lost connection to MySQL server during query** 报错
-
-
 ### 幻读
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/18.png)
 
@@ -486,7 +470,7 @@ T1时刻加一条语句,update t set d=100 where d=5;（update的加锁语义和
 可重复读事务条件下的加锁规则
 
 **原则**
-1. 加锁基本单位是next-key lock，next=key lock是前开后闭区间
+1. 加锁基本单位是next-key lock，next=key lock是**前开后闭区间**
 2. 查找过程中访问到的对象才会加锁
 
 **优化**
@@ -494,9 +478,10 @@ T1时刻加一条语句,update t set d=100 where d=5;（update的加锁语义和
 2. 索引上的**等值查询**，向**右遍历**时**最后一个值不满足**等值条件的时候，next-key lock退化为**间隙锁**
 
 **bug**
-唯一索引上的范围查询会访问到不满足条件的第一个值为止。
+**唯一索引**上的范围查询会访问到不满足条件的第一个值为止。
 
-案例：
+
+创建一个表和数据
 ```java
 CREATE TABLE `t` (
   `id` int(11) NOT NULL,
@@ -510,10 +495,76 @@ insert into t values(0,0,0),(5,5,5),
 (10,10,10),(15,15,15),(20,20,20),(25,25,25);
 ```
 
+案例1 **等值索引范围锁**：
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/19.png)
 
-如上，我们创建了一张表，假如sessionA以事务执行update t set d=d+1 where id=7,根据加锁原则1，那么sessionA的加锁范围就是(5,10],根据优化2，退化为间隙锁，最终加锁范围为(5,10); 
+假如sessionA以事务执行update t set d=d+1 where id=7,根据加锁原则1，那么sessionA的加锁范围就是(5,10],虽然这是一个等值查询，而且是唯一索引，但是id=7并不存在，根据优化2，退化为间隙锁，最终加锁范围为(5,10); 
 
-针对覆盖索引，查询的对象只会在**覆盖索引上进行加锁**而不会影响主键索引，如果sessionA使用了lock share in mode，在其他session下通过主键索引操作相同范围的记录是被允许的，这是覆盖索引的优化，如果我们有要求给**行加锁避免数据被更新**的话，就要在查询字段中加入**覆盖索引中不存在**的字段。
+案例2  **非唯一索引等值锁**：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/20.png) 
 
-delete语句的时候最好加上limit，这样可以控制删除数据的条数，让操作更安全，还可以减小加锁的范围。
+sessionA使用共享锁查询C=5的记录，根据原则1，(0,5]被锁，因为C是普通索引，所以继续往后查找到c=10，(5,10]被锁，根据优化2，退化为间隙锁（5,10），sessionB是使用的主键索引，针对覆盖索引，查询的对象只会在**覆盖索引上进行加锁**而不会影响主键索引，所以不会阻塞，而session C就会
+ 
+这是覆盖索引的优化，如果我们有要求给**行加锁避免数据被更新**的话，就要在查询字段中加入**覆盖索引中不存在**的字段。
+
+案例3 **主键索引范围锁**：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/21.png) 
+
+ sessionA先进行等值查询，本来是应该加锁(5,10]，但是由于id是唯一索引，根据优化1退化为行锁，继续向右遍历找到不满足条件的15，加锁(10,15]
+ 
+案例4 **非唯一索引范围锁**：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/22.png) 
+
+ sessionA由于等值查询不是唯一索引，索引应该加锁(5,10]，根据bug1继续向右遍历找到不满足条件的15，加锁(10,15]
+ 
+案例5 **唯一索引范围锁BUG**：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/23.png) 
+
+ 根据原则1 范围查询，索引应该加锁(10,15]，sessionA是唯一索引，索引应该到15就停止了，但是根据bug1继续向右遍历找到不满足条件的20，原则2加锁(15,20]
+ 
+案例6 **非唯一索引上存在等值的例子**：
+```java
+mysql> insert into t values(30,10,30);
+```
+这时数据库中有两条c=10的记录
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/24.png)
+
+有如下事务
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/25.png)
+
+根据原则1，锁住(5,10]，非唯一索引，优化2，继续向右遍历锁住(10,15）
+
+案例7 **limit语句加锁**：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/26.png)
+
+我们在思考为什么会产生死锁呢？sessionA加锁(5,10]，(10,15），sessionB不是应该申请不到锁吗？
+实际是这样的先加锁(5,10），然后加锁10，被锁住
+
+
+ ### mysql临时提高性能的方案
+ **短连接风暴**
+ 
+短连接模式中,每一次连接只会执行很少的sql语句,当数据库处理慢的时候,短时间并发上去之后,连接数上去后,之后的请求都会被提示"too many connections"的错误.但是又不能无限的增加max_connections的上限(相应的会增加系统负载,资源消耗,权限验证等逻辑).
+
+1. 在max_connections中有很多连接都是空闲的,可以通过设置wait_timout被动**剔除空闲连接**
+2. 主动kill空闲连接,
+    - 通过show processlist,查看处于**sleep**中的线程
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/14.png)
+如图:有两个空闲连接,这两个空闲连接,有的是**事务中的空闲连接**,有的是**事务外空闲连接**,我们优先kill掉**事务外空闲连接**.
+
+    - 查询事务具体状态
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/15.png)
+如图:通过上述sql查询处于事务中的连接为4,然后使用kill connection id执行kill.
+
+被kill掉的客户端在下一次请求时会收到**Lost connection to MySQL server during query** 报错，从数据库主动断开连接是有损的，如果应用端收到错误后不重新连接，而是直接用这个句柄继续查询，会导致误认为mysql没有恢复
+3. 减少连接过程消耗
+    - 跳过权限验证阶段，重启数据库，并使用-skip-grant-tables参数启动（在8.0版本默认启用该功能后，--skip-networking参数也会打开，只允许本地客户端连接）
+4. 慢查询解决
+    - 索引没建好，在5.6以后版本使用Online DDL创建紧急索引。1先在备库执行，set sql_log_bin=off，不写binlog，执行alter table加索引；2然后执行主备切换；3然后再在切过来的主库（现在是备库）执行一遍第一步操作
+    - 语句没写好，5.7提供了query_rewritegongn ,可以把输入一种语句变成另外一种模式
+    - mysql选错索引，这种情况向下，通过前面所讲的使用force index
+5. QPS突增
+    - 一种是全新业务的bug导致，如果DB运维规范，可以直接从白名单下掉该功能
+    - 如果新功能时单独数据库用户，可以用管理员账号把用户删掉，断开现有连接。
+    - 如果新功能跟主题功能部署一起，那么只能通过处理语句限制，查询重写把sql改为select 1返回
+
