@@ -1,0 +1,15 @@
+
+-- 对于没有使用NDB存储引擎的表来说，分区最大数限制为8192
+-- 对于分区表来说，查询缓存是不支持的，涉及分区表的查询会自动关闭查询缓存，且不能开启。
+-- -- InnoDB存储引擎的分区表不支持外键。
+-- 分区表是InnoDB或者MyISAM存储引擎，全文索引也不被支持
+-- POINT或者GEOMETRY这样的空间数据类型列，不能被用在分区表
+-- 临时表和日志表都不能被分区/
+-- 位运算符例如|, &, ^, <<, >>, 和 ~ 是不支持
+-- 分区键必须要么是整型列，要么是整型列表达式。
+-- [LINEAR] KEY分区方式，只要不是TEXT或者BLOB类型，其他任何类型列都可以作为分区键
+-- RANGE COLUMNS 或者 LIST COLUMNS 分区方式，可以使用string，DATE和DATETIME类型作为分区列
+-- 创建分区表时，可以为每个分区指定 DATA DIRECTORY 和 INDEX DIRECTORY。但是Window系统或者MyISAM的子分区是不支持该语法的
+-- 分区表受到单数据库实例的连接数限制、 IO瓶颈、 swap空间、 FD等诸多限制
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/16.png)
