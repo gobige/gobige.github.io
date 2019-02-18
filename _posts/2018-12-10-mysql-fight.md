@@ -568,3 +568,41 @@ mysql> insert into t values(30,10,30);
     - 如果新功能时单独数据库用户，可以用管理员账号把用户删掉，断开现有连接。
     - 如果新功能跟主题功能部署一起，那么只能通过处理语句限制，查询重写把sql改为select 1返回
 
+	
+	#### binlog写入机制
+事务执行过程中,先把日志写到binlog cache,事务提交的时候,再把binlog cache写到binlog中. 系统给binlog cache分配了内存,每个线程一个, binlog_cache_size用于控制单个线程内所占内存大小.每个线程有独立的binlog cache,但是共用同一份binlog文件,如果超过了这个参数大小,就要暂存到磁盘.
+
+如图:
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/27.png) 
+
+图中的write,指的是把日志写入到page cache;图中的fsync,是将数据持久化磁盘的操作.
+
+write和fsync是由sync_binlog控制的.(比较常见的设置为100~1000中某个值)
+
+- sync_binlog=0,每次提交事务只write,不fsync;
+- sync_binlog=1,每次提交事务只fsync;
+- sync_binlog=N(N>1),每次提交事务都write,但累积N个事务后才fsync.
+
+#### redolog写入机制
+rodolog是先写到redo log buffer里的,不是每次生成后就持久化到磁盘的,也不是非得事务提交的时候,redo log buffer中日志才持久化到磁盘.
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/28.png) 
+上图对应redolog的三种状态
+
+- 存在redo log buffer中,物理上处于mysql进程内存中,红色部分;
+- 写到磁盘(write),但是没有持久化(fsync),物理上是在文件系统中page cache中,也就是黄色部分;
+- 持久化到磁盘,对应hard disk,也就是绿色部分.
+
+速度方面红色和黄色部分速度相当,绿色部分要快一些
+
+同样redolog也有写入策略控制参数,innodb_flush_log_at_trx_commit有三种取值
+
+- 设置为0的时候,每次事务提交都只是把redo log 留在redo log buffer中
+- 设置为1的时候,每次事务提交时都将redo log直接持久化到磁盘
+- 设置为2的时候,每次事务提交时都只把redo log写到page cache
+
+注意:事务执行中间过程redo log也会写在redo log buffer中.
+
+
+有一个后台线程,每隔一秒,就会把redo log buffer 中日志,调用write写到文件系统的page cache.然后fsync持久化到磁盘.除此以外,还有两种场景redo log 写入到磁盘中.1.redo log buffer占用空间即将达到innodb_log_buffer_size一半时,会主动进行写盘(只是到达page cache中).2
+另一种是,并行的事务提交的时候,顺带把redo log buffer持久化到磁盘.如果把innodb_flush_log_at_trx_commit参数设置成1,每秒一次的轮询刷盘,再加上崩溃恢复机制,innodb认为redo log在commit时候就不需要fsync了,只会write到文件系统中的page cache.
