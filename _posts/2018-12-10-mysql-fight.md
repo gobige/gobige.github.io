@@ -593,7 +593,7 @@ rodolog是先写到redo log buffer里的,不是每次生成后就持久化到磁
 - 写到磁盘(write),但是没有持久化(fsync),物理上是在文件系统中page cache中,也就是黄色部分;
 - 持久化到磁盘,对应hard disk,也就是绿色部分.
 
-速度方面红色和黄色部分速度相当,绿色部分要快一些
+速度方面红色和黄色部分速度相当,绿色部分要慢一些
 
 同样redolog也有写入策略控制参数,innodb_flush_log_at_trx_commit有三种取值
 
@@ -613,3 +613,47 @@ rodolog是先写到redo log buffer里的,不是每次生成后就持久化到磁
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/29.png) 
 
 如图有三个事务,分别先后到达mysql进程内存中,t1先到达,被选举为这组的leader,等T1写盘的时候,LSN变成了160,那么小于160的redolog都会被顺带持久化到磁盘.也就是t2和t3可以直接返回了.一次组提交里面,组员越多,节约的IOPS效果越好.
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/30.png) 
+
+如图：我们前面所说两阶段提交，实际上是这样的，这样binlog和redolog都可以进行组提交。
+
+由于第三步非常快，索引binlog的组提交效果并不明显，可以使用**binlog_group_commit_sync_delay**设置多少微秒后才调用fsync，**binlog_group_commit_sync_no_delay_count**等待多少事务数量才调用fsync。这两种方式可能增加语句的响应时间，但没有丢失数据的风险
+
+前面所讲的WAL机制是**减少磁盘写**，这个机制得益于两个方面：1redo log和binlog都是顺序写 2组提交机制，可以大幅降低磁盘IOPS消耗
+
+总结：磁盘性能出现在IO方面的瓶颈解决方案
+- 设置**binlog_group_commit_sync_delay**，**binlog_group_commit_sync_no_delay_count**参数，减少binlog写盘次数，安全的
+- 将sync_binlog设置为大于1的值,有风险，主机掉电会丢失binlog日志。
+- 将innodb_flush_log_at_trx_commit设置为2，有风险，也是主机掉电会丢失binlog日志。
+
+crash-safe保证
+1. 如果客户端收到事务成功消息，事务就一定持久化了
+2. 如果客户端收到事务失败的消息，事务就一定失败了
+3. 如果客户端收到执行异常的消息，应用重连后通过查询当前状态继续后续逻辑，此时数据库只需保证内部一致就可以了。
+
+#### 主备同步
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/31.png) 
+
+上图是主备同步的流程，备库B跟主库A之间维持了一个长连接
+
+- 在备库B上通过change master命令，设置主库A的IP，端口，用户名，密码以及从哪个位置开始请求binlog，这个位置包含文件名和日志偏移量
+- 在备库B执行start slave命令，这时会启动两个线程，如图，其中IO_thread负责与主库建立连接
+- 主库A校验完用户名，密码，按照备库B传过来的位置，从本地读取binlog，发给B.
+- 备库拿到binlog后，写到本地文件，称为中转日志
+- sql_thread读取中转日志，解析出日志里命令，并执行
+
+后期多线程复制方案的引入，sql_thread演化为多个线程
+
+#### binlog的三种格式对比
+statement 可能会导致binlog**主备不一致**，（比如delete语句加上limit时）
+row 很**占空间**，如果用delete语句删除10w行数据，用statement就只是一个sql语句被记录到binlog中，而用row，就要把10w条记录写到binlog中，而且还耗费IO资源，但是现在越来越多的场景使用row格式，原因是**恢复数据**的好处
+mixed：综合上面两种方式，**判断这条sql是否可能引起主备不一致**，如果可能，就用row格式，否则用statement格式。
+
+binlog重放应该使用mysqlbinglog工具解析出来，然后把解析结果整个发给mysql执行，而不是把里面的statment语句拷贝出来执行
+
+主备切换常用结构，双M结构和M-S结构，区别在于节点A和B之间总是互为主备关系，那么在主备切换的时候会不会导致binlog之间重复循环执行呢？会有这种情况，解决方案：
+
+- 规定两个库的serverid必须不同，如果相同，则它们，不能互为主备关系
+- 一个备库接到binlog并重放过程中，生成与原binlog的server id相同的新的binlog
+- 每个库收到从自己主库发来日志后，先判断serverid，如果相同，表示日志自己生成，直接进行丢弃
