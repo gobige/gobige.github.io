@@ -789,3 +789,201 @@ WRITESET比前面5.6之前实现还是有改良，
 2. 不需要吧整个事务binlog都扫一遍才决定分发到哪个worker，更省内存
 3. 备库分发策略不依赖于binlog格式
 
+ 
+ 
+#### 一主多从架构
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/37.png) 
+
+**基于位点的主备切换**
+当我们要把节点B设置成节点A'的从库的时候，需要执行一条change master命令
+```java
+CHANGE MASTER TO 
+MASTER_HOST=$host_name // 主库A'的ip
+MASTER_PORT=$port // 主库A'的端口
+MASTER_USER=$user_name // 主库A'的用户名
+MASTER_PASSWORD=$password // 主库A'的密码
+MASTER_LOG_FILE=$master_log_name // 主库同步文件
+MASTER_LOG_POS=$master_log_pos  // 主库同步位点
+```
+
+取同步位点的方法：
+1. 等待新主库A'把中转日志全部同步完成
+2. 在A'上执行show master status命令，得到当前A'上最新的file和position
+3. 取原主库A故障的时刻T
+4. 用mysqlbinlog工具解析A'的file，得到T时刻的位点
+
+```java
+mysqlbinlog File --stop-datetime=T --start-datetime=T
+```
+T时刻写入新的binlog的位置以end_log_pos参数给出。但是这个参数并不准确（如果T时刻，主库A以及执行完成一个insert语句插入一行数据R，并将binlog传给了A'和B，然后A就掉电了，那么此时1从库B上因为同步了binlog，R这一行已经存在 2在新主库A'上,R这一行也已经存在，在123位置之后，3在B上执行change master命令，指向A'的123位置，那么插入R这一行又会同步到B）
+
+**解决方案**
+1. 主动跳过一个事务
+```java
+set global sql_slave_skip_counter=1;
+start slave;
+```
+切换过程中，可能不止重复执行一个事务，B接到A'时，会进行持续观察，每次碰到错误就停下来，跳过。
+
+2. 设置slave_skip_errors参数，直接跳过指定的错误(1062错误：插入数据唯一键冲突；1032错误：删除数据时找不到行)
+
+**GTID**
+通过sql_slave_skip_counter跳过事务和通过slave_skip_errors忽略错误可以重新建立库B和新主库A'的主备关系。但是这两种操作很复杂，而且容易出错。
+
+GTID全称Global Transaction Identifier，也就是全局事务ID。表示一个事务提交的时候生成的，是这个事务的唯一标识。
+```java
+GTID=server_uuid:gno // GTID格式
+```
+
+- server_uuid是一个实例第一次启动时自动生成的，全局唯一。
+- gno是一个整数，初始值时1，每次提交事务时分配这个给事务，并+1。
+
+启动GTID模式，加上gtid_mode=on 和 enforce_gtid_consistency=on参数
+
+在GTID模式下，每个事务都会跟一个GTID一一对应，这个GTID有两种生成方式，而使用哪种方式取决于session变量gtid_next的值
+
+**基于GTID的主备切换**
+备库B设置为新主库A'的从库
+```java
+CHANGE MASTER TO 
+MASTER_HOST=$host_name 
+MASTER_PORT=$port 
+MASTER_USER=$user_name 
+MASTER_PASSWORD=$password 
+master_auto_position=1  // 表示主备关系使用GTID协议
+```
+设A'的GTID集合记为set_a，B的GTID集合记为set_b。
+
+我们在B库上执行start slave命令
+
+1. 实例B指定A'，基于主备协议建立连接
+2. 实例B把set_b发给主库A'
+3. 实例A'算出set_a与set_b的差集，也就是所有存在于set_a，但不存在于set_b的GTID集合，判断A'本地是否包含这个差集所需所有binlog事务
+    - 如果不包含，表示A'已经把实例B需要的binlog给删除了，直接返回错误。
+    - 如果确认全表包含，A'从自己的binlog文件里面，找出第一个不在set_b的事务，发给B
+4. 之后从这个事务开始，往后读文件，按顺序取binlog发给B执行。
+
+相比于基于位点的主备协议，前者由备库决定，备库指定哪个位点，主库就发哪个位点，不做日志完整性判断；后者认为只要建立主备关系，主备就必须保证发给备库的日志时完整的。
+
+**GTID和在线DDL**
+在双M结构下，备库执行DDL语句也会传给主库，为了避免传回后对主库造成影响，要通过set sql_log_bin=off关掉binlog
+
+
+### 主库延迟（过期读）的处理
+**强制走主库方案**
+将查询请求做分类
+- 对于必须要拿到最新结果的请求，强制将其发送到主库上。
+- 对于可以读到旧数据的请求，才将其发到从库上。
+
+**sleep方案**
+主库更新后，读从库之前先sleep一下。类似于一条select sleep(1)命令。 
+
+**判断主备无延迟方案**
+
+- 通过每次从库查询请求前，判断sbm是否等于0。如不等于0，需等待变为0才执行查询请求
+- 对比位点确保主备无延迟，通过master_log_file和read_master_log_pos，表示读到的主库最新位点；Relay_Master_Log_File 和 Exec_Master_Log_Pos，表示备库执行最新位点。如这两组位点一致，表示接收到的日志已经完全同步
+- 对比GTID集合确保主备无延迟
+    - auto_position=1，表示对主备协议使用GTID协议
+    - Retrieved_Gtid_Set，是备库收到的所有日志的GTID集合
+    - Executed_Gtid_Set，是备库所有已经执行完成的GTID集合
+    两个集合进行比较，如一致，表示同步已完成
+
+是不是有了这些方案，过期读就解决了呢？严格意义上没有，因为在判断是否同步完成时，主备之间可能还是会有刚好产生的日志而且未同步。
+
+**semi-sync replication**
+设计思路
+- 事务提交的时候，主库把binlog发给从库
+- 从库收到binlog以后，发回给主库一个ack，表示收到
+- 主库收到ack，给客户端返回“事务完成确认”
+
+- 缺点:一主多从的时候，在某些从库执行查询请求会存在过期读的现象 2在持续延迟的情况下，可能出现过度等待的问题
+
+**等主库位点方案**
+```java
+select master_pos_wait(file, pos[, timeout]);
+```
+指令逻辑如下：
+
+1. 从库执行
+2. 参数file和pos值的是主库上文件名和位置
+3. timeout可选，设置为正整数N表示这个函数最多等待N秒
+
+指令返回结果是一个正整数M，表示从命理开始执行，到应用完file和pos表示的binlog位置，执行了多少事务。附带（执行期间，备库同步线程发生异常，则返回NULL 2等待超过N秒，就返回-1 3开始执行时，就发现已经执行过这个位置，就返回0）
+
+1. trx1 事务更新完成后，马上执行 show master status 得到当前主库执行到的 File和Position；
+
+2. 选定一个从库执行查询语句在从库上执行 select master_pos_wait(File, Position, 1)；
+3. 如果返回值是>=0的正整数，则在这个从库执行查询语句；
+4. 否则，到主库执行查询语句。
+
+**等GTID方案**
+```JAVA
+ select wait_for_executed_gtid_set(gtid_set, 1);
+```
+指令逻辑
+
+- 等待，直到这个库执行的事务中包含传入的 gtid_set，返回 0； 
+- 超时返回 1。
+ 
+1. trx1 事务更新完成后，从返回包直接获取这个事务的 GTID，记为 gtid1； 
+2. 选定一个从库执行查询语句；
+3. 在从库上执行selectwait_for_executed_gtid_set(gtid1, 1)；
+4. 如果返回值是0，则在这个从库执行查询语句；
+5. 否则，到主库执行查询语句。
+ 
+### 如何判断数据出问题
+
+**select 1**
+select 1 只能说明库还在，不能说明主库没有问题
+
+我们设置innodb_thread_concurrency（通常设置为64~128之间的值），控制InnoDB的并发线程上限。
+如图：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/38.png) 
+可以看出使用select 1是检测不出实例是否正常的
+
+**并发连接，并发查询**
+并发连接高并不会影响CPU，就多占用内存，并发查询高才是CPU杀手
+
+热点数据查询，线程进入锁等待以后，并发线程计数会减1
+
+**检测innodb并发线程过多导致系统不可用情况**
+```java
+mysql> select * from mysql.health_check; 
+```
+但是如果空间满了后，这个检测语句哟不好用了，更新事务写binlog，磁盘满了后，commit语句会堵住。但是系统可以正常读取数据
+
+解决方案：使用更新语句
+```java
+mysql> update mysql.health_check set t_modified=now();
+```
+
+主备都应该进行检测，如果主备是双M结构，那么主备都用相同更新命令会导致主备同步停止。
+
+解决方案：在mysql.health_check增加多行数据，并用A,B的servier_id做主键
+
+缺点：判定慢
+
+更新语句，如果失败或者超时，就可以发起主备切换了，为什么还会有判定慢的问题呢？
+
+首先，所有检测逻辑都需要一个超时时间N，执行一条update，超过N秒不返回，认为系统不可用（日志盘IO利用率100%场景）
+
+**内部统计**
+mysql5.6以后提供的performance_schema库，在file_summary_by_event_name表里统计了每次IO请求的时间。
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/39.png) 
+
+因为我们每一次操作数据库，performance_schema都需要额外地统计这些信息，所以我们打开这个统计功能是有性能损耗的。如果打开所有的 performance_schema 项，性能大概会下降 10% 左右
+
+打开特定的统计数据
+ ```java
+ mysql> update setup_instruments set ENABLED='YES', Timed='YES' where name like '%wait/io/file/innodb/innodb_log_file%';
+ ```
+ 
+检测逻辑
+```java
+ mysql> select event_name,MAX_TIMER_WAIT  FROM performance_schema.file_summary_by_event_name where event_name in ('wait/io/file/innodb/innodb_log_file','wait/io/file/sql/binlog') and MAX_TIMER_WAIT>200*1000000000;
+```
+
+清空统计信息
+```java
+mysql> truncate table performance_schema.file_summary_by_event_name;
+```
