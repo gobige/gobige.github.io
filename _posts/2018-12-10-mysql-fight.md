@@ -931,7 +931,7 @@ select master_pos_wait(file, pos[, timeout]);
 4. 如果返回值是0，则在这个从库执行查询语句；
 5. 否则，到主库执行查询语句。
  
-### 如何判断数据出问题
+### 如何判断数据库出问题
 
 **select 1**
 select 1 只能说明库还在，不能说明主库没有问题
@@ -986,4 +986,247 @@ mysql5.6以后提供的performance_schema库，在file_summary_by_event_name表�
 清空统计信息
 ```java
 mysql> truncate table performance_schema.file_summary_by_event_name;
+```
+
+### 误删数据处理
+
+#### **误删行**
+使用delete语句误删行，可用flashback工具通过闪回恢复
+
+原理：通过修改binlog内容，拿回数据库重放，前提是确保binlog_format=row和binlog_row_image=FULL
+
+单个事务处理:
+1. 对于insert语句，对应binlog_event类型是write_rows_event，把它改成delete_rows_event
+2. 同理，对于delete语句，将delete_rows_event改成write_rows_event
+3. 对于update_rows，binglog里面对调修改前和修改后的值即可。
+
+多个事务处理：
+用flashback解析后，要将事务的顺序调过来在执行
+
+**恢复数据比较安全的做法是恢复出一个备份，在临时库上执行操作，然后在确认过的备份，恢复回主库**
+
+**事先预防**
+1. 把sql_safe_updates参数设置为on。如果delete或update语句中where条件，没有包含索引字段，语句执行就会报错
+2. 代码上线前，需审计
+
+#### **误删库/表**
+要求需要平时有全量备份，加增量日志的机制。
+
+1. 取最近一次全量备份，
+2. 用备份恢复出一个临时库
+3. 从日志备份里，取出凌晨0点后的日志
+4. 把这些日志，除了误删外，全部应用到临时库
+
+**注意**
+
+- 为了加速数据恢复，如果临时库有多个数据库，可以使用mysqlbinlog命令加上一个-datebase参数，指定误删表所在的库
+- 第3步应用日志时，需要跳过误删除的语句的binlog
+    - 如果原实例没有使用GTID模式，只能包含误删语句的binlog文件时，先使用-stop-postion参数执行误操作之前日志，然后使用-start-position继续执行误操作之后的日志。
+    - 如果使用了GTID模式，假设误操作命令GTID是gtid1，那么只需执行set_gtid_next=gtid1;begin;commit;先把这个GTID加到临时实例的GTID集合，之后按顺序执行binlog，就会自动跳过误操作语句
+
+**缺点**：
+mysqlbinlog并不能指定解析一个表的日志；用mysqlbinlog解析出日志应用，应用日志过程只能是单线程
+
+**加速方法**
+在start_slave之前，先通过执行change replication filter replicate_do_table=(tbl_name)命令，就可以让临时库只同步误操作的表。
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/40.png) 
+
+如果时间太久线上备库已经删除临时实例需要的binnlog的话，我们可以从binlog备份系统中找到需要的binlog，再放回备库中
+
+例:当前临时实例需要binlog从master.05开始的，备库最小binlog时master.07。则进行如下操作：
+
+1. 从备份系统下载master.05和master.06两个文件，放到备库日志目录下
+2. 打开日志目录下master.index文件，文件开头加入两行，./master.05,./master.06
+3. 重启备库，让备库重新识别这两个日志文件
+4. 现在备库上有了临时库所需所有binlog，建立主备关系，可以正常同步了
+
+同时经常进行数据恢复的演练也是很重要
+
+#### **延迟复制备库**
+
+如果一个库的备份特别大，误操作时间距离上一个全量备份时间较长，而且我们有非常核心的业务，不允许太长的恢复时间，考虑搭建延迟复制的备库
+
+通过CHANGE MASTER TO MASTER_DELAY = N命令，可以指定这个备库持续保持跟主库有N秒的延迟，如果在N秒内发现了误删的数据，那么先到备库执行stop slave，再通过之前的方法，跳过误操作命令，恢复出需要的数据
+
+#### **预防误删库/表的方法**
+- 账号分离
+    - 业务开发同学只给DML权限，不给truncate/drop权限
+    - 平常只是用只读账号，必要时使用更新权限账号
+- 规范操作
+    - 删除数据表前，先对表做改名操作，观察一段时间，确保业务无影响后再删除这张表
+    - 改表名，要求给表名加固定后缀，通过管理系统执行删除表，删除表时，只能删除固定后缀的表
+
+#### **rm删除数据**
+手动狗头，只要不是所有集群都删了，单个节点数据的恢复，然后再接入整个集群
+
+
+### 为什么有kill不掉的语句
+
+**kill query thread_id_B**
+**线程没有执行到判断线程状态的逻辑情况**
+kill掉查询语句的流程：
+1. 把session B 运行状态改成 THD::KILL_QUERY（将变量killed赋值为THD::KILL_QUERY）
+2. 给session B 执行线程发一个信号（发通知是为了让sessionB退出等待，来处理这个THD::KILL_QUERY状态）
+
+从整个流程可以得到三层信息:
+- 一个语句执行过程中有多处埋点，这些埋点的地方判断线程状态，如果线程状态是THD::KILL_QUERY，才开始进入语句终止逻辑
+- 如果处于等待状态，必须是一个可以被唤醒的等待，否则不会执行到埋点处
+- 语句从开始进入终止逻辑，到终止逻辑完全完成，是有一个过程的
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/41.png) 
+
+如图先设置global innodb_thread_concurrency=2。我们发现
+- session C执行时候被堵住了
+- session D执行kill query C命令却没什么效果
+- 直到sessionE执行了kill connection命令，才断开sessionC的连接
+- 我们执行show processlist，看见如下图
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/42.png) 
+
+sessionD执行kill后，sessionC还是没有退出。因为12号线程每10ms判断一下是否可以进入innodb执行，如果不行，调用nanosleep进入sleep状态
+
+seesionE执行kill connection命令时，
+1. 把12号线程状态设置为 KILL_CONNECTION
+2. 关掉12号线程的网络连接，因为这个操作，你会看到，sessionC收到了断开连接的提示
+3. 执行show processlist，会看到command显式killed
+
+即使客户端退出，这个线程仍处于等待中，只有等到满足进入innodb条件后，sessionC继续执行，才判断线程状态变成了kill_query和kill_connection,再进入终止逻辑阶段
+
+**终止逻辑耗时较长**
+从show processlist结果上看也是command=killed。常出现于以下场景
+
+- 超大事务执行期间被kill。回滚操作需要对事务执行期间生成新数据版本做回收操作，耗时长
+- 大查询回滚。如果查询过程生成了较大临时文件，加上此时文件系统压力大，删除临时文件需要等待IO资源，导致耗时长
+- DDL命令执行到最后，如果被kill，需要删除中间过程临时文件，可能受IO资源影响耗时久
+
+**为什么客户端连接有时很慢**
+当使用默认参数连接时，mysql客户端提供一个本地库名和表名补全功能 1.执行show databases 2切到db1库，执行showtables3把这两个命令结果用于构建一个本地哈希表
+
+这种慢是客户端慢而不是服务端慢，可以使用连接命令加上 -A，关闭自动补全功能
+
+加-quick也可以跳过补全阶段，但是这个参数可能会降低服务端性能
+
+mysql发送请求后，接收服务端返回结果方式：
+1. 本地先把结果缓存起来
+2. 不缓存，读一个处理一个
+
+客户端默认使用第一种，加上-quick就会使用第二种不缓存方式
+
+**-quick效果**
+- 跳过表名自动补全
+- mysql_store_result需申请本地内存缓存查询结果，缓存过大会影响本地机器性能
+- 不会吧执行命令记录到本地命令历史文件
+
+### 全表扫描对server的影响
+假如对200G的innodb表db1.t，执行全表扫描，
+```java
+ mysql -h$host -P$port -u$user -p$pwd -e "select * from db1.t" > $target_file
+```
+
+如图，产生一个结果集，服务端取数据，发数据流程：
+1. 获取一行，写到net_buffer中，由net_buffer_length定义，默认16k
+2. 重复获取行，直到net_buffer写满，调用网络接口发出去
+3. 发送成功，清空net_buffer，继续下一行，写入net_buffer
+4. 如果返回EAGIAN或WSAEWOULDBLOCK，表示本地网络栈写满，进入等待。直到网络栈重新科协，再继续发送
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/43.png) 
+
+从这个流程，你可以看到：
+1. 一个查询在发送过程中，最多占用内存就是net——buffer_length这么大
+2. socket_send_buffer也不能达到200G
+
+结论：**MySQL 是边读边发的**
+如果客户端不去读socket_send_buffer中内容，然后在服务端 show processlist
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/44.png) 
+State 的值一直处于“Sending to client”，就表示服务器端的网络栈写满了。
+ 
+ 使用–quick 参数，会使用 mysql_use_result 方法，读一行处理一行，如果业务的逻辑比较复杂
+服务端就会很慢
+
+**如果一个查询的返回结果不会很多，建议使用 mysql_store_result接口，直接把查询结果保存到本地内存。
+ 
+ 
+一个查询语句的状态变化：
+- MySQL 查询语句进入执行阶段后，首先把状态设置成Sending data
+- 然后，发送执行结果的列相关的信息（meta data) 给客户端；
+- 再继续执行语句的流程；
+- 执行完成后，把状态设置成空字符串。
+
+
+**一个线程处于“等待客户端接收结果”的状态，才会显示"Send to client"；而如果显示成“Sending data”，它的意思只是“正在执行**
+
+### 全表扫描对 InnoDB 的影响
+内存的数据页是在 Buffer Pool (BP) 中管理的，在 WAL 里 Buffer Pool 起到了加速更新的作用，查询要读数据页，如果内存数据页的结果是最新的，直接从内存拿结果
+，Buffer Pool 对查询的加速效果，依赖于一个重要的指标，**内存命中率**
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/45.png) 
+
+innodb_buffer_pool_size建议设置成可用物理内存的 60%~80% 
+
+Buffer Pool 满了，而又要从磁盘读入一个数据页
+，InnoDB 内存管理用的是最近最少使用 (Least Recently Used, LRU) 算法。
+
+假设按照这个算法，我们要扫描一个 200G 的表，会把当前的 Buffer Pool 里的数据全部淘汰掉，存入扫描过程中访问到的数据页的内容
+
+改进后的LRU：
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/46.png) 
+
+按照 5:3 的比例把整个 LRU 链表分成了 young 区域和 old 区域
+
+操作逻辑：
+- 扫描过程中，需要新插入的数据页，都被放到 old 区域 ;
+- 一个数据页里面有多条记录，这个数据页会被多次访问到，但由于是顺序扫描，这个数据页第一次被访问和最后一次被访问的时间间隔不会超过 1 秒，因此还是会被保留在 old 区域
+- 再继续扫描后续的数据，之前的这个数据页之后也不会再被访问到，于是始终没有机会移到链表头部（也就是 young 区域），很快就会被淘汰出去
+
+### join的使用
+
+#### 驱动表和被驱动表的选择
+驱动表是走全表扫描，而被驱动表是走树搜索。
+
+- 使用 join 语句，性能比强行拆成多个单表执行SQL 语句的性能要好；
+- 如果使用 join 语句的话，需要让小表做驱动表。
+
+**结论**：小表作为驱动表，**前提**：可以使用被驱动表的索引
+
+#### 用不上索引的情况
+Simple Nested-Loop Join算法 ：扫描次数=驱动表行数*被驱动表行数，算法太笨重
+
+Block Nested-Loop Join算法
+1. 把表 t1 的数据读入线程内存 join_buffer 中，由于我们这个语句中写的是 select *，因此是把整个表 t1 放入了内存；
+2. 扫描表 t2，把表 t2 中的每一行取出来，跟 join_buffer 中的数据做对比，满足 join 条件的，作为结果集的一部分返回。
+
+从时间复杂度上来说，这两个算法是一样的。但是Block Nested-Loop Join 算法的判断是内存操作，速度上会快很多，性能也更好。
+
+判断要不要使用 join 语句时，就是看 explain 结果里面，Extra 字段里面有没有出现Block Nested Loop”字样。
+
+**结论**：总是应该使用小表做驱动表
+
+**什么是小表**
+- 小表包含用上条件过滤的表
+- 数据量小的是小表
+
+**在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，过滤完成之后，计算参与 join 的各个字段的总数据量，数据量小的那个表，就是“小表”，应该作为驱动表。**
+
+### join的优化
+主键索引是一棵 B+ 树，在这棵树上，每次只能根据一个主键id 查到一行数据。因此，回表肯定是一行行搜索主键索引的，随着 a 的值递增顺序查询的话，id 的值就变成随机的，就会出现随机访问性能相对较差。虽然“按行查”这个机制不能改，但是调整查询的顺序，还是能够加速的。
+
+**Multi-Range Read**
+
+- 根据索引 a，定位到满足条件的记录，将 id 值放入 read_rnd_buffer(read_rnd_buffer_size控制)中 ;
+- 将 read_rnd_buffer 中的 id 进行递增排序。
+- 排序后的 id 数组，依次到主键 id 索引中查记录，并作为结果返回。
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/48.png) 
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/49.png) 
+Extra 字段多了 Using MRR，表示的是用上了 MRR 优化
+在 read_rnd_buffer 中按照 id 做了排序，得到的结果集也是按照主键 id 递增顺序
+
+**Batched Key Access**
+NLJ 算法执行的逻辑是：从驱动表 t1，一行行地取出a 的值，再到被驱动表 t2 去做 join。也就是说，对于表 t2 来说，每次都是匹配一个值。这时，MRR 的优势就用不上了。我们需要构造一个临时内存，join_buffer，数据取出来一部分
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/50.png) 
+
+启用BKA算法：
+```java
+set optimizer_switch='mrr=on,mrr_cost_based=off,batched_key_access=on';
 ```
