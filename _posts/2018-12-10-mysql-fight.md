@@ -1230,3 +1230,49 @@ NLJ 算法执行的逻辑是：从驱动表 t1，一行行地取出a 的值，�
 ```java
 set optimizer_switch='mrr=on,mrr_cost_based=off,batched_key_access=on';
 ```
+
+#### 临时表
+
+**特征**
+1. 建表语法是 create temporary table …
+2. 一个临时表只能被创建它的 session 访问，对其他线程不可见
+3. 临时表可以与普通表同名。
+4. session A 内有同名的临时表和普通表的时候，show create 语句，以及增删改查语句访问的是临时表
+5. show tables 命令不显示临时表
+6. session结束时，会自动删除临时表
+
+**应用**
+由于不用担心线程之间的重名冲突，临时表经常会
+复杂查询的优化过程中
+
+- 分库分表系统的跨库查询(一般分库分表的场景，就是要把一个逻辑上的大表分散到不同的数据库实例上。) 比如。将一个大表 ht，按照字段 f，拆分成 1024 个分表，然后分布到 32 个数据库实例上.
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/51.png) 
+    - 通常，分库分表系统都有一个中间层proxy。分区key的选择以“减少跨库和跨表查询”为依据，如果大部分语句包含f的等值条件，那么就使用f作为分区键，proxy解析完sql就知道到哪个分表进行查询
+    - 如果这个表上还有其他索引k，而查询语句并没有用到分区字段，那么有两种办法
+        - 在 proxy 层的进程代码中实现排序。(优点：处理速度快，拿到分库的数据以后，直接在内存中参与计算;缺点：需要的开发工作量比较大；对 proxy 端的压力比较大，尤其是很容易出现内存不够用和CPU 瓶颈的问题
+        - 把各个分库拿到的数据，汇总到一个 MySQL 实例的一个表中,然后在这个汇总实例上做逻辑操作
+
+
+**临时表重名**
+```java
+create temporary table temp_t(id int primary key)engine=innodb;
+```
+该sql流程：MySQL 要给这个 InnoDB 表创建一个 frm 文件保存表结构定义，还要有地方保存表数据。这个 frm 文件放在临时文件目录下，文件名的后缀是.frm，前缀是“#sql{进程 id}_{线程 id}_ 序列号”
+可以根据命名可以看出mysql认为临时表名T1和普通表名T1是不一样的
+
+普通表和临时表通过table_def_key区分
+- 普通表的 table_def_key 的值是由“库名 + 表名”得到的
+- 对于临时表，table_def_key 在“库名 + 表名”基础上，又加入了“server_id+thread_id”
+
+**临时表和主备复制**
+```java
+create table t_normal(id int primary key, c int)engine=innodb;/*Q1*/
+create temporary table temp_t like t_normal;/*Q2*/
+insert into temp_t values(1,1);/*Q3*/
+insert into t_normal select * from temp_t;/*Q4*/
+```
+如果关于临时表的操作都不记录，那么在备库执行到 insert into t_normal 的时候，就会报错“表 temp_t 不存在”。
+只在 binlog_format=statment/mixed 的时候，binlog 中才会记录临时表的操作
+创建临时表的语句会传到备库执行，主库在线程退出的时候，会自动删除临时表，但备库同步线程是持续在运行的，需要在主库上再写一个 DROP TEMPORARY TABLE 传给备库执行。
+
+主库上不同的线程创建同名的临时表是没关系的，但是备库的应用日志线程是共用的，但不会导致同步线程报错，因为MySQL 在记录 binlog 的时候，会把主库执行这个语句的线程 id 写到 binlog 中，备库利用这个线程 id 来构造临时表的 table_def_key
