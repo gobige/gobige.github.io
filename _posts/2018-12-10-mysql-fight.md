@@ -1276,3 +1276,182 @@ insert into t_normal select * from temp_t;/*Q4*/
 创建临时表的语句会传到备库执行，主库在线程退出的时候，会自动删除临时表，但备库同步线程是持续在运行的，需要在主库上再写一个 DROP TEMPORARY TABLE 传给备库执行。
 
 主库上不同的线程创建同名的临时表是没关系的，但是备库的应用日志线程是共用的，但不会导致同步线程报错，因为MySQL 在记录 binlog 的时候，会把主库执行这个语句的线程 id 写到 binlog 中，备库利用这个线程 id 来构造临时表的 table_def_key
+
+#### 临时内存表
+- 如果语句执行过程可以一边读数据，一边直接得到结果，是不需要额外的内存，来保存中间结果；
+- join_buffer 是无序数组，sort_buffer 是有序数组，临时表是二维表结构；
+- 如果执行逻辑需要用到二维表特性，就会优先考虑使用临时表。比如union需要用到唯一索引约束， group by 还需要用到另外一个字段来存累积计数
+
+参数 tmp_table_size控制内存临时表大小的，发现内存临时表大小到达了上限，这时候会把内存临时表转成磁盘临时表
+
+group by 优化方法 -- 索引
+论是使用内存临时表还是磁盘临时表，group by 逻辑都需要构造一个带唯一索引的表，执行代价都是比较高的。如果表的数据量比较大，上面这个 group by 语句执行起来就会很慢由于每一行的 id%100 的结果是无序的，需要有一个临时表。如果保证出现的数据是有序，就不需要临时表，也不需要额外排序。具体为创建一个列 z，然后在 z 列上创建一个索引,如：
+```java
+alter table t1 add column z int generated always as(id % 100), add index(z);
+```
+
+group by 优化方法 -- 直接排序 
+果一个group by语句中需要放到临时表上的数据量特别大，使用SQL_BIG_RESULT，告诉mysql直接用磁盘临时表。
+
+### innodb和memory
+**数据组织方式**
+
+- InnoDB 引擎把数据放在主键索引上，其他索引上保存的是主键id。这种方式，我们称之为为**索引组织表**。
+- 而Memory引擎采用的是把数据单独存放，索引上保存数据位置的数据组织形式，我们称之为**堆组织表**。
+
+**区别**
+
+1. InnoDB 表的数据总是有序存放的，而内存表的数据就是按照写入顺序存放的；
+2. 当数据文件有空洞的时候，InnoDB表在插入新数据的时候，为了保证数据有序性，只能在固定的位置写入新值，而内存表找到空位就可以插入新值
+3. 数据位置发生变化的时候，InnoDB表只需要修改主键索引，而内存表需要修改所有索引
+4. InnoDB 表用主键索引查询时需要走一次索引查找，用普通索引查询的时候，需要走两次索引查找。而内存表没有这个区别，所有索引的“地位”都是相同的。
+5. InnoDB 支持变长数据类型，不同记录的长度可能不同；内存表不支持 Blob 和 Text 字段，并且即使定义了 varchar(N)，实际也当作 char(N)，也就是固定长度字符串来存储，因此内存表的每行数据长度相同。
+
+**内存表使用B-tree索引**
+```java
+alter table t1 add index a_btree_index using btree (id);
+```
+
+**缺点**
+- 锁粒度问题：内存表不支持行锁，只支持表锁。
+- 数据持久性问题：数据放在内存中，数据库重启，内存表也会被清空（特别是在主备模式下的，会导致主备同步失败，以及一系列异常）
+
+### 自增主键
+
+**自增值保存**
+
+- MyISAM 引擎的自增值保存在数据文件中。
+- innoDB 引擎的自增值，保存在内存里（MySQL 5.7 及之前的版本,每次重启后，第一次打开表的时候，都会去找自增值的最大值max(id)），MySQL8.0版本后，才有了“自增值持久化（发生重启，表的自增值可以恢复为MySQL重启前的值,记录在了 redo log） 
+
+**自增值修改机制**
+- 插入数据时 id 字段指定为 0、null 或未指定值，当前的 AUTO_INCREMENT 值填到自增字段
+- 插入数据时 id字段指定了具体的值，就直接使用指定的值
+- 插入的值是 X，当前的自增值是 Y
+    - 如果 X<Y,那么这个表自增值不变
+    - 如果X>=Y，把当前值修改为新的自增值
+
+**新的自增值生成算法**
+从 auto_increment_offset开始，以auto_increment_increment 为步长，持续叠加，直到找到第一个大于 X 的值，作为新的自增值。
+
+**自增主键id不连续**
+- 插入一条记录的唯一字段重复时，会造成一个自增主键id不连续
+- 回滚也会产生这种现象
+
+**自增值为什么不能回退**
+如果两个并行执行的事务，在申请自增值后有个事务失败了，如果回退，那么接下来的事务会出现主键重复的冲突
+
+MySQL 5.1.22新增参数 innodb_autoinc_lock_mode
+
+1. 这个参数的值被设置为0时，语句执行结束后才释放锁
+2. 这个参数的值被设置为 1 时，普通 insert 语句，自增锁在申请之后就马上释放，insert … select 批量插入数据语句，自增锁还是要等语句结束后才被释放
+3. 被设置为 2 时，所有的申请自增主键的动作都是申请后就释放锁
+
+insert … select使用语句级的锁是为了多并发条件下单主从数据的一致性
+
+### 怎么快速复制一张表
+insert … select：适用于扫描行数和加锁范围很小
+很有可能造成对源表加读锁 
+
+**mysqldump方法**
+使用mysqldump导出成一组insert语句，输出到临时文件
+```java
+mysqldump -h$host -P$port -u$user --add-locks=0 --no-create-info --single-transaction  --set-gtid-purged=OFF db1 t --where="a>900" --result-file=/client_tmp/t.sql
+```
+- –single-transaction:在导出数据不需要对表 db1.t 加表锁
+- –add-locks 设置为0，表示在输出的文件结果里，不增加"LOCK TABLES t WRITE;"
+- no-create-info 的意思是，不需要导出表结构
+- set-gtid-purged=off 表示的是，不输出跟GTID 相关的信息
+- result-file 指定了输出文件的路径，其中client 表示生成的文件是在客户端机器上的
+
+**导出 CSV 文件**
+直接将结果导出成.csv文件,将查询结果导出到服务端本地目录
+```java
+select * from db1.t where a>900 into outfile '/server_tmp/t.csv';
+```
+注意：结果保存在服务端2into outfile 指定了文件的生成位置（/server_tmp/），这个位置必须受参数secure_file_priv的限制3条命令不会帮你覆盖文件4这条命令生成的文本文件中，原则上一个数据行对应文本文件的一行 
+
+**将数据导入到目标表**
+```java
+load data infile '/server_tmp/t.csv' into table db2.t;
+```
+
+由于 /server_tmp/t.csv文件只保存在主库所在的主机上，如果只是把这条语句原文写到 binlog 中，在备库执行的时候，备库的本地机器上没有这个文件，就会导致主备同步停止
+
+**物理拷贝方法**
+可传输表空间:
+
+1. 执行 create table r like t，创建一个相同表结构的空表
+2. 执行 alter table r discard tablespace，这时候 r.ibd 文件会被删除
+3. 执行 flush table t for export，这时db1 目录下会生成一个 t.cfg 文件(db1.t 整个表处于只读状态，直到执行第5步，unlock table)
+4. 在 db1 目录下执行 cp t.cfg r.cfg; cp t.ibd r.ibd；这两个命令（拷贝得到的两个文件，MySQL 进程要有读写权限)
+5. 执行 unlock tables，t.cfg 文件会被删除
+6. 执行 alter table r import tablespace，将这个 r.ibd 文件作为表 r 的新的表空间，由于这个文件的数据内容和 t.ibd 是相同的，所以表 r 中就有了和表 t 相同的数据（为了让文件里的表空间 id 和数据字典中的一致，会修改r.ibd 的表空间 id）
+ 
+#### grant赋权和flush privileges
+```java
+create user 'ua'@'%' identified by 'pa';
+```
+1. 磁盘上，往 mysql.user 表里插入一行,不指定权限
+2. 内存里，往数组 acl_users 里插入一个acl_user 对象，这个对象的 access 字段值为0
+
+**全局权限**
+```java
+grant all privileges on *.* to 'ua'@'%' with grant option;
+```
+1. 磁盘上，将 mysql.user 表里，用户’ua’@’%''这一行的所有表示权限的字段的值都修改为‘Y’
+2. 内存里，从数组 acl_users 中找到这个用户对应的对象，将 access 值（权限位）修改为二进制的“全 1”。
+
+**回收权限**
+```java
+revoke all privileges on *.* from 'ua'@'%';
+```
+1. 磁盘上，将 mysql.user 表里，用户’ua’@’%''这一行的所有表示权限的字段的值都修改为‘N’
+2. 内存里，从数组 acl_users 中找到这个用户对应的对象，将 access 值（权限位）修改为二进制的“全 0”。
+
+**DB权限**
+```java
+grant all privileges on db1.* to 'ua'@'%' with grant option;
+```
+1. 磁盘上，往 mysql.db 表中插入了一行记录所有权限位字段设置为“Y”；
+2. 内存里，增加一个对象到数组 acl_dbs 中，这个对象的权限位为0
+
+grant 操作对于已经存在的连接的影响，在全局权限和基于 db 的权限效果是不同的
+
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/52.png) 
+
+set global sync_binlog需要 super 权限
+因为 super 是全局权限，权限信息在线程对象中，而 T3revoke 操作影响不到这个线程对象。
+acl_dbs 是一个全局数组,db 权限都用这个数组,T5
+revoke 操作马上就会影响到 session B
+
+**表权限和列权限**
+```java
+create table db1.t1(id int, a int);
+
+grant all privileges on db1.t1 to 'ua'@'%' with grant option;
+GRANT SELECT(id), INSERT (id,a) ON mydb.mytbl TO 'ua'@'%' with grant option;
+```
+这两个权限每次 grant 的时候都会修改数据表，也会同步修改内存中的 hash 结构,也会马上影响到已经存在的连接
+
+flush privileges命令会清空acl_users数组，然后从mysql.user表中读取数据重新加载，重新构造一个 acl_users 数组
+ 
+ ### 分区表
+**分区表的引擎层行为**
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/53.png) 
+session B 的第一个 insert 语句是可以执行成功的。这是因为，对于引擎来说，p_2018 和 p_2019是两个不同的表，也就是说 2017-4-1 的下一个记录并不是 2018-4-1，而是 p_2018 分区的 supremum 
+
+**分区策略**
+每当第一次访问一个分区表的时候，MySQL 需要把所有的分区都访问一遍
+MyISAM 通用分区策略每次访问分区都由 server 层控制 
+5.7.9 InnoDB 引擎引入了本地分区策略，是在 InnoDB 内部自己管理打开分区的行为
+8.0 版本开始只有InnoDB和NDB这两个引擎支持了本地分区策略
+
+**分区表的 server 层行为**
+从 server 层看的话，一个分区表就只是一个表
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/54.png) 
+sessionA持有MDL锁，导致了 session B 的 alter 语句被堵住 
+
+**分区表的应用场景**
+优势是对业务透明，相对于用户分表来说，使用分区表的业务代码更简洁
+如果一项业务跑的时间足够长，往往就会有根据时间删除历史数据的需求，可以直接通过 alter table t drop partition删掉分区，速度快、对系统影响小
+ 
