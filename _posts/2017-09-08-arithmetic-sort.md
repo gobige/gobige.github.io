@@ -280,6 +280,64 @@ private static void merge(int arrays[], int left, int right, int mid, int[] temp
     }
 }
 ```
+#### 计数排序（针对正整数,比较耗空间）
+思路：
+计算数组每个数值出现的次数，放入一个临时数组中temp1，数组下标为数组的值，数组值为出现个数；
+计算数组每个数值比他小的数值数量，放入又一个临时数组中temp2，数组下标为比他小数值数量，数值为计算的数值；
+然后根据temp2 和temp1得到最终的排序数组temp3
+
+```java
+/**
+ * 计数排序
+ * @param arrays
+ */
+public static int[] countSort(int[] arrays) {
+    // 得到最大值
+    int max = arrays[0];
+    for (int i = 0; i < arrays.length; i++) {
+        if (arrays[i] > max) {
+            max = arrays[i];
+        }
+    }
+
+    // 初始化数组
+    int[] showCountArrays = new int[max+1];
+
+    // 计算数组每个值出现次数
+    for (int i : arrays) {
+        showCountArrays[i]++;
+    }
+
+    // 计算数组每个值比他小的数值个数
+    int[] lessNumArrays = new int[arrays.length];
+    for (int i : arrays) {
+        int num = 0;
+        for (int j : arrays) {
+            if (i > j) {
+                num++;
+            }
+        }
+        lessNumArrays[num] = i;
+    }
+
+    int[] sortResultArrays = new int[arrays.length];
+
+    int j = 0;
+    for (int i : lessNumArrays) {
+        int count = showCountArrays[i];
+        while (count > 0) {
+            sortResultArrays[j] = i;
+            j++;
+            count--;
+        }
+
+    }
+
+    return sortResultArrays;
+}
+```
+
+
 
 #### 基数排序
 思路：基数排序和计数排序类型，都是分类排序，特点在于基数排序，对一组数组，将所有数值补位一样长度的值，进行个位对比排序，然后进行十位对比排序，...，直到最高位排序完成
@@ -452,62 +510,8 @@ public static void bucketSort(int[] arr){
     System.out.println(bucketArr.toString());
 }
 ```
-#### 计数排序（针对正整数,比较耗空间）
-思路：
-计算数组每个数值出现的次数，放入一个临时数组中temp1，数组下标为数组的值，数组值为出现个数；
-计算数组每个数值比他小的数值数量，放入又一个临时数组中temp2，数组下标为比他小数值数量，数值为计算的数值；
-然后根据temp2 和temp1得到最终的排序数组temp3
 
-```java
-/**
- * 计数排序
- * @param arrays
- */
-public static int[] countSort(int[] arrays) {
-    // 得到最大值
-    int max = arrays[0];
-    for (int i = 0; i < arrays.length; i++) {
-        if (arrays[i] > max) {
-            max = arrays[i];
-        }
-    }
-
-    // 初始化数组
-    int[] showCountArrays = new int[max+1];
-
-    // 计算数组每个值出现次数
-    for (int i : arrays) {
-        showCountArrays[i]++;
-    }
-
-    // 计算数组每个值比他小的数值个数
-    int[] lessNumArrays = new int[arrays.length];
-    for (int i : arrays) {
-        int num = 0;
-        for (int j : arrays) {
-            if (i > j) {
-                num++;
-            }
-        }
-        lessNumArrays[num] = i;
-    }
-
-    int[] sortResultArrays = new int[arrays.length];
-
-    int j = 0;
-    for (int i : lessNumArrays) {
-        int count = showCountArrays[i];
-        while (count > 0) {
-            sortResultArrays[j] = i;
-            j++;
-            count--;
-        }
-
-    }
-
-    return sortResultArrays;
-}
-```
+**这些排序算法,很多都是在基础算法上优化,改进得来,比如二分插入,希尔排序建立在插入排序的基础上;基数,桶排序建立在计数排序上;同时每一种排序有不同的适应场景,根据内存,数据量,排序数值最大值等因素综合考虑**
 
 
 #### 二分查找算法
