@@ -85,7 +85,7 @@ CPU的处理速度和主存的读写速度不是一个量级的，为了平衡�
 在不改变程序执行结果的前提下，cpu和编译器会对代码编译后的指令和代码进行重排序，从而提高执行效率
 
 代码执行过程
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/1.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/2.png)
 
 **happens-before规则**
 指的是两个操作之间的**执行顺序**，一个操作位于另一个操作之前发生，这两个操作可以同一个线程，也可以不是同一个线程。
