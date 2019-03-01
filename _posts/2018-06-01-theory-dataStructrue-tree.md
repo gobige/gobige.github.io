@@ -15,6 +15,7 @@ tags: 树
 ###二叉树
 
 二叉树结构：
+
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-06-07-theory-dataStructrue-tree/1.jpg)
 
 二叉树定义：
