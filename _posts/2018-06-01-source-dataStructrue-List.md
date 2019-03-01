@@ -563,7 +563,8 @@ linkList的删除，查找方法都是遍历整个列表，进行对象地址比
 ```
 
 clear方法就和arraylist和vector一样的效率了
-```
+
+```java
     public void clear() {
         // Clearing all of the links between nodes is "unnecessary", but:
         // - helps a generational GC if the discarded nodes inhabit
@@ -583,7 +584,7 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 获取某个位置的节点元素，由于是链表结构，所以查询某个位置下面节点元素值，需要遍历，时间复杂度为o(n/2)
-```
+```java
     public E get(int index) {
         checkElementIndex(index);
         return node(index).item;
@@ -607,7 +608,7 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 查找某个对象元素第一次出现的所在节点位置
-```
+```java
  public int indexOf(Object o) {
         int index = 0;
         if (o == null) {
@@ -629,7 +630,7 @@ clear方法就和arraylist和vector一样的效率了
 
 
 检索节点的元素值，
-```
+```java
     public E element() {// 获取首节点，不存在会抛出异常
         return getFirst();
     }
@@ -648,7 +649,7 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 检索并删除链表节点
-```
+```java
     public E poll() { // 不存在不会报错（建议使用该方法）
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
@@ -672,7 +673,7 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 增加节点
-```
+```java
     public boolean offer(E e) { // 默认头部增加
         return add(e);
     }
@@ -690,7 +691,7 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 获取迭代器 可指定从**任何地方**迭代 同样也是快速返回失败的
-```
+```java
     public ListIterator<E> listIterator(int index) {
         checkPositionIndex(index);
         return new ListItr(index);
@@ -698,7 +699,7 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 链表转换为数组结构
-```
+```java
     public Object[] toArray() {
         Object[] result = new Object[size];
         int i = 0;
