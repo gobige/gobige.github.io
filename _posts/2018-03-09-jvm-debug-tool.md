@@ -29,6 +29,25 @@ jps指令常见选项
 jstat指令常见选项
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/13.png)
 
+
+```java
+jstat -gcutil 26797 2000 100  // 每2秒查询26797进程GC情况 共100次 
+```
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/38.png)
+
+**各项意义**
+S0:存活区1
+S1:存活区2
+E:年轻代
+O:老年代
+M:元空间 (对应以前的P 永久代,方法区)
+YGC:minorGC次数
+YGCT:minorGC总耗时
+FGC:fullGC次数
+FGCT:fullGC总耗时
+GCT:GC总耗时
+
+
 **jinfo：java配置信息工具**
 - 实时查看和调整jvm各项参数
 
