@@ -146,6 +146,11 @@ CMS收集，设置年老代为并发收集
 -XX:+PrintGCTimeStamps 
 ```
 
+**内存溢出时生成堆dump文件**
+```java
+-XX:+HeapDumpOnOutOfMemoryError
+```java
+
 jit编译的代码都是放在codecache
 ```java
 -XX:+UseCodeCacheFlushing 最早被编译的一半方法将会被放到一个old列表中等待回收
