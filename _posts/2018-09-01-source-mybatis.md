@@ -53,6 +53,70 @@ mybatis调用大体可分为上面7步：
 
 第一步：
 此步的解析请移步
-
+http://muyibeyond.cn/2017/11/11/stream-file-get.html
 
 第二步：
+通过得到的流装载封装到XPathParser对象中，使用XMLConfigBuilder对XPathParser解析（XPathParser把流数据转换成XNODE，从configuration根元素开始，通过对一个个节点的eval得到各个node封装到XNODE对象，属性，变量，XPATH）
+
+XNODE对象 声明的变量
+```java
+private final Node node;
+private final String name;
+private final String body;
+private final Properties attributes;
+private final Properties variables;
+private final XPathParser xpathParser;
+```
+
+XPathParser对象 声明的变量
+```java
+private final Document document;
+private boolean validation;
+private EntityResolver entityResolver;
+private Properties variables;
+private XPath xpath;
+```
+
+XPathParser对象 声明的变量
+```java
+private boolean parsed;
+private final XPathParser parser;
+private String environment;
+private final ReflectorFactory localReflectorFactory;
+```
+
+xmlconfigbuilder解析
+```java
+public Configuration parse() {
+    if (this.parsed) {
+        throw new BuilderException("Each XMLConfigBuilder can only be used once.");
+    } else {
+        this.parsed = true;
+        this.parseConfiguration(this.parser.evalNode("/configuration"));
+        return this.configuration;
+    }
+}
+```
+
+xmlconfigbuilder解析 XNode
+```java
+private void parseConfiguration(XNode root) {
+    try {
+        this.propertiesElement(root.evalNode("properties"));
+        Properties settings = this.settingsAsProperties(root.evalNode("settings"));
+        this.loadCustomVfs(settings);
+        this.typeAliasesElement(root.evalNode("typeAliases"));
+        this.pluginElement(root.evalNode("plugins"));
+        this.objectFactoryElement(root.evalNode("objectFactory"));
+        this.objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+        this.reflectorFactoryElement(root.evalNode("reflectorFactory"));
+        this.settingsElement(settings);
+        this.environmentsElement(root.evalNode("environments"));
+        this.databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+        this.typeHandlerElement(root.evalNode("typeHandlers"));
+        this.mapperElement(root.evalNode("mappers"));
+    } catch (Exception var3) {
+        throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + var3, var3);
+    }
+}
+```
