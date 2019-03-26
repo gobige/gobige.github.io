@@ -77,7 +77,7 @@ private Properties variables;
 private XPath xpath;
 ```
 
-XPathParser对象 声明的变量
+xmlconfigbuilderr对象 声明的变量
 ```java
 private boolean parsed;
 private final XPathParser parser;
@@ -102,21 +102,148 @@ xmlconfigbuilder解析 XNode
 ```java
 private void parseConfiguration(XNode root) {
     try {
+		// 取出properties元素封装进configuration和parser对象
         this.propertiesElement(root.evalNode("properties"));
+		// 获取，验证settings元素
         Properties settings = this.settingsAsProperties(root.evalNode("settings"));
+		// 加载虚拟文件系统配置
         this.loadCustomVfs(settings);
+		// 声明类型别名
         this.typeAliasesElement(root.evalNode("typeAliases"));
+		// 加载配置插件元素
         this.pluginElement(root.evalNode("plugins"));
+		// 自定义对象工厂（MyBatis 每次创建结果对象的新实例时，它都会使用一个对象工厂（ObjectFactory）实例来完成。 默认的对象工厂需要做的仅仅是实例化目标类，要么通过默认构造方法，要么在参数映射存在的时候通过参数构造方法来实例化。 如果想覆盖对象工厂的默认行为，则可以通过创建自己的对象工厂来实现）
         this.objectFactoryElement(root.evalNode("objectFactory"));
+		// 加载自定义objectWrapperFactory对象
         this.objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+		//创建配置自定义反射工厂
         this.reflectorFactoryElement(root.evalNode("reflectorFactory"));
+		// 配置属性元素配置
         this.settingsElement(settings);
+		// 配置，mybatis多环境运行环境 
         this.environmentsElement(root.evalNode("environments"));
+		// 配置多数据库支持（mybatis加载所有的不带 databaseId 或匹配当前 databaseId 的语句；如果带或者不带的语句都有，则不带的会被忽略）,配置多数据库，mybatis会和当前environment匹配合适的databaseId选择合适的数据库
         this.databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+		// 类型处理器将获取的值以合适的方式转换成 Java 类型当我们没有配置指定TypeHandler时，Mybatis会根据参数或者返回结果的不同，默认为我们选择合适的TypeHandler处理(实际也是注册typeAlias来实现)
         this.typeHandlerElement(root.evalNode("typeHandlers"));
+		// 加载mapper到configuration中
         this.mapperElement(root.evalNode("mappers"));
     } catch (Exception var3) {
         throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + var3, var3);
     }
+}
+```
+
+将得到的configuration对象封装到sqlsessionFactory中
+```java
+public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
+    SqlSessionFactory var5;
+    try {
+        XMLConfigBuilder parser = new XMLConfigBuilder(inputStream, environment, properties);
+        var5 = this.build(parser.parse());
+    } catch (Exception var14) {
+        throw ExceptionFactory.wrapException("Error building SqlSession.", var14);
+    } finally {
+        ErrorContext.instance().reset();
+
+        try {
+            inputStream.close();
+        } catch (IOException var13) {
+        }
+
+    }
+
+    return var5;
+}
+```
+
+第三步： 获取configuration对象里面的environment对象，使用事务工厂transactionfactory，生成一条新的事务，创建执行器excutor，创建一条默认的session
+```java
+private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
+    Transaction tx = null;
+
+    DefaultSqlSession var8;
+    try {
+        Environment environment = this.configuration.getEnvironment();
+        TransactionFactory transactionFactory = this.getTransactionFactoryFromEnvironment(environment);
+        tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+        Executor executor = this.configuration.newExecutor(tx, execType);
+        var8 = new DefaultSqlSession(this.configuration, executor, autoCommit);
+    } catch (Exception var12) {
+        this.closeTransaction(tx);
+        throw ExceptionFactory.wrapException("Error opening session.  Cause: " + var12, var12);
+    } finally {
+        ErrorContext.instance().reset();
+    }
+
+    return var8;
+}
+```
+
+defaultsqlsession
+```java
+public class DefaultSqlSession implements SqlSession {
+    private final Configuration configuration;
+    private final Executor executor;
+    private final boolean autoCommit;
+    private boolean dirty;
+    private List<Cursor<?>> cursorList;
+}
+```
+
+sqlsession提供的接口
+```java
+<T> T selectOne(String var1);
+<E> List<E> selectList(String var1);
+<K, V> Map<K, V> selectMap(String var1, String var2);
+<T> Cursor<T> selectCursor(String var1);
+void select(String var1, Object var2, ResultHandler var3);
+int insert(String var1);
+int update(String var1);
+int delete(String var1);
+void commit();
+void rollback(boolean var1);
+List<BatchResult> flushStatements();
+void close();
+void clearCache();
+Configuration getConfiguration();
+<T> T getMapper(Class<T> var1);
+Connection getConnection();
+```
+
+第四步：根据sqlsession获取configuration里面的maaper配置，我们可以看到是从mapperr注册器中获取
+```java
+// sqlsession.getMapper方法
+public <T> T getMapper(Class<T> type) {
+    return this.getConfiguration().getMapper(type, this);
+}
+// configuration.getMapper方法
+public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
+    return this.mapperRegistry.getMapper(type, sqlSession);
+}
+// mapperRegistry.getMapper方法
+public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
+    MapperProxyFactory<T> mapperProxyFactory = (MapperProxyFactory)this.knownMappers.get(type);
+    if (mapperProxyFactory == null) {
+        throw new BindingException("Type " + type + " is not known to the MapperRegistry.");
+    } else {
+        try {
+            return mapperProxyFactory.newInstance(sqlSession);
+        } catch (Exception var5) {
+            throw new BindingException("Error getting mapper instance. Cause: " + var5, var5);
+        }
+    }
+}
+```
+
+通过mapper代理工厂在当前sqllsession中生成新的mapper实例,生成代理对象，代理mapper
+```java
+public T newInstance(SqlSession sqlSession) {
+    MapperProxy<T> mapperProxy = new MapperProxy(sqlSession, this.mapperInterface, this.methodCache);
+    return this.newInstance(mapperProxy);
+}
+
+protected T newInstance(MapperProxy<T> mapperProxy) {
+    return Proxy.newProxyInstance(this.mapperInterface.getClassLoader(), new Class[]{this.mapperInterface}, mapperProxy);
 }
 ```
