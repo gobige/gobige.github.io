@@ -247,3 +247,89 @@ protected T newInstance(MapperProxy<T> mapperProxy) {
     return Proxy.newProxyInstance(this.mapperInterface.getClassLoader(), new Class[]{this.mapperInterface}, mapperProxy);
 }
 ```
+
+第五步：根据mapper对象调用对应方法，映射到对应的sql，使用相应的excutor执行相应statement，形成sql缓存
+
+```java
+protected PerpetualCache localCache;
+protected PerpetualCache localOutputParameterCache;
+```
+
+PerpetualCache类
+```java
+public class PerpetualCache implements Cache {
+	private final String id;
+	// 执行语句集合
+	private Map<Object, Object> cache = new HashMap();
+	
+	
+	// 
+    public void clear() {
+        this.cache.clear();
+    }
+	
+	public ReadWriteLock getReadWriteLock() {
+        return null;
+    }
+	
+	// 
+}
+	
+```
+**提交/回滚/关闭session都是有excutor执行器去操作**
+第六步：提交/回滚
+调用excutor提交/回滚事务，清缓存，刷statement
+```java
+public void commit(boolean required) throws SQLException {
+	if (this.closed) {
+		throw new ExecutorException("Cannot commit, transaction is already closed");
+	} else {
+		this.clearLocalCache();
+		this.flushStatements();
+		if (required) {
+			this.transaction.commit();
+		}
+
+	}
+}	
+	
+public void rollback(boolean required) throws SQLException {
+	if (!this.closed) {
+		try {
+			this.clearLocalCache();
+			this.flushStatements(true);
+		} finally {
+			if (required) {
+				this.transaction.rollback();
+			}
+
+		}
+	}
+}
+```
+
+第七步：关闭session
+
+```java
+public void close(boolean forceRollback) {
+	try {
+		try {
+			this.rollback(forceRollback);
+		} finally {
+			if (this.transaction != null) {
+				this.transaction.close();
+			}
+
+		}
+	} catch (SQLException var11) {
+		log.warn("Unexpected exception on closing transaction.  Cause: " + var11);
+	} finally {
+		this.transaction = null;
+		this.deferredLoads = null;
+		this.localCache = null;
+		this.localOutputParameterCache = null;
+		this.closed = true;
+	}
+
+}
+```
