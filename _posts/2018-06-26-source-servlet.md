@@ -156,5 +156,20 @@ public abstract class GenericServlet implements Servlet, ServletConfig, Serializ
 
 HttpServlet继承了GenericServlet，主要针对**http协议**交互的两端进行通信。**HttpServletRequest，HttpServletResponse，HttpSession**作为通信的载体
 
-针对HttpSession提供 HttpSessionActivationListener，HttpSessionAttributeListener，HttpSessionBindingEvent，HttpSessionBindingListener，HttpSessionIdListener，HttpSessionListener等**事件监听器**
+针对HttpSession，HttpServletRequest，HttpServletResponse提供listener和event,wrapper,attributeEvent,attributeListener等相关接口，类
  
+我们在请求服务器或得到服务响应的时候有很多请求是需要进行过滤，把内容进行修改或拦截
+
+filter接口源码 和servlet类似一样的生命周期,同样和servlet一样提供chain进行链式调用，提供config调用servletContext
+```java
+public interface Filter {
+    void init(FilterConfig var1) throws ServletException;
+
+    void doFilter(ServletRequest var1, ServletResponse var2, FilterChain var3) throws IOException, ServletException;
+
+    void destroy();
+}
+```
+
+```java
+```
