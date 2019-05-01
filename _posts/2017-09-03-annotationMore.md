@@ -3,7 +3,7 @@ layout: post
 title: '注解知多少'
 subtitle: '关于java的注解你又知道多少呢'
 date: 2017-09-03
-categories: java底层
+categories: java
 author: yates
 cover: 'http://cctv.com'
 tags: jdk
@@ -48,7 +48,7 @@ tags: jdk
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/2.png)
 
 ### Java中常见的注解
-####@Override
+#### @Override
 我们都知道，java三大特性的继承中，方法是可以覆盖的，如图：
 
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-03-annotationMore/4.png)
@@ -57,10 +57,10 @@ tags: jdk
 
 所有类都隐式从object继承，testAno类**目的是覆盖**object的equals方法,但是得到的结果却是错误的，因为我们**重写**object的equals方法时制定了一个非object类型参数，从而引发了这个方法**重载**，而不是重写的效果，当我们引入@Override注解后，会在编译的时候提示报错的信息，因此我么可以使用该注解来确保子类的方法也覆盖超类中的非最终具体方法或抽象方法以及接口方法
     
-####@Deprecated
+#### @Deprecated
 在开发代码时，有时候代码会变得过时，在新的调用中被其他更合适的代码替换，但是为了兼容以前的对该代码调用的地方的正常运行，以及在未来的版本中被弃用，可以使用该注解，在程序运行中使用过时代码的时候会得到warning提示
 
-####@FunctionalInterface
+#### @FunctionalInterface
 随着jdk8的lambda表达式引入，函数式接口（一个函数式接口只有一个抽象方法，由于默认方法有一个实现，所以他们不是抽象的）越来越流行，这些接口可以使用lambda表达式，方法引用，或构造函数引用代替。
 
 ```java
@@ -96,10 +96,10 @@ FunctionalConsumer functionalConsumer = new FunctionalConsumer();
 
 如果我们错误的将Foo和Bar接口定义为非函数式接口，那么编译器便不会报错直到运行报错，于是可以使用FunctionalInterface注解，编译器便指出错误
 
-####@SuppressWarnings
+#### @SuppressWarnings
 警告是编译器组成部分，为开发人员提供反馈，可能的危险行为或在未来的编译器版本中可能会出现的错误，例如在java 泛型类型使用没有关联正式泛型参数。为了忽略某些特定警告，可以使用该注解
 
-####@SafeVarargs
+#### @SafeVarargs
 参数安全类型注解 
 同样还有很多著名的第三方注解，如：spring的Autowired，Service等
 
