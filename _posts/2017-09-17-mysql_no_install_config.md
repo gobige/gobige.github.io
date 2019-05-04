@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 'MySQL索引'
+title: 'mysql免安装版配置'
 subtitle: 'mysql免安装版配置'
 date: 2017-09-17
 categories: mysql
