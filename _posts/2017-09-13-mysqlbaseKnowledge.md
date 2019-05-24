@@ -57,6 +57,10 @@ alter table 表名 drop column 字段名
 **显示当前版本**
 SELECT VERSION();
 
+**显示mysql服务器状态**
+show status;
+https://www.cnblogs.com/zuxing/articles/7761262.html
+
 **显示当前时间**
 select now();
 
