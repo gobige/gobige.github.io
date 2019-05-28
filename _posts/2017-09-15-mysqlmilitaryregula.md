@@ -155,9 +155,9 @@ tail -50 D:/green/mysql-5.7.9/data/yates-PC-slow.log
 Explain对sql执行进行分析 
 - **id** id列的编号是 select 的序列号，有几个 select 就有几个id，并且id的顺序是按 select 出现的顺序增长的
 - **select_type** 查询类型 简单查询，复杂查询（简单子查询，复杂子查询（from后子查询），union查询）
-	- SIMPLE, 表示此查询不包含 UNION 查询或子查询
-	- PRIMARY, 表示此查询是最外层的查询
-	- UNION, 表示此查询是 UNION 的第二或随后的查询
+	- SIMPLE, 表示此查询**不包含****UNION**查询或**子查询**
+	- PRIMARY, 表示此查询是**最外层的查询**
+	- UNION, 表示此查询是**UNION的第二**或**随后的查询**
 	- DEPENDENT UNION, UNION 中的第二个或后面的查询语句, 取决于外面的查询
 	- UNION RESULT, UNION 的结果
 	- SUBQUERY, 子查询中的第一个SELECT
