@@ -9,7 +9,7 @@ cover: ''
 tags: tips
 ---
  
-**数据库自增长策略或字段**
+## 数据库自增长策略或字段 
 
 方法：利用数据库生成
 
@@ -30,7 +30,7 @@ tags: tips
 
 针对主库单点，如果有多个Master，每个Master库设置起始数字不一样，步长一样
 
-**UUID**
+## UUID
 
 数据库，程序都可生成，全球唯一
 
@@ -54,7 +54,7 @@ tags: tips
 
 2. 为了解决UUID无序的问题，NHibernate在其主键生成方式提供了Comb算法，保留10个字节，用另外6个字节表示GUID生成时间
 
-**redis生成id**
+## redis生成id 
 
 依赖redis是单线程，可以利用其生成全局唯一ID。多redis集群，可以使用初始值不一样，步长一致的方法解决
 
@@ -67,7 +67,7 @@ tags: tips
 
 1. 须有redis组件，还有编码和配置的工作量
 
-**snowflake**
+## snowflake 
 
 snowflake算法是twitter开源的分布式算法。 使用41bit作为毫秒数，10bit作为机器ID（5bit数据中心 5bit机器id），12bit作为毫秒内流水号，最后一个符号位，为0
 
@@ -83,7 +83,7 @@ snowflake需要更具自身项目需要进行修改，比如估算未来数据�
 
 1. 分布式环境，每台机器时钟不可能完全同步，有时候会出现不是全局递增
 
-**zookeeper生成唯一ID**
+## zookeeper生成唯一ID
 
 通过其znode数据版本来生成32位或64位序列号
 
@@ -92,6 +92,10 @@ snowflake需要更具自身项目需要进行修改，比如估算未来数据�
 - 竞争较大的情况下，需要考虑使用分布式锁，
 - 性能在高并发的分布式环境下，也不甚理想
 
-**MongoDB的ObjectId**
+## MongoDB的ObjectId
 
 利用ObjectId生成兼容不同机器都能使用的全局唯一id，原理和snowflake类似
+
+## 百度UidGenerator
+
+基于snowlake算法的唯一ID生成器，通过消费未来时间解决并发限制（提前生成id并缓存）
