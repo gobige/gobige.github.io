@@ -67,7 +67,6 @@ tags: mysql
 - 避免负向查询(NOT,!=,<>,!<,!>,NOT EXISTS,NOT IN,NOT LIKE)
 - 避免%前缀模糊查询（B+tree，索引失效，全表扫描）
 - Count不要使用在可Null的字段上面
-- 减少Count(*)
 - 计数统计：redis，双向更新，
 - 非实时统计：尽量单独统计表，定期重算
 - Limit高效分页，SELECT * FROM message WHERE id > 9527 (or sub select) limit 10（如果使用limit 9527,10 因为LIMIT 偏移量越大，越慢）
