@@ -9,7 +9,7 @@ cover: 'http://cctv.com'
 tags: 大数据处理相关
 ---
 
-### bitSet
+## bitSet
 java bitSet类是一种特殊类型的**数组**，用于存储**位值**，提供的方法本质上是位运算，所以对于一些数据的处理特别快。
 - bitSet 数组中只会有0和1
 - bitSet不是线程安全的
@@ -68,6 +68,23 @@ long endTimeOfNormal = System.currentTimeMillis();
 System.out.println("normal method cost time---" + (endTimeOfNormal - startTimeOfNormal));
 
 ```
-### 布隆过滤器
+
+### bitSet局限性
+数字分布不均匀很浪费空间
+只能表示正整数
+不容纳冲突
+
+## 布隆过滤器
+对于不同字符串问题，通过hash后得到的hash值可能一样，那么就无法判断这个字符串是否存在。布隆过滤器使用多个hash函数对该
+字符串进行hash得到不同hash值存入数组中，表示为1。如果下次判断这个字符串是否存入时，同时判断多个hash后得到的值是否都为1，
+如果有**其中一个为0**，则这个字符串**一定不存在**；如果**全为1**，这个字符串**不一定存在**。最大限度的避免了hash冲突
+
+
+### 应用场景
+
+1. 判断某个key是否存在,如：黑名单，邮件过滤，URL访问
+
+### 布隆过滤器局限性
+有一定的误判性，取决于hash函数的质量和数量。跟过滤性能在一定程度上成反比。
 
 ### 未完待续....
