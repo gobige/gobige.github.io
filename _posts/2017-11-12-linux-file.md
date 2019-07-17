@@ -130,6 +130,28 @@ yum remove <package> 删除软件包命令
 - telnet 远程登录主机
 - ping 检查主机连通性
 
+**防火墙设置**
+停止防火墙
+systemctl stop firewalld
+
+锁定防火墙
+systemctl mask firewalld
+
+安装iptables-services：
+yum install iptables-services
+
+设置开机启动
+systemctl enable iptables
+
+重启
+systemctl restart iptables
+
+/etc/sysconfig/iptables添加端口开放设置
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 8080 -j ACCEPT
+
+保存设置
+service iptables save
+
 
 **系统相关**
 
