@@ -64,3 +64,7 @@ RpcContext.getContext().getAttachment("CRT_MEMBER_ID")
 // 局部配置
 <dubbo:service delay="5000" interface="com.alibaba.dubbo.demo.DemoService" ref="demoService" version="1.0.0"/>
 ```
+
+
+请求线程的 applicationContext.getBean() 调用，先同步 singletonObjects 判断 Bean 是否存在，不存在就同步 beanDefinitionMap 进行初始化，并再次同步 singletonObjects 写入 Bean 实例缓存。
+而 Spring 初始化线程，因不需要判断 Bean 的存在，直接同步 beanDefinitionMap 进行初始化，并同步 singletonObjects 写入 Bean 实例缓存。
