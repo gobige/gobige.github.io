@@ -68,3 +68,12 @@ RpcContext.getContext().getAttachment("CRT_MEMBER_ID")
 
 请求线程的 applicationContext.getBean() 调用，先同步 singletonObjects 判断 Bean 是否存在，不存在就同步 beanDefinitionMap 进行初始化，并再次同步 singletonObjects 写入 Bean 实例缓存。
 而 Spring 初始化线程，因不需要判断 Bean 的存在，直接同步 beanDefinitionMap 进行初始化，并同步 singletonObjects 写入 Bean 实例缓存。
+
+
+
+@SPI:service provider interface. 为了便于模块之间实现可插拔，采用接口编程方式扩展和实例化扩展点的方式。
+jdk的SPI通过遍历来查找扩展点和实例化，导致一次性加载所有扩展点，而dubbo每个扩展点都有多种实现；配置文件中扩展实现格式修改为key-value格式，便于定位到问题；dubbo的SPI机制增加了IOC增加了IOC,AOP
+在某个接口上加上@SPI注解后，表明该接口为可扩展接口
+
+@Adaptive：在实现类上面加上@Adaptive注解，表明该实现类是该接口的适配器。
+在接口方法上加@Adaptive注解，dubbo会动态生成适配器类。
