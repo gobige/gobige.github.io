@@ -34,7 +34,7 @@ System.out.println(echoService.$echo("hello"));
 比如conttroller层接受token的一个参数,然后通过RpcContext在服务消费者和服务提供者之间传递参数(1多个service级联调用可多级传递,2只能传递string类型数据)
 ```java
 RpcContext.getContext().setAttachment("CRT_MEMBER_ID", "13828886888");
- 
+
 RpcContext.getContext().getAttachment("CRT_MEMBER_ID")
 ```
 
