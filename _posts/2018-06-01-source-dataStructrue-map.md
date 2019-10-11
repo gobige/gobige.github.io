@@ -403,7 +403,7 @@ hashMap获取所有value的collelction集合(**可以看出来values类也是has
 ```
 
 
-hashMap获取由key和value组合形成的entry对象set集合(**可以看出来keySet类是hashMap的一个内部类，我们可以看到entry对象里的contains，remove,foreach,迭代本质还是还是从hashMap的node对象数组链表进行操作**)
+hashMap获取由key和value组合形成的entry对象set集合(**可以看出来keySet类是hashMap的一个内部类，我们可以看到entry对象里的contains，remove,foreach,迭代本质还是从hashMap的node对象数组链表进行操作**)
 keyset，values和entryset遍历的时候也是会快速失败的，所以hashMap也是线程不安全的
 ```java
    public Set<Map.Entry<K,V>> entrySet() {
