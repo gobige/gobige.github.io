@@ -43,6 +43,8 @@ tags: java
 
 - Arrays.asList()返回的对象是一个Arrays内部类，并没有实现集合的add，remove等方法，只是转换接口，只有set,get，contain,replace,sort方法，后台的数据仍是原数组
 
+- Ints.asList(new int[]{1,2,3}); int数组转换为integer数组
+
 - if else请勿超过三层，若超过三层 则使用状态设计模式
 
 - 循环体内的语句尽量考量性能，定义对象，变量，获取数据库连接等尽量放在外面去
@@ -61,4 +63,5 @@ tags: java
 - 对trace/debug/info级别的日志输出，必须使用条件输出形式或者使用占位符的方式。
 
 - 日志规约 并发规约  mysql规约
+
 
