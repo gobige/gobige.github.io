@@ -20,6 +20,7 @@ tags: 编码
 ### jpa之你真的了解jpa的执行机制吗？
 
 **当jpa自定义sql遇上数据库某非空dateTime类型默认为'0000-00-00 00:00:00'的数据**
+
 有这么一个需求，修改一张表的一个字段值，大概是这个样子的sql
 
 ```java
@@ -48,3 +49,20 @@ int update***(String col1, Integer col2);
 恍然大悟了，jpa在flush update的时候该字段更新为null，而数据库DDL定义该字段是非空的，所以造成了该问题的出现。最后这个问题是怎么解决的了，因为该字段只是一个签订日期的含义，所以直接赋值为java中的元时间。
 
 
+**当jpa使用默认自带封装持久层查询方法**
+
+整个服务方法大致是这样写的
+```
+// 步骤1，自带封装findById方法
+select status from user where address = 111; // 此时status为1
+
+// 步骤2，自定义修改方法
+update user set status = 0 where user_id = 1;// 此时status为0
+
+// 步骤3，自带封装findById方法
+select status from user where user_id = 1; // 此时数据库中status为0，但是查出来为1
+```
+
+对，没错，它的机制就是这样，步骤1从数据库拿数据后，步骤3他居然从sessioncache里面取值，而不是数据库...
+
+![此处输入图片的描述](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2019-10-18-inside-the-pit-record/4.png)
