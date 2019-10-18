@@ -31,18 +31,18 @@ int update***(String col1, Integer col2);
 
 自信满满的自测该功能，咦，报错了
 
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/2019-10-18-inside-the-pit-record/1.png)
 
 这个功能就执行了这一句sql为什么汇报这个错了？我没更新这个时间字段呀？这么诡异的事？怀着科学的态度重新编译，运行还是报同样的错，在寻求度娘的帮助下还是得不到一个有效的解释。
 好吧最后的办法只能看源码了，
 
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/)
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/2019-10-18-inside-the-pit-record/2.jpg)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/2019-10-18-inside-the-pit-record/3.jpg)
 
 原来加了modifying注解的在sql执行时会flush update一次全量更新（暂时还不知道jpa为什么会这样做），这是第一个问题，这次全量更新的数据通过查询这条更新记录得到，这个字段定义如下：
 
 ```java
-  `contractBeginTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT ''
+`contractBeginTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT ''
 ```
 该字段是在记录产生的时候默认赋值为'0000-00-00 00:00:00'，通过jpa获取这条记录的时候，我发现jpa是读取不到该字段的值的，也就是说该字段在java对象中值为null，那么之前奇怪的现象就
 恍然大悟了，jpa在flush update的时候该字段更新为null，而数据库DDL定义该字段是非空的，所以造成了该问题的出现。最后这个问题是怎么解决的了，因为该字段只是一个签订日期的含义，所以直接赋值为java中的元时间。
