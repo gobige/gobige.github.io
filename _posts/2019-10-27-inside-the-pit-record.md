@@ -46,7 +46,9 @@ int update***(String col1, Integer col2);
 `contractBeginTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT ''
 ```
 该字段是在记录产生的时候默认赋值为'0000-00-00 00:00:00'，通过jpa获取这条记录的时候，我发现jpa是读取不到该字段的值的，也就是说该字段在java对象中值为null，那么之前奇怪的现象就
-恍然大悟了，jpa在flush update的时候该字段更新为null，而数据库DDL定义该字段是非空的，所以造成了该问题的出现。最后这个问题是怎么解决的了，因为该字段只是一个签订日期的含义，所以直接赋值为java中的元时间。
+恍然大悟了，jpa在flush update的时候该字段更新为null，而数据库DDL定义该字段是非空的，所以造成了该问题的出现。
+
+**解决方案** 因为该字段只是一个签订日期的含义，所以直接赋值为java中的元时间。
 
 
 **当jpa使用默认自带封装持久层查询方法**
@@ -63,6 +65,8 @@ update user set status = 0 where user_id = 1;// 此时status为0
 select status from user where user_id = 1; // 此时数据库中status为0，但是查出来为1
 ```
 
-对，没错，它的机制就是这样，步骤1从数据库拿数据后，步骤3他居然从sessioncache里面取值，而不是数据库...
+对，没错，它的机制就是这样，步骤1从数据库拿数据后，步骤3他居然从entitymanage里面的sessioncache取值，而不是数据库...
 
 ![此处输入图片的描述](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2019-10-18-inside-the-pit-record/4.png)
+
+**解决方案** 在继承JpaRepository的dao方法，也就是上述步骤2的update方法的modifying注解使用@Modifying(clearAutomatically = true)
