@@ -1,0 +1,10 @@
+zookeeper 是基于CP的，euraka是基于CA的，zokeeper有master，slave之分，如果正在选主或集群半数以上机器不可用，那么zookeeper无法保证服务的可用；而Euraka没有，采用peer to peer通信，节点彼此互相注册提高可用性。即使所有节点都挂了，也能通过本地得到缓存数据。根据两者区别来选择合适的注册中心
+
+spring对每个bean提供一个scope属性表示bean的作用域，这些bean大多是无状态对象。single类型的无状态bean都是线程安全的，例如每个dao提供的方法都只是对数据的CURD，每个数据库connection都作为函数局部变量，处于栈中，属于线程私有的内存区域，用完即回收。每个controller被多个线程执行，springmvc对请求拦截粒度时基于每个方法（而struct2时基于类，也就是多例controller，频繁创建，回收，影响性能）。spring没有对bean的多线程安全作出任何保证和措施，所以我们在bean的设计中声明任何有状态的实例变量和类变量，如果非得有，则要使用ThreadLocal变量私有化或使用synchronized，lock，cas等实现线程同步方法
+
+数据库基概：单库-分组（线性提升数据库读性能，消除读写锁，提升写性能；读高可用）-分片（分表依然公用一个数据库文件，仍有磁盘IO竞争；分库容易数据迁移不同数据库实例，扩展好）（线性提升数据库写能力，降低单库容量）-垂直切分（降低单库容量，降低磁盘IO，跟业务紧密相关）
+
+使用spring-session 和 redis 实现 session集群共享
+
+for循环改写 for(int i = 0; int temp = xxx.size();i  temp;i++)
+引起FULL GC原因，老年代不够用了，永久代元空间不够用了，system.gc
