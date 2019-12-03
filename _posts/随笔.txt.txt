@@ -1,4 +1,4 @@
-zookeeper 是基于CP的，euraka是基于CA的，zokeeper有master，slave之分，如果正在选主或集群半数以上机器不可用，那么zookeeper无法保证服务的可用；而Euraka没有，采用peer to peer通信，节点彼此互相注册提高可用性。即使所有节点都挂了，也能通过本地得到缓存数据。根据两者区别来选择合适的注册中心
+﻿zookeeper 是基于CP的，euraka是基于CA的，zokeeper有master，slave之分，如果正在选主或集群半数以上机器不可用，那么zookeeper无法保证服务的可用；而Euraka没有，采用peer to peer通信，节点彼此互相注册提高可用性。即使所有节点都挂了，也能通过本地得到缓存数据。根据两者区别来选择合适的注册中心
 
 spring对每个bean提供一个scope属性表示bean的作用域，这些bean大多是无状态对象。single类型的无状态bean都是线程安全的，例如每个dao提供的方法都只是对数据的CURD，每个数据库connection都作为函数局部变量，处于栈中，属于线程私有的内存区域，用完即回收。每个controller被多个线程执行，springmvc对请求拦截粒度时基于每个方法（而struct2时基于类，也就是多例controller，频繁创建，回收，影响性能）。spring没有对bean的多线程安全作出任何保证和措施，所以我们在bean的设计中声明任何有状态的实例变量和类变量，如果非得有，则要使用ThreadLocal变量私有化或使用synchronized，lock，cas等实现线程同步方法
 
@@ -8,12 +8,21 @@ spring对每个bean提供一个scope属性表示bean的作用域，这些bean大
 
 for循环改写 for(int i = 0; int temp = xxx.size();i  temp;i++)
 引起FULL GC原因，老年代不够用了，永久代元空间不够用了，system.gc
+ 
 
+jdk动态代理是基于接口代理，而CGLIB则不是
+spring 5.x 中AOP默认使用JDK动态代理
+
+springboot 2.x默认使用CGLIB，要想使用JDK 配置项  spring.aop.proxy-target-class=false
+ 
 除了构造注入会导致强依赖以外，一个bean也会强依赖于暴露他的配置类。不要对有@configuration注解的配置类进行field级的依赖注入
 
-
+ 
 hikaricp连接池的使用，
 spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
 事务传播行为：
 PROPAGATION_REQUIRES_NEW：始终启动一个新事务，两个事务无关联
 PROPAGATION_REQUIRED_NESTED：在原事务内启动一个内嵌事务，两个事务有关联，外部事务回滚，内部也会回滚
+ 
+hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
+  

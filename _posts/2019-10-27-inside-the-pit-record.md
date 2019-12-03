@@ -70,3 +70,8 @@ select status from user where user_id = 1; // 此时数据库中status为0，但
 ![此处输入图片的描述](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2019-10-18-inside-the-pit-record/4.png)
 
 **解决方案** 在继承JpaRepository的dao方法，也就是上述步骤2的update方法的modifying注解使用@Modifying(clearAutomatically = true)
+
+
+**e.printStackTrace()**
+
+e.printStackTrace() 方法打印堆栈信息到控制台，如果异常处理区域设置过大且堆栈信息过多，加上该请求频繁，会造成字符串常量池很快就满了，多线程会造成死锁，进而导致服务器的奔溃
