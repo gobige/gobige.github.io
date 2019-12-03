@@ -8,9 +8,15 @@ spring对每个bean提供一个scope属性表示bean的作用域，这些bean大
 
 for循环改写 for(int i = 0; int temp = xxx.size();i  temp;i++)
 引起FULL GC原因，老年代不够用了，永久代元空间不够用了，system.gc
-
+ 
 
 jdk动态代理是基于接口代理，而CGLIB则不是
 spring 5.x 中AOP默认使用JDK动态代理
 
 springboot 2.x默认使用CGLIB，要想使用JDK 配置项  spring.aop.proxy-target-class=false
+ 
+除了构造注入会导致强依赖以外，一个bean也会强依赖于暴露他的配置类。不要对有@configuration注解的配置类进行field级的依赖注入
+
+
+hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
+ 
