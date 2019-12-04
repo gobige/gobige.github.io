@@ -83,7 +83,6 @@ springboot 2.x默认使用CGLIB，要想使用JDK 配置项  spring.aop.proxy-ta
  
 除了构造注入会导致强依赖以外，一个bean也会强依赖于暴露他的配置类。不要对有@configuration注解的配置类进行field级的依赖注入
 
-
 hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
 
 幂等
@@ -109,3 +108,11 @@ hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增
 @cacheevict方法和@transactional事务同时用的情况下很可能导致redis刷新缓存失败，参考aop round就像一层一层的包裹与解开必然执行顺序和提交顺序会有差别，解决方案：缩小事务范围
 
 spring升级时 默认Integer和date是不能互相转换，会报错，而之前版本时可以的
+ 
+spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
+事务传播行为：
+PROPAGATION_REQUIRES_NEW：始终启动一个新事务，两个事务无关联
+PROPAGATION_REQUIRED_NESTED：在原事务内启动一个内嵌事务，两个事务有关联，外部事务回滚，内部也会回滚
+ 
+hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
+
