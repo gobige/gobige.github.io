@@ -25,4 +25,7 @@ PROPAGATION_REQUIRES_NEW：始终启动一个新事务，两个事务无关联
 PROPAGATION_REQUIRED_NESTED：在原事务内启动一个内嵌事务，两个事务有关联，外部事务回滚，内部也会回滚
  
 hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
-  
+
+reactive programming：响应式编程，面向数据流和变化传播的编程方式
+
+Flux-onNext() onComplete() onError()
