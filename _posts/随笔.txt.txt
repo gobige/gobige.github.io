@@ -107,8 +107,8 @@ hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增
 	
 @cacheevict方法和@transactional事务同时用的情况下很可能导致redis刷新缓存失败，参考aop round就像一层一层的包裹与解开必然执行顺序和提交顺序会有差别，解决方案：缩小事务范围
 
-spring升级时 默认Integer和date是不能互相转换，会报错，而之前版本时可以的
- 
+springboot2.5.8升级时 默认Integer和date是不能互相转换，会报错，而之前版本时可以的
+
 spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
 事务传播行为：
 PROPAGATION_REQUIRES_NEW：始终启动一个新事务，两个事务无关联
@@ -119,3 +119,11 @@ hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增
 reactive programming：响应式编程，面向数据流和变化传播的编程方式
 
 Flux-onNext() onComplete() onError() 
+
+mybatis和jpa的选择：
+jpa
+
+
+jdbctemplate jparespository,mongotemplate mongoresipository,redistemplate redisresipository,redis哨兵和集群
+
+reactive:面向数据流和变化传播的编程范式
