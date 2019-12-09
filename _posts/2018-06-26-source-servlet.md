@@ -10,7 +10,42 @@ tags: java
 ---
 
 ### 前言
+早期web应用主要浏览新闻等静态页面，http服务器向浏览器返回静态HTML。浏览器负责解析HTML，并将结果呈现
+而后随着互联网发展，为了通过一些交互获取动态结果，需要HTTP服务器调用服务端程序，比如servlet，而servlet不能独立运行，必须部署到servlet容器中。
 servlet作为服务器和客户端之间交互，响应请求，基于组件，独立于平台的服务端常用的程序，大多数servlet只用来扩张http协议的web服务器
+
+Servlet容器用来加载和管理业务类。HTTP服务器不直接跟业务类打交道，而是把请求交给Servlet容器去处理，Servlet容器会将请求转发到具体的Servlet，
+如果这个Servlet还没创建，就加载并实例化这个Servlet，然后调用这个Servlet的接口方法。因此Servlet接口其实是Servlet容器跟具体业务类之间的接口。
+
+
+### Servlet请求流程：
+资源请求-->HTTP服务器封装请求信息到ServletRequest对象-->servlet容器调用service方法-->根据请求URL和servlet映射关系，找到相应servlet（如果未加载则利用反射创建servlet，调用init初始化）
+-->调用servlet的service处理请求-->返回ServletResponse对象给HTTP服务器-->服务器返回给客户端
+
+Servlet容器会实例化和调用Servlet，以Web应用程序的方式来注册，部署Servlet到Servlet容器中。根据Servlet规范，Web应用程序有一定的目录结构用于加载Servlet
+
+- MyWebApp
+	- WEB-INF/web.xml 	
+	- WEB-INF/lib
+	- WEB-INF/classes
+	- META-INF
+
+Servlet规范servlet容器在启动时会加载web应用，创建ServletContext对象。ServletContext是一个全局对象，所有servlet可通过此共享数据（web应用初始化数据，文件资源，servlet请求转发等等）
+
+## filter Listener
+servlet规范是开发者专注于业务，但是由于规范导致的个性化需求受到限制，我们可以通过filter和 listener来实现
+
+filter 工作流程：web应用部署完成后，servlet容器实例化Filter并把filter链接成一个filterchain，依次调用
+listener 工作流程：web应用在servlet容器中运行，servlet容器内部发生各种事件，servlet容器提供一些默认监听器监听这些事件，也可以在web.xml中自定义监听器。
+
+前者是干预过程的，是基于过程行为的；后者是基于状态，任何行为改变同一个状态，触发事件是一致的
+
+**springMVC容器，spring容器，servlet容器**
+tomcat等服务器启动时创建全局上下文环境servletcontext，期间触发容器初始化事件，Spring的ContextLoaderListener监听到后，调用contextInitialized方法初始化全局spring根容器（IOC容器）并放入servletcontext中。
+tomcat还会扫描servlet，比如springmvc的dispatchservlet，dispatchservlet初始化时建立自己容器也就是springmvc容器，他可以通过servletcontext拿到spring根容器，并将其设置为springmvc父容器，这也就是为什么controller能访问service服务，而service不可以访问controller
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/1.jpg
+
 
 servlet接口源码
 ```java

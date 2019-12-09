@@ -1,0 +1,33 @@
+## web容器
+
+JBoss和Weblogic等重量级的应用服务器在微服务架构日益盛行的今天略显笨重，因此tomcat和jetty就是一个很好地选择
+
+Spring Session通过Servlet规范中的Filter机制拦截了所有Servlet请求，将标准的Servlet请求对象包装换成它自己的Request包装类对象，通过Request对象的getSession方法拿Session
+
+在HTTP1.1中，请求是按顺序排队处理的，前面的HTTP请求处理会阻塞后面的HTTP请求，虽然HTTP pipelining对连接请求做了改善，但是复杂度太大，并没有普及，这个问题在HTTP2.0中得到了解决
+
+服务端会设置连接超时时间，如果TCP连接上超过一段时间没有请求数据，服务端会关闭这个连接
+
+敏感的用户信息没有在网络上传输了，但是攻击者拿到sessionid也可以冒充受害者发送请求，这就是为什么我们需要https，加密后攻击者就拿不到sessionid了，另外CSRF也是一种防止session劫持的方式
+
+tomcat配置server.xml 中Connector标签的maxThreads是线程池中线程的个数
+spring boot的配置文件*.yml中的 server.tomcat.max-connections也是tcp连接的最大值 
+tomcat维护一个tcp连接池响应所有客户端的请求。虽然一个tcp请求可以同时和多个客户端建立连接，但是同一个tcp连接在同一时间只能服务一个客户端请求，只有这个请求处理完后才会响应其他的请求。类似于每个连接都分配一个阻塞队列
+
+## tomcat
+
+**日志分类**：
+- **运行日志**，记录运行过程中一些信息，尤其是一些异常错误日志信息。
+- **访问日志**，记录访问时间，IP地址，访问路径等信息
+
+**catalina.{}.log**：记录tomcat启动过程信息，可以看到启动的JVM参数以及操作系统等日志信息
+
+**catalina.out**：tomcat标准输出和标准错误，如果没有修改tomcat启动脚本，stdout和stderr会重定向到这里。
+
+**localhost.{}.log**：记录web应用在初始化过程中遇到的未处理的异常
+
+**localhost_access_log.{}.txt**：存放访问tomcat的请求日志，包括IP地址以及请求路径，时间，请求协议，状态码
+
+**manager.{}.log/host-manager.{}.log**：存放tomcat自带manager项目日志信息
+
+### 容器和连接器

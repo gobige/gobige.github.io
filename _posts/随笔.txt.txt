@@ -126,4 +126,9 @@ jpa
 
 jdbctemplate jparespository,mongotemplate mongoresipository,redistemplate redisresipository,redis哨兵和集群
 
+Reactor:一个轻量级JVM基础库，帮助你的服务或应用高效，异步地传递消息
+
+- 高效：消息从A到B产生很少的内存垃圾 2解决消费者处理消息效率低于生产者带来的溢出问题 3尽可能提供非阻塞异步流
+
+
 reactive:面向数据流和变化传播的编程范式
