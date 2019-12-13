@@ -1,4 +1,4 @@
-## web容器
+﻿## web容器
 
 JBoss和Weblogic等重量级的应用服务器在微服务架构日益盛行的今天略显笨重，因此tomcat和jetty就是一个很好地选择
 
@@ -31,3 +31,289 @@ tomcat维护一个tcp连接池响应所有客户端的请求。虽然一个tcp�
 **manager.{}.log/host-manager.{}.log**：存放tomcat自带manager项目日志信息
 
 ### 容器和连接器
+
+tomcat支持I/O模型
+
+- NIO：非阻塞I/O，采用java NIO类库实现
+- NIO2: 异步I/O，采用JDK7最新NIO2类库实现
+- APR: 采用apache可移植运行库实现，是C/C++编写本地库
+
+tomcat支持应用层协议：
+
+- HTTP/1.1:
+- AJP:用于和web服务器集成
+- HTTP/2：
+
+#### 连接器
+
+tomcat一个容器可对接多个连接器，组成被称为Service组件。一个Tomcat可有多个service，通过不同端口访问同一个tomcat上不同应用
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/2.png
+
+连接器对servlet容器屏蔽了协议和I/O模型的区别，统一向容器传入servletrequest对象，并从servlet接受对象servletresponse将其转换出去
+
+连接器的设计符合了我们经常讲的**高内聚，低耦合**原则
+
+高类聚功能：网络通信（endpoint），应用层协议解析（processor），tomcatrequest/response 与servletrequest/response的转换（adapter）
+
+由于IO模型和协议之间的组合有很多种，组件之间通过抽象接口交互，tomcat设计了一个protocolhandler接口来封装这两种变化点。
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/3.png
+
+可以清晰看出它们之间继承和层次关系，尽量将稳定的部分放到抽象基类，每一个io模型和协议组合都有相应实现类
+
+**endpoint**
+endpoint是通信端点，具体socket接收和发送处理器，对传输层抽象，endpoint用来实现TCP/IP协议
+
+- acceptor：监听socket连接请求。
+- socketProcessor：用于处理接收到的socket请求，实现runnable，在run方法里调用协议处理组件process进行处理。
+
+**processor**
+processor用来实现HTTP协议，读取字节流解析成tomcatrequest和response对象，并通过adapter将其提交到容器处理，processor是对应应用层协议抽象。定义请求的处理。他的抽象类abstractprocessor对协议共有属性进行封装
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/4.png
+
+**adapter**
+tomcat定义tomcatrequest类来存放请求，但是tomcatrequest不是标准servletrequest，tomcat引入coyoteadapter，传入tomcatrequest将其转换为servletrequest，在调用容器service方法
+
+
+#### 容器
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/5.png
+
+- engine：表示引擎，用来管理多个虚拟站点，一个service最多只能有一个engine
+	- host：表示虚拟主机
+		- context：表示web应用程序；
+			- wrapper：表示一个servlet
+
+tomcat采用一种分层架构，组合模式管理容器，使得servlet容器具有很好的灵活性。
+
+**servlet定位**
+tomcat使用mapper组件来处理servlet的定位，mapper组件保留了web应用配置信息，其实就是**容器组件与访问路径的映射关系**，host容器配置域名，context的web路径，wrapper容器servlet映射路径，根据请求路径分解并映射到不同路由最终到servlet
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/6.png
+
+1. 根据协议和端口号选定service和engine
+2. 根据域名选定host
+3. 根据URL路径找到context组件
+4. context确定后，mapper根据web.xml配置的servlet映射路径找到wrapper，servlet。
+
+并不是servlet处理所有请求内容，在这个调用链上每一个容器都可以使用pipeline-value进行处理
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/7.png
+
+
+### 组件的创建、初始化、启动、停止和销毁
+
+如果一个系统对外提供服务，那么tomcat需要创建，组装并启动这些组件；服务停止时，tomcat需要释放资源，销毁这些组件，这是一个动态过程
+
+- 先创建子组件，在创建父组件，子组件需要被注入到父组件
+- 先创建内层组件，在创建外层组件，内层组件被注入到外层组件中
+
+如果按照从小到大，从内到外顺序创建组件，然后组装，这样会造成代码逻辑混乱和组件遗漏，而且也不利于后期功能扩展
+
+**lifecycle**
+组件的共通点，不变点是init，start，stop，destroy，抽象为lifecycle接口，每个组件去实现改接口。父组件方法需创建子组件并调用子组件对应方法，这样我们就可以只调用最顶层组件就可以实现一键式启停。
+
+整个组件生命周期定义为一不同状态，状态的改变看作一个事件，而事件是有监听器的，监听器可方便添加和删除，利于扩展。
+
+LifeCycleBase基类实现了一些公共逻辑，生命状态转变与维护，事件触发，监听器添加，删除。而具体实现由子类去完成，这就是模板设计模式
+
+
+### tomcat启动
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/8.png
+
+1. 启动脚本启动一个jvm，bootstrap初始化类加载器
+2. 实例化Catalina，通过解析server.xml，创建相应组件，并调用server的start方法
+3. server管理多个service，service负责连接器和容器的管理
+
+- 当我们使用ctrl+c关闭tomcat时，tomcat调用Catalina在JVM注册一个关闭钩子 CatalinaShutdownHook(注册一线程，run方法调用Catalina.this.stop方法)进行调用
+- server组件具体实现类是standardServer，继承了lifecycleBase，添加（通过固定数组存放service，动态复制扩展数组长度），启动，停止，管理service。同时server还启动一个socket（await方法中创建，死循环接收特定连接请求指令）来监听停止端口
+- service组件具体实现类是 standardService 也继承了lifecycleBase，同时还有server connector，engine和mapper。其中还有一个MapperListener，用于监听容器变化，并把信息更新到mapper，支持tomcat支持热部署
+- engine容器继承了containerbase基类，并实现了Engine接口，管理host容器数组，处理请求，把请求转发到host容器，host位于请求中（mapper组件通过请求URL定位相应容器，并把容器对象保存到请求对象中）
+
+
+## jetty
+
+jetty 由多个connector和多个handler，所有connector被handler共享。以及一个线程池组成
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/9.png
+
+### connector
+connector对IO模型和协议进行封装，jetty9只支持NIO
+
+- acceptor：用于接收请求，创建_acceptor数组用于存放acceptor。acceptor通过阻塞方式接受连接。连接成功后调用accepted函数，accepted函数将socketchannel设置
+为阻塞模式，然后交于selector处理。
+- selectormanager：selectormanager管理selector，selector的register用于处理channel注册到selector上，得到一个selectionKey。创建endpoint和connection，并跟selectionKey绑在一起，ManagedSelector并没有调用直接EndPoint的方法去处理数据，而是通过调用EndPoint的方法返回一个Runnable，然后把这个Runnable扔给线程池执行，所以你能猜到，这个Runnable才会去真正读数据和处理请求。
+- connection：上述endpoint的runnable会调用connection回调方法来处理请求。connection类比tomcat的processor，解析协议。
+	- 请求处理：endpoint调用connection回调方法，使用endpoint接口读数据，读完后让HTTP解析器解析字节流，解析后数据存放到request对象里
+	- 响应处理：connection调用handler进行业务处理，handler通过response操作响应流，向流写入数据，httpconnection再通过endpoint写数据到channel。
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/10.png
+
+1. Acceptor监听连接请求，当有连接请求到达时就接受连接，一个连接对应一个Channel，Acceptor将Channel交给ManagedSelector来处理。
+
+2. ManagedSelector把Channel注册到Selector上，并创建一个EndPoint和Connection跟这个Channel绑定，接着就不断地检测I/O事件。
+
+3. I/O事件到了就调用EndPoint的方法拿到一个Runnable，并扔给线程池执行。
+
+4. 线程池中调度某个线程执行Runnable。
+
+5. Runnable执行时，调用回调函数，这个回调函数是Connection注册到EndPoint中的。
+
+6. 回调函数内部实现，其实就是调用EndPoint的接口方法来读数据。
+
+7. Connection解析读到的数据，生成请求对象并交给Handler组件去处理。
+
+
+### handler
+connector会将servlet请求交给handler处理
+
+**handler类型**
+
+- 协调handler，赋值将请求路由到一组handler中
+- 过滤器handler，自己处理请求，然后转发下一个handler
+- 内容handler，真正调用Servlet来处理请求，生成响应的内容
+
+https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/11.png
+
+AbstractHandlerContainer：为了实现链式调用，内部有其他handler引用
+HandlerWrapper：只包含一个其他handler引用
+	- 子类：
+		- Server：Handler模块的入口，必然要将请求传递给其他Handler来处理
+		- ScopedHandler：实现了“具有上下文信息”的责任链调用
+HandlerCollection：包含多个其他handler引用，Jetty可能需要同时支持多个Web应用，如果每个Web应用有一个Handler入口，那么多个Web应用的Handler就成了一个数组
+
+ContextHandler：创建并初始化Servlet规范里的ServletContext对象，同时ContextHandler还包含了一组能够让你的Web应用运行起来的Handler
+ServletHandler：实现了Servlet规范中的Servlet、Filter和Listener的功能
+SessionHandler：用来管理Session
+
+除此还有一些其他通用组件handler，安全，解压缩，，jetty提供任意添加，裁剪这些模块，从而实现高度可定制化
+
+tomcat和jetty整体结构都是基于组件，通过xml或代码方式灵活选择组件搭建web容器。这种组件化设计，有两点很重要，面向接口编程和通过责任链模式处理请求。因为高度灵活定制化，web容器启动前
+通过反射机制动态创建组件。通过生命周期方式来管理组件，父组件负责子组件创建，启停，销毁；并通过监听组件状态转变事件作为触发条件
+
+
+## tomcat 优化
+
+- **清理不必要的web应用**,tomcat启动时，会启动webapps文件夹下的所有工程，所以清理不需要启动的工程很有必要
+- **清理XML配置文件**，XML解析代价不算小，tomcat启动时会解析所有XML配置文件。所以保持配置文件简洁很重要。
+- **清理JAR包**：JVM类加载器在加载类是，需要查找每一个依赖JAR包，WEB应用中lib目录下不应该出现servlet API或者Tomcat自身的JAR
+- **清理其他文件**：及时清理日志，删除logs文件夹下不需要的日志文件。还有work文件夹下catalina文件夹（tomcat吧JSP转换为Class文件工作目录，有时修改了代码，重启tomcat没有生效。这时可以尝试删除文件夹，删除后，下次启动后自动生成）
+- **禁止tomcat TLD扫描**：为了支持JSP，在应用启动时，tomcat会扫描JAR包里面的TLD文件，加载里面定义的标签库，所以tomcat会在启动日志中说明，扫描web应用下的JAR包，如果没有发现TLD文件，会提示建议配置tomcat不要扫描这些JAR包
+    - **禁用TLD扫描**（不使用JSP作为Web页面模板）：打开Tomcat的conf/context.xml文件，在该文件下Context标签下，加上JarScanner和JarScanFilter子标签：
+    ```java
+    
+    <Context>
+    	<JarScanner>
+    		<JarScanFilter defaultTldScan="false"/>
+    	</JarScanner>
+    </Context>
+    ```
+    - **指定扫描包含TLD文件的jar包**（使用JSP作为页面模板情况下）打开conf/catalina.properties文件，在配置项jarsToSkip中加上JAR包()
+    ```java
+    tomcat.util.scan.StandardScanFilter.jarsToSkip=xxx.jar
+    ```
+- **关闭WebSocket支持**：tomcat会扫描WebSocket注解的API实现，比如@ServerEndpoint注解的类。注解扫描一般是比较慢的。打开conf/context.xml，给context标签添加containerSciFilter的属性
+```java
+<Context containerSciFilter="org.apache.tomcat.websocket.server.WsSci">
+</Context>
+```
+- **关闭JSP支持**：打开conf/context.xml，给context标签添加containerSciFilter的属性
+```java
+<Context containerSciFilter="org.apache.jasper.servlet.JasperInitializer">
+</Context>
+```
+- **禁止Servlet注解扫描**：打开web.xml文件设置web-app属性
+```java
+<web-app metadata-complete="true">  
+</web-app>
+```
+- **配置Web-Fragment扫描**：Servlet3.0引入了web模块部署描述符片段”的web-fragment.xml，这是一个部署描述文件，可以完成web.xml的配置功能。而这个web-fragment.xml文件必须存放在JAR文件的META-INF目录下，而JAR包通常放在WEB-INF/lib目录下，因此Tomcat需要对JAR文件进行扫描才能支持这个功能。打开web.xml文件设置<absolute-ordering>元素直接指定了哪些JAR包需要扫描web fragment
+```java
+<web-app>
+    <absolute-ordering/> // 不需要扫描
+</web-app>
+```
+- **随机数熵源优化**：tomcat7以上版本通过java的SecureRandom类生成随机数。而JVM默认使用阻塞式熵源(安全性较高一些)，可能会导致tomcat启动编码。通过设置JVM参数
+```java
+-Djava.security.egd=file:/dev/./urandom
+```
+或者设置$JAVA_HOME/jre/lib/java.security文件
+```java
+securerandom.source=file:/dev/./urandom
+```
+- **并行启动多个web应用**
+tomcat启动默认一个一个启动web应用，通过修改server.xml文件中Host元素的startStopThreads属性设置用多少线程进行来完成并行启动。
+```java
+<Engine startStopThreads="0">
+    <Host startStopThreads="0">
+    </Host>
+</Engine
+```
+engine元素里配置表示tomcat配置多少线程启动Host
+
+## tomcat非阻塞I/O实现
+
+tomcat的NioEndPoint组件实现了I/O多路复用模型，
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/12.png)
+
+- LimitLatch：连接控制器，控制最大连接数，NIO模式下默认10000，
+```java
+public class LimitLatch {
+    private class Sync extends AbstractQueuedSynchronizer {
+     
+        @Override
+        protected int tryAcquireShared() {
+            long newCount = count.incrementAndGet();
+            if (newCount > limit) {
+                count.decrementAndGet();
+                return -1;
+            } else {
+                return 1;
+            }
+        }
+
+        @Override
+        protected boolean tryReleaseShared(int arg) {
+            count.decrementAndGet();
+            return true;
+        }
+    }
+
+    private final Sync sync;
+    private final AtomicLong count;
+    private volatile long limit;
+    
+    //线程调用这个方法来获得接收新连接的许可，线程可能被阻塞
+    public void countUpOrAwait() throws InterruptedException {
+      sync.acquireSharedInterruptibly(1);
+    }
+
+    //调用这个方法来释放一个连接许可，那么前面阻塞的线程可能被唤醒
+    public long countDown() {
+      sync.releaseShared(0);
+      long result = getCount();
+      return result;
+   }
+}
+```
+- Acceptor：在一个单独线程里，在一个死循环里调用accept方法接受新连接，一旦有新连接，accept方法返回一个channel对象，接着把channel对象交给poller去处理。ServerSocketChannel通过accept()接受新的连接，accept()方法返回获得SocketChannel对象，然后将SocketChannel对象封装在一个PollerEvent对象中，并将PollerEvent对象压入Poller的Queue里，这是个典型的生产者-消费者模式，Acceptor与Poller线程之间通过Queue通信。
+```java
+serverSock = ServerSocketChannel.open();
+serverSock.socket().bind(addr,getAcceptCount());// 操作系统的等待队列长度,操作系统能继续接收的最大连接数就是这个队列长度，可以通过acceptCount参数配置，默认是100
+serverSock.configureBlocking(true);// 以阻塞的方式接收连接
+```
+- Poller：在一个单独线程里。维护一个channel数组，在死循环不断检测channnel数据状态，一旦有Channel可读，就生成一个SocketProcessor任务对象扔给Executor去处理
+```java
+private final SynchronizedQueue<PollerEvent> events = new SynchronizedQueue<>();// SynchronizedQueue的方法都使用synchronize关键字加锁，保证队列只被一个acceptor读写。多个Poller线程运行，每个都有自己queue，可被多个acceptor调用注册pollerEvent。poller不断通过内部selector想内核查询channel状态，一旦刻度就生成任务类socketprocessor交于executor处理。同时循环遍历检查管理socketchannel是否超时，超时则关闭
+```
+- socketProcessor：用来定义任务，主要调用http11processor组件处理请求。Http11Processor读取Channel的数据来生成ServletRequest对象。tomcat使用包装类socketwrapper屏蔽支持channel的非阻塞IO和异步IO模型的差异
+- Executor就是线程池，负责运行SocketProcessor任务类，调用SocketProcessor的run方法会调用Http11Processor来读取和解析请求数据。我们知道，Http11Processor是应用层协议的封装，它会调用容器里servlet获得响应，再把响应通过Channel写出
+
+
+
+
+
+
+
