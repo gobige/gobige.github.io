@@ -311,9 +311,47 @@ private final SynchronizedQueue<PollerEvent> events = new SynchronizedQueue<>();
 - socketProcessor：用来定义任务，主要调用http11processor组件处理请求。Http11Processor读取Channel的数据来生成ServletRequest对象。tomcat使用包装类socketwrapper屏蔽支持channel的非阻塞IO和异步IO模型的差异
 - Executor就是线程池，负责运行SocketProcessor任务类，调用SocketProcessor的run方法会调用Http11Processor来读取和解析请求数据。我们知道，Http11Processor是应用层协议的封装，它会调用容器里servlet获得响应，再把响应通过Channel写出
 
+## tomcat异步I/O实现
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/13.png)
 
+NioEndpoint2总体工作流程大致和NioEndpoint是相似的。Nio2Acceptor扩展了Acceptor，用异步IO方式接受连接，跑在一个单独线程，NioEndpoint2没有Poller组件，也就是没有Selector。而Selector的工作交给内核来做了
 
+**Nio2Acceptor**
+Nio2Acceptor监听连接过程不是不断调accept方法，而是通过回调函数完成
 
+监听连接过程
+```java
+serverSock.accept(null, this);
+```
 
+Nio2Acceptor实现了CompletionHandler接口
+```java
+protected class Nio2Acceptor extends Acceptor<AsynchronousSocketChannel>
+    implements CompletionHandler<AsynchronousSocketChannel, Void> {
+    
+@Override
+public void completed(AsynchronousSocketChannel socket,
+        Void attachment) {
+        
+    if (isRunning() && !isPaused()) {
+        if (getMaxConnections() == -1) {
+            //如果没有连接限制，继续接收新的连接
+            serverSock.accept(null, this);
+        } else {
+            //如果有连接限制，就在线程池里跑Run方法，Run方法会检查连接数
+            getExecutor().execute(this);
+        }
+        //处理请求
+        if (!setSocketOptions(socket)) {
+            closeSocket(socket);
+        }
+    } 
+}
+```
 
+- 如果没有连接限制，继续在本线程中调用accept方法接收新的连接。
+- 如果有连接限制，就在线程池里跑run方法去接收新的连接。那为什么要跑run方法呢，因为在run方法里会检查连接数，当连接达到最大数时，线程可能会被LimitLatch阻塞。为什么要放在线程池里跑呢？这是因为如果放在当前线程里执行，completed方法可能被阻塞，会导致这个回调方法一直不返回。
 
+completed方法会调用setSocketOptions方法，在这个方法里，会创建Nio2SocketWrapper和SocketProcessor，并交给线程池处理
+
+**Nio2SocketWrapper**
