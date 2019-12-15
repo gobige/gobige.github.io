@@ -312,6 +312,51 @@ private final SynchronizedQueue<PollerEvent> events = new SynchronizedQueue<>();
 - Executor就是线程池，负责运行SocketProcessor任务类，调用SocketProcessor的run方法会调用Http11Processor来读取和解析请求数据。我们知道，Http11Processor是应用层协议的封装，它会调用容器里servlet获得响应，再把响应通过Channel写出
 
 ## tomcat异步I/O实现
+**NIO.2**
+异步最大的特点：应用程序**不需要自己取触发**数据从内核空间到用户空间的**拷贝**。内核主动将数据拷贝到用户空间通知应用程序or等待应用程序通过**selector查询**，当数据**就绪**后，应用程序发起**read**调用，这时内核再把数据从内核拷贝到用户空间（这是应用程序是阻塞的），readAPI告诉内核：1数据准备好了拷贝到哪个buffer。2调用哪个函数去处理这些数据；内核在街道read指令后，等待数据到达后，产生硬件中断，内核在中断程序把数据从网卡拷贝到内核空间，然后做TCP/IP协议的数据解包和重组，再把数据拷贝到应用程序指定buffer并调用指定回调函数
+
+java NIO.2实现
+```java
+public class Nio2Server {
+
+   void listen(){
+      //1.创建一个线程池,用来执行内核回调请求
+      ExecutorService es = Executors.newCachedThreadPool();
+
+      //2.创建异步通道群组，绑定线程池
+      AsynchronousChannelGroup tg = AsynchronousChannelGroup.withCachedThreadPool(es, 1);
+      
+      //3.创建服务端异步通道，绑定到异步通道群组
+      AsynchronousServerSocketChannel assc = AsynchronousServerSocketChannel.open(tg);
+
+      //4.绑定监听端口
+      assc.bind(new InetSocketAddress(8080));
+
+      //5. 监听连接，传入回调类处理连接请求
+      assc.accept(this, new AcceptHandler()); 
+   }
+}
+
+//AcceptHandler类实现了CompletionHandler接口的completed方法。它还有两个模板参数，第一个是异步通道，第二个就是Nio2Server本身
+public class AcceptHandler implements CompletionHandler<AsynchronousSocketChannel, Nio2Server> {
+
+   //具体处理连接请求的就是completed方法，它有两个参数：第一个是异步通道，第二个就是上面传入的NioServer对象
+   @Override
+   public void completed(AsynchronousSocketChannel asc, Nio2Server attachment) {      
+      //调用accept方法继续接收其他客户端的请求
+      attachment.assc.accept(attachment, this);
+      
+      //1. 先分配好Buffer，告诉内核，数据拷贝到哪里去
+      ByteBuffer buf = ByteBuffer.allocate(1024);
+      
+      //2. 调用read函数读取数据，除了把buf作为参数传入，还传入读回调类
+      channel.read(buf, buf, new ReadHandler(asc)); 
+
+}
+
+```
+
+**NioEndpoint2**
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/13.png)
 
 NioEndpoint2总体工作流程大致和NioEndpoint是相似的。Nio2Acceptor扩展了Acceptor，用异步IO方式接受连接，跑在一个单独线程，NioEndpoint2没有Poller组件，也就是没有Selector。而Selector的工作交给内核来做了
@@ -355,3 +400,146 @@ public void completed(AsynchronousSocketChannel socket,
 completed方法会调用setSocketOptions方法，在这个方法里，会创建Nio2SocketWrapper和SocketProcessor，并交给线程池处理
 
 **Nio2SocketWrapper**
+主要作用是封装Channel，并提供接口给Http11Processor读写数据。Http11processor是不能阻塞等待数据的，processor调用wrapper的read方法时需要注册回调类。read立即返回，如果立即返回后processor没有读到数据那么这个请求不就失败了吗
+
+http11processor通过2次调用完成读取操作
+
+- 第一次read调用：连接刚刚建立好后，Acceptor创建SocketProcessor任务类交给线程池去处理，Http11Processor在处理请求的过程中，会调用Nio2SocketWrapper的read方法发出第一次读请求，同时注册了回调类readCompletionHandler，因为数据没读到，Http11Processor把当前的Nio2SocketWrapper标记为数据不完整。接着SocketProcessor线程被回收，Http11Processor并没有阻塞等待数据。这里请注意，Http11Processor维护了一个Nio2SocketWrapper列表，也就是维护了连接的状态。
+- 第二次read调用：当数据到达后，内核已经把数据拷贝到Http11Processor指定的Buffer里，同时回调类readCompletionHandler被调用，在这个回调处理方法里会重新创建一个新的SocketProcessor任务来继续处理这个连接，而这个新的SocketProcessor任务类持有原来那个Nio2SocketWrapper，这一次Http11Processor可以通过Nio2SocketWrapper读取数据了，因为数据已经到了应用层的Buffer。
+
+**配置nio2**
+```java
+server.xml中：
+<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+maxThreads="150" SSLEnabled="true">
+
+</Connector>
+```
+
+## AprEndpoint
+APR是Apache可移植运行时库，目的是向上层应用程序提供一个跨平台操作系统接口库。AprEndpoint通过JNI调用APR本地库实现非阻塞I/O
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/14.png)
+
+和NioEndpoint相比，acceptor和poller的实现是不同的
+
+**Acceptor**
+java使用JNI调用C语言的API实现acceptor。
+
+**Poller**
+acceptor接受到新的socket连接后，把socket交给poller查询I/O事件（通过JNI调用APR中的poll方法，APR又调用操作系统的epoll API实现）。AprEndpoint中，可以配置一个deferAccept参数，对应TCP协议中的TCP_DEFER_ACCEPT，当TCP客户端有新的连接请求到达时，TCP服务端不建立连接，而是等到请求数据发过来是再建立连接。（不用selector反复查询是否就绪）
+
+**JVM堆/本地内存**
+每个进程都有自己虚拟空间，JVM内存是进程空间一部分（此外还有代码段，数据段，内存映射区，内核空间等），从JVM角度看，JVM内存之外部分叫做本地内存
+
+java NIO提供两种buffer来接收数据，HeapByteBuffer和DirectByteBuffer
+
+使用HeapByteBuffer接受网络数据时，需要吧数据从内核拷贝到一个临时本地内存，再从临时本地内存拷贝到JVM堆（GC会造成堆地址失效），而**本地内存到JVM堆拷贝过程中JVM可以保证不做GC**（Hotspot VM层面，这时是没有safepoint的）。而DirectByteBuffer对象本身在JVM堆上，但是字节数组直接从本地内存分配少一次拷贝。从稳定性考虑，NioEndpoint和Nio2Endpoint不直接使用本地内存，因为本地内存不好管理，若内存泄露难以定位。
+
+**sendfile**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/15.png)
+
+传统的静态文件处理流程经历了6次内存拷贝，且read和write等系统调用导致进程从用户态到内核态切换，会耗费大量CPU和内存资源。
+
+而AprEndpoint通过操作系统层面sendfile解决问题。
+
+1. 将文件内容读取到内核缓冲区
+2. 将记录数据位置和长度的描述符添加到Socket缓冲区；而数据直接从内核缓冲区传递给网卡。
+
+服务访问高峰期，重启或发布服务，没有启动完成时，不要把流量送过来，避免出现阻塞线程过多情况。
+
+## 线程池
+
+java线程池核心类ThreadPoolExecutor，在每次**提交任务**时，如果线程数还**没达到核心线程数corePoolSize**，就**创建**新的线程,**否则**将其放道工作队列**workQueue**；而corePool中线程通过poll方法获取queue中任务，若**workQueue**有界，会创建临时线程直到数量**maximumPoolSize**，转而执行拒绝策略**handler**。若corePool中线程通过poll方法获取不到queue中任务，则该线程会被销毁。
+
+ - FixedThreadPool：固定长度线程数组，而queue是无界队列
+ - CachedThreadPool：无限创建临时时队列（Integer.Max_VALUE）
+ 
+tomcat定制线程池和原生java线程池唯一区别是在达到**maximumPoolSize**时，**继续尝试把任务添加到任务队列中**（其实现是通过捕获原生线程池抛出RejectedExecutionException异常，继续尝试放入任务队列）,如下：
+
+```java
+  public void execute(Runnable command, long timeout, TimeUnit unit) {
+  // Tomcat需要维护已提交任务数这个变量，它的目的就是在任务队列的长度无限制的情况下，让线程池有机会创建新的线程
+      submittedCount.incrementAndGet();
+      try {
+          //调用Java原生线程池的execute去执行任务
+          super.execute(command);
+      } catch (RejectedExecutionException rx) {
+         //如果总线程数达到maximumPoolSize，Java原生线程池执行拒绝策略
+          if (super.getQueue() instanceof TaskQueue) {
+              final TaskQueue queue = (TaskQueue)super.getQueue();
+              try {
+                  //继续尝试把任务放到任务队列中去
+                  if (!queue.force(command, timeout, unit)) {
+                      submittedCount.decrementAndGet();
+                      //如果缓冲队列也满了，插入失败，执行拒绝策略。
+                      throw new RejectedExecutionException("...");
+                  }
+              } 
+          }
+      }
+}
+```
+
+上述代码中，第一行解决任务队列长度无限制情况
+```java
+public class TaskQueue extends LinkedBlockingQueue<Runnable> {
+
+   @Override
+  //线程池调用任务队列的方法时，当前线程数肯定已经大于核心线程数了
+  public boolean offer(Runnable o) {
+
+      //如果线程数已经到了最大值，不能创建新线程了，只能把任务添加到任务队列。
+      if (parent.getPoolSize() == parent.getMaximumPoolSize()) 
+          return super.offer(o);
+          
+      //执行到这里，表明当前线程数大于核心线程数，并且小于最大线程数。
+      //表明是可以创建新线程的，那到底要不要创建呢？分两种情况：
+      
+      //1. 如果已提交的任务数小于当前线程数，表示还有空闲线程，无需创建新线程
+      if (parent.getSubmittedCount()<=(parent.getPoolSize())) 
+          return super.offer(o);
+          
+      //2. 如果已提交的任务数大于当前线程数，线程不够用了，返回false去创建新线程
+      if (parent.getPoolSize()<parent.getMaximumPoolSize()) 
+          return false;
+          
+      //默认情况下总是把任务添加到任务队列
+      return super.offer(o);
+  }
+  
+}
+```
+
+可以看出Tomcat维护已提交任务数，在任务队列的长度无限制的情况下，让线程池有机会创建新的线程
+
+## websocket
+
+对于实现实时性高的需求，有Ajax和comet技术，前者本质还是轮询，后者是在HTTP长连接基础上做了一些hack，实时性不高，而且频繁请求会给服务器带来压力，造成网络流量和带宽的浪费。Html5推出了WebSocket技术，使得浏览器和服务器之间任何一方都可以主动发消息给对方。
+
+websocket和socket不一样，socket是对TCP/IP协议抽象出来的API，对应一个IP地址和端口号。而webSocket是一个应用层协议，为了兼容HTTP，和HTTP进行一次握手，握手之后数据通过TCP的socket继续传输，与HTTP无关了。数据以frame形式传输，将一条消息分为几个frame，先后传输。这样的好处：
+
+- 大数据传输可以分片传输，不用考虑数据大小问题
+- 同HTTP的chunk一样，边生成数据边传输，提高传输效率
+
+websocket应用程序由一些列websocket endpoint组成，Endpoint是一个java对象，代码websocket连接的一端，好像处理HTTP请求的servlet一样。当浏览器连接到一个Endpoint时，tomcat会给这个链接创建一个唯一session，session的websocket在连接关闭时销毁，Session是socket的封装，endpoint通过它与浏览器通信。
+
+**Endpoint加载和WebSocket请求处理**
+
+WebSocket加载通过SCI机制完成，SCI是Servlet 3.0规范中定义的用来接收Web应用启动事件的接口。通过监听servlet容器启动事件，做一些扫描和加载websocket需要的endpoint类的初始化工作。
+
+**SCI使用**
+实现ServletContainerInitializer接口，并增加HandlesTypes注解。
+
+**加载**
+tomcat启动时通过SCI扫描指定类，作为SCI的onStartup方法参数，调用SCI的onStartup方法。构造一个websocketcontainer实例（专门处理websocket请求的endpoint容器），并且建立URL到ServerEndpoint的映射关系。
+
+**请求处理**
+当第一个websocket请求到达时，tomcat将HTTP协议升级成WebSocket协议，并将该Socket连接processor替换成UpgradeProcess。socket不会立即关闭，接下来请求，tomcat通过upgradeProcessor直接调用相应serverPoint处理
+
+## jetty线程策略
+
+Jetty的connector支持NIO模型，Jetty在Java原生Selector基础上封装自己的selector，ManagedSelector。将**I/O时间侦测和处理用同一个线程处理。充分利用CPU缓存并减少线程上下文切换开销**。
+
+将I/O检测和业务处理两种工作分开是传统selector的做法，但是这样存在缺点。当selector检测读就绪事件时，数据已经拷贝到内核中缓存，CPU缓存中也有这些数据了，如果应用程序此时去读取这些数据是另一个线程去读，很有可能使用另一个CPU核，这样之前那个CPU缓存中数据就用不上了。并且线程切换也需要开销。
+
