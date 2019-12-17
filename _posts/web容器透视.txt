@@ -30,7 +30,7 @@ tomcat维护一个tcp连接池响应所有客户端的请求。虽然一个tcp�
 
 **manager.{}.log/host-manager.{}.log**：存放tomcat自带manager项目日志信息
 
-### 容器和连接器
+### **容器和连接器**
 
 tomcat支持I/O模型
 
@@ -44,11 +44,11 @@ tomcat支持应用层协议：
 - AJP:用于和web服务器集成
 - HTTP/2：
 
-#### 连接器
+#### **连接器**
 
 tomcat一个容器可对接多个连接器，组成被称为Service组件。一个Tomcat可有多个service，通过不同端口访问同一个tomcat上不同应用
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/2.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/2.png)
 
 连接器对servlet容器屏蔽了协议和I/O模型的区别，统一向容器传入servletrequest对象，并从servlet接受对象servletresponse将其转换出去
 
@@ -58,7 +58,7 @@ https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/2.png
 
 由于IO模型和协议之间的组合有很多种，组件之间通过抽象接口交互，tomcat设计了一个protocolhandler接口来封装这两种变化点。
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/3.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/3.png)
 
 可以清晰看出它们之间继承和层次关系，尽量将稳定的部分放到抽象基类，每一个io模型和协议组合都有相应实现类
 
@@ -70,7 +70,7 @@ endpoint是通信端点，具体socket接收和发送处理器，对传输层抽
 
 **processor**
 processor用来实现HTTP协议，读取字节流解析成tomcatrequest和response对象，并通过adapter将其提交到容器处理，processor是对应应用层协议抽象。定义请求的处理。他的抽象类abstractprocessor对协议共有属性进行封装
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/4.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/4.png)
 
 **adapter**
 tomcat定义tomcatrequest类来存放请求，但是tomcatrequest不是标准servletrequest，tomcat引入coyoteadapter，传入tomcatrequest将其转换为servletrequest，在调用容器service方法
@@ -78,7 +78,7 @@ tomcat定义tomcatrequest类来存放请求，但是tomcatrequest不是标准ser
 
 #### 容器
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/5.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/5.png)
 
 - engine：表示引擎，用来管理多个虚拟站点，一个service最多只能有一个engine
 	- host：表示虚拟主机
@@ -90,7 +90,7 @@ tomcat采用一种分层架构，组合模式管理容器，使得servlet容器�
 **servlet定位**
 tomcat使用mapper组件来处理servlet的定位，mapper组件保留了web应用配置信息，其实就是**容器组件与访问路径的映射关系**，host容器配置域名，context的web路径，wrapper容器servlet映射路径，根据请求路径分解并映射到不同路由最终到servlet
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/6.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/6.png)
 
 1. 根据协议和端口号选定service和engine
 2. 根据域名选定host
@@ -99,10 +99,10 @@ https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/6.png
 
 并不是servlet处理所有请求内容，在这个调用链上每一个容器都可以使用pipeline-value进行处理
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/7.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/7.png)
 
 
-### 组件的创建、初始化、启动、停止和销毁
+### **组件的创建、初始化、启动、停止和销毁**
 
 如果一个系统对外提供服务，那么tomcat需要创建，组装并启动这些组件；服务停止时，tomcat需要释放资源，销毁这些组件，这是一个动态过程
 
@@ -119,9 +119,9 @@ https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/7.png
 LifeCycleBase基类实现了一些公共逻辑，生命状态转变与维护，事件触发，监听器添加，删除。而具体实现由子类去完成，这就是模板设计模式
 
 
-### tomcat启动
+### **tomcat启动**
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/8.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/8.png)
 
 1. 启动脚本启动一个jvm，bootstrap初始化类加载器
 2. 实例化Catalina，通过解析server.xml，创建相应组件，并调用server的start方法
@@ -136,9 +136,9 @@ https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/8.png
 ## jetty
 
 jetty 由多个connector和多个handler，所有connector被handler共享。以及一个线程池组成
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/9.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/9.png)
 
-### connector
+### **connector**
 connector对IO模型和协议进行封装，jetty9只支持NIO
 
 - acceptor：用于接收请求，创建_acceptor数组用于存放acceptor。acceptor通过阻塞方式接受连接。连接成功后调用accepted函数，accepted函数将socketchannel设置
@@ -148,7 +148,7 @@ connector对IO模型和协议进行封装，jetty9只支持NIO
 	- 请求处理：endpoint调用connection回调方法，使用endpoint接口读数据，读完后让HTTP解析器解析字节流，解析后数据存放到request对象里
 	- 响应处理：connection调用handler进行业务处理，handler通过response操作响应流，向流写入数据，httpconnection再通过endpoint写数据到channel。
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/10.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/10.png)
 
 1. Acceptor监听连接请求，当有连接请求到达时就接受连接，一个连接对应一个Channel，Acceptor将Channel交给ManagedSelector来处理。
 
@@ -174,7 +174,7 @@ connector会将servlet请求交给handler处理
 - 过滤器handler，自己处理请求，然后转发下一个handler
 - 内容handler，真正调用Servlet来处理请求，生成响应的内容
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/11.png
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/11.png)
 
 AbstractHandlerContainer：为了实现链式调用，内部有其他handler引用
 HandlerWrapper：只包含一个其他handler引用
@@ -193,7 +193,7 @@ tomcat和jetty整体结构都是基于组件，通过xml或代码方式灵活选
 通过反射机制动态创建组件。通过生命周期方式来管理组件，父组件负责子组件创建，启停，销毁；并通过监听组件状态转变事件作为触发条件
 
 
-## tomcat 优化
+## **tomcat 优化**
 
 - **清理不必要的web应用**,tomcat启动时，会启动webapps文件夹下的所有工程，所以清理不需要启动的工程很有必要
 - **清理XML配置文件**，XML解析代价不算小，tomcat启动时会解析所有XML配置文件。所以保持配置文件简洁很重要。
@@ -234,7 +234,7 @@ tomcat和jetty整体结构都是基于组件，通过xml或代码方式灵活选
     <absolute-ordering/> // 不需要扫描
 </web-app>
 ```
-- **随机数熵源优化**：tomcat7以上版本通过java的SecureRandom类生成随机数。而JVM默认使用阻塞式熵源(安全性较高一些)，可能会导致tomcat启动编码。通过设置JVM参数
+- **随机数熵源优化**：tomcat7以上版本通过java的SecureRandom类生成随机数。而JVM默认使用阻塞式熵源(安全性较高一些)，可能会导致tomcat启动偏慢。通过设置JVM参数
 ```java
 -Djava.security.egd=file:/dev/./urandom
 ```
@@ -252,7 +252,7 @@ tomcat启动默认一个一个启动web应用，通过修改server.xml文件中H
 ```
 engine元素里配置表示tomcat配置多少线程启动Host
 
-## tomcat非阻塞I/O实现
+## **tomcat非阻塞I/O实现**
 
 tomcat的NioEndPoint组件实现了I/O多路复用模型，
 
@@ -526,7 +526,7 @@ websocket应用程序由一些列websocket endpoint组成，Endpoint是一个jav
 
 **Endpoint加载和WebSocket请求处理**
 
-WebSocket加载通过SCI机制完成，SCI是Servlet 3.0规范中定义的用来接收Web应用启动事件的接口。通过监听servlet容器启动事件，做一些扫描和加载websocket需要的endpoint类的初始化工作。
+WebSocket加载通过SCI机制完成，SCI是Servlet 3.0规范中定义的**用来接收Web应用启动事件的接口**。通过监听servlet容器启动事件，做一些扫描和加载websocket需要的endpoint类的初始化工作。
 
 **SCI使用**
 实现ServletContainerInitializer接口，并增加HandlesTypes注解。
@@ -543,3 +543,287 @@ Jetty的connector支持NIO模型，Jetty在Java原生Selector基础上封装自�
 
 将I/O检测和业务处理两种工作分开是传统selector的做法，但是这样存在缺点。当selector检测读就绪事件时，数据已经拷贝到内核中缓存，CPU缓存中也有这些数据了，如果应用程序此时去读取这些数据是另一个线程去读，很有可能使用另一个CPU核，这样之前那个CPU缓存中数据就用不上了。并且线程切换也需要开销。
 
+**ManagedSelector**
+ManagedSelector本身就是一个selector，负责I/O**时间检测和分发**。
+
+```java
+public class ManagedSelector extends ContainerLifeCycle implements Dumpable
+{
+    //原子变量，表明当前的ManagedSelector是否已经启动
+    private final AtomicBoolean _started = new AtomicBoolean(false);
+    
+    //表明是否阻塞在select调用上
+    private boolean _selecting = false;
+    
+    //管理器的引用，SelectorManager管理若干ManagedSelector的生命周期
+    private final SelectorManager _selectorManager;
+    
+    //ManagedSelector不止一个，为它们每人分配一个id
+    private final int _id;
+    
+    //关键的执行策略，生产者和消费者是否在同一个线程处理由它决定
+    private final ExecutionStrategy _strategy;
+    
+    //Java原生的Selector
+    private Selector _selector;
+    
+    //"Selector更新任务"队列
+    private Deque<SelectorUpdate> _updates = new ArrayDeque<>();
+    private Deque<SelectorUpdate> _updateable = new ArrayDeque<>();
+    
+    ...
+}
+```
+**SelectorUpdate**
+对selector的操作无非是将**channel注册到selector或告诉selector感兴趣的I/O事件**。都是对**selector状态的更新**。jetty把这些操作抽象为SelectorUpdate
+
+```java
+/**
+ * A selector update to be done when the selector has been woken.
+ */
+public interface SelectorUpdate
+{
+    void update(Selector selector);
+}
+```
+意味你需向managedSelector提交一个任务类，任务类实现SelectorUpdate接口，update方法定义对managedselector做的操作。managedSelector在一个死循环里拉取每个任务执行
+
+**Selectable**
+I/O事件到达时，managedSelector通过实现接口Selectable任务类进行回调处理。
+```java
+public interface Selectable
+{
+    //当某一个Channel的I/O事件就绪后，ManagedSelector会调用的回调函数
+    Runnable onSelected();
+
+    //当所有事件处理完了之后ManagedSelector会调的回调函数，我们先忽略。
+    void updateKey();
+}
+```
+managedSelector检查某个channel的I/O事件就绪时，就调用该channel绑定附件类的onSelected方法拿到一个runnable，然后扔到线程池取执行。
+
+endpoint的onselced实现
+```java
+public Runnable onSelected()
+{
+    int readyOps = _key.readyOps();
+
+// 读事件，写事件
+    boolean fillable = (readyOps & SelectionKey.OP_READ) != 0;
+    boolean flushable = (readyOps & SelectionKey.OP_WRITE) != 0;
+
+    // return task to complete the job
+    Runnable task= fillable 
+            ? (flushable 
+                    ? _runCompleteWriteFillable 
+                    : _runFillable)
+            : (flushable 
+                    ? _runCompleteWrite 
+                    : null);
+
+    return task;
+}
+```
+
+**ExecutionStrategy**
+ManagedSelector将I/O事件的生产和消费看作是生产者消费者模式。jetty定义ExecutionStrategy接口
+```java
+public interface ExecutionStrategy
+{
+    //只在HTTP2中用到，简单起见，我们先忽略这个方法。
+    public void dispatch();
+
+    //实现具体执行策略，任务生产出来后可能由当前线程执行，也可能由新线程来执行
+    public void produce();
+    
+    //任务的生产委托给Producer内部接口，
+    public interface Producer
+    {
+        //生产一个Runnable(任务)
+        Runnable produce();
+    }
+}
+```
+
+ExecutionStrategy具体实现类
+
+- ProduceConsume：任务生产者自己依次生产和执行任务，就是用一个线程来侦测和处理一个ManagedSelector上所有的I/O事件，后面的I/O事件要等待前面的I/O事件处理完。图中绿色表示生产，蓝色表示消费。
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/16.png)
+- ProduceExecuteConsume：任务生产者开启新线程来运行任务I/O事件侦测和处理用不同的线程来处理，不能利用CPU缓存，线程切换成本高。棕色表示线程切换
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/17.png)
+-  ExecuteProduceConsume：任务生产者自己运行任务，该策略可能会新建一个新线程以继续生产和执行任务。这种策略被称为“吃掉你杀的猎物”（狩猎伦理，认为一个人不应该杀死他不吃掉的东西）。它的优点是能利用CPU缓存，但是如果处理I/O事件的业务代码执行时间过长，会导致**线程大量阻塞和饥饿**。
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/18.png)
+- EatWhatYouKill:对ExecuteProduceConsume改良，线程池线程充足时等同ExecuteProduceConsume；不足时，使用ProduceExecuteConsume策略（上面说过ExecuteProduceConsume导致线程大量阻塞，最坏连I/O事件侦测都没线程可用，导致拒绝连接请求）。
+
+**jetty的ExecutionStrategy实现**
+SelectorProducer是ManagedSelector内部类
+
+```java
+private class SelectorProducer implements ExecutionStrategy.Producer
+{
+    private Set<SelectionKey> _keys = Collections.emptySet();
+    private Iterator<SelectionKey> _cursor = Collections.emptyIterator();
+
+    @Override
+    public Runnable produce()
+    {
+        while (true)
+        {
+            //如果Channel集合中有I/O事件就绪，调用前面提到的Selectable接口获取Runnable,直接返回给ExecutionStrategy去处理
+            Runnable task = processSelected();
+            if (task != null)
+                return task;
+            
+           //如果没有I/O事件就绪，就干点杂活，看看有没有客户提交了更新Selector的任务，就是上面提到的SelectorUpdate任务类。
+            processUpdates();
+            updateKeys();
+
+           //继续执行select方法，侦测I/O就绪事件
+            if (!select())
+                return null;
+        }
+    }
+ }
+```
+
+## **对象池**
+一个比较大，比较复杂的java对象，创建，初始化，GC需要耗费CPU和内存资源。Jetty和Tomcat都是用了对象池技术
+
+**Tomcat--SynchronizedStack**
+```java
+public class SynchronizedStack<T> {
+
+    //内部维护一个对象数组,用数组实现栈的功能,（不使用链表来维护，减少节点维护内存开销，只支持扩容，不支持缩容，也就不会被GC，最低代价实现无界容器）
+    private Object[] stack;
+
+    //这个方法用来归还对象，用synchronized进行线程同步
+    public synchronized boolean push(T obj) {
+        index++;
+        if (index == size) {
+            if (limit == -1 || size < limit) {
+                expand();//对象不够用了，扩展对象数组
+            } else {
+                index--;
+                return false;
+            }
+        }
+        stack[index] = obj;
+        return true;
+    }
+    
+    //这个方法用来获取对象
+    public synchronized T pop() {
+        if (index == -1) {
+            return null;
+        }
+        T result = (T) stack[index];
+        stack[index--] = null;
+        return result;
+    }
+    
+    //扩展对象数组长度，以2倍大小扩展
+    private void expand() {
+      int newSize = size * 2;
+      if (limit != -1 && newSize > limit) {
+          newSize = limit;
+      }
+      //扩展策略是创建一个数组长度为原来两倍的新数组
+      Object[] newStack = new Object[newSize];
+      //将老数组对象引用复制到新数组
+      System.arraycopy(stack, 0, newStack, 0, size);
+      //将stack指向新数组，老数组可以被GC掉了
+      stack = newStack;
+      size = newSize;
+   }
+}
+```
+
+**Jetty---ByteBufferPool**
+本质是一个ByteBuffer对象池，jetty进行网络数据读写时直接获取预先分配的buffer
+```java
+public interface ByteBufferPool
+{
+// 指定buffer从本地内存还是JVM堆分配
+    public ByteBuffer acquire(int size, boolean direct);
+
+    public void release(ByteBuffer buffer);
+}
+```
+ArrayByteBufferPool
+```java
+public class ArrayByteBufferPool implements ByteBufferPool
+{
+    private final int _min;//最小size的Buffer长度
+    private final int _maxQueue;//Queue最大长度
+    
+    //用不同的Bucket(桶)来持有不同size的ByteBuffer对象,同一个桶中的ByteBuffer size是一样的
+    private final ByteBufferPool.Bucket[] _direct;
+    private final ByteBufferPool.Bucket[] _indirect;
+    
+    //ByteBuffer的size增量
+    private final int _inc;
+    
+    public ArrayByteBufferPool(int minSize, int increment, int maxSize, int maxQueue)
+    {
+        //检查参数值并设置默认值
+        if (minSize<=0)//ByteBuffer的最小长度
+            minSize=0;
+        if (increment<=0)
+            increment=1024;//默认以1024递增
+        if (maxSize<=0)
+            maxSize=64*1024;//ByteBuffer的最大长度默认是64K
+        
+        //ByteBuffer的最小长度必须小于增量
+        if (minSize>=increment) 
+            throw new IllegalArgumentException("minSize >= increment");
+            
+        //最大长度必须是增量的整数倍
+        if ((maxSize%increment)!=0 || increment>=maxSize)
+            throw new IllegalArgumentException("increment must be a divisor of maxSize");
+         
+        _min=minSize;
+        _inc=increment;
+        
+        //创建maxSize/increment个桶,包含直接内存的与heap的
+        _direct=new ByteBufferPool.Bucket[maxSize/increment];
+        _indirect=new ByteBufferPool.Bucket[maxSize/increment];
+        _maxQueue=maxQueue;
+        int size=0;
+        for (int i=0;i<_direct.length;i++)
+        {
+          size+=_inc;
+          _direct[i]=new ByteBufferPool.Bucket(this,size,_maxQueue);
+          _indirect[i]=new ByteBufferPool.Bucket(this,size,_maxQueue);
+        }
+    }
+}
+
+//分配Buffer
+public ByteBuffer acquire(int size, boolean direct)
+{
+    //找到对应的桶，没有的话创建一个桶
+    ByteBufferPool.Bucket bucket = bucketFor(size,direct);
+    if (bucket==null)
+        return newByteBuffer(size,direct);
+    //这里其实调用了Deque的poll方法
+    return bucket.acquire(direct);
+        
+}
+
+//释放Buffer
+public void release(ByteBuffer buffer)
+{
+    if (buffer!=null)
+    {
+      //找到对应的桶
+      ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(),buffer.isDirect());
+      
+      //这里调用了Deque的offerFirst方法
+  if (bucket!=null)
+      bucket.release(buffer);
+    }
+}
+```
+buffer的获取和释放通过对相应的桶中deque进行操作
+
+对象池的存在会造成**线程同步**的问题，但是却避免了**创建，销毁对象**的开销。从对象池本身设计上来看，需尽量做到**无锁化**。如果内存够大，考虑使用ThreadLocal（注意内存泄漏问题）；必须对**对象池大小做限制（自动扩容，缩容）**，
