@@ -118,8 +118,7 @@ Java虚拟机只与Class文件这种特定的二进制文件格式所关联，�
 ## 类加载器
 
 类加载器主要实现了在类加载阶段，**通过一个类的全限定名来获取描述此类的二进制字节流**，这个实现动作是放到java虚拟机外部去实现的。
-
-每一个类，都需要由加载它的类加载器和这个类本身一同确立其在java虚拟机中的唯一性。
+JVM不是启动的时候把所有class文件都加载一遍，而是用到的时候才回去加载。每一个类，都需要由加载它的类加载器和这个类本身一同确立其在java虚拟机中的唯一性。
 
 **双亲委派模型**
 
@@ -134,6 +133,56 @@ Java虚拟机只与Class文件这种特定的二进制文件格式所关联，�
 - 启动类加载器：负责加载java_home下**lib目录或-Xbootclasspath参数所指定路径中的类库**到虚拟机内存中，在开发中返回null可将加载请求委派给引导类加载器
 - 扩展类加载器：由sun.misc.Launcher的ExtClassLoader实现，负责加载javahome下**lib\ext目录中或java.ext.dirs系统变量指定路径的类库**，该加载器在开发中可被直接使用
 - 应用程序类加载器：由sun.misc.Launcher的App-ClassLoader实现，通过classLoader的getsystemclassloader方法得到，也被称为系统类加载器。负责**加载用户类路径上类库**
+
+```java
+public abstract class ClassLoader {
+
+    //每个类加载器都有个父加载器
+    private final ClassLoader parent;
+    
+    public Class<?> loadClass(String name) {
+  
+        //查找一下这个类是不是已经加载过了
+        Class<?> c = findLoadedClass(name);
+        
+        //如果没有加载过
+        if( c == null ){
+          //先委托给父加载器去加载，注意这是个递归调用
+          if (parent != null) {
+              c = parent.loadClass(name);
+          }else {
+              // 如果父加载器为空，查找Bootstrap加载器是不是加载过了
+              c = findBootstrapClassOrNull(name);
+          }
+        }
+        // 如果父加载器没加载成功，调用自己的findClass去加载
+        if (c == null) {
+            c = findClass(name);
+        }
+        
+        return c；
+    }
+    
+    protected Class<?> findClass(String name){
+       //1. 根据传入的类名name，到在特定目录下去寻找类文件，把.class文件读入内存
+          ...
+          
+       //2. 调用defineClass将字节数组转成Class对象
+       return defineClass(buf, off, len)；
+    }
+    
+    // 将字节码数组解析成一个Class对象，用native方法实现
+    protected final Class<?> defineClass(byte[] b, int off, int len){
+       ...
+    }
+}
+```
+
+- defineClass这个工具方法，调用native方法（C语言实现，通过JNI机制调用）把java类字节码解析成一个class对象
+- findClass主要职责是找到.class文件
+- loadClass确定哪个类加载器去加载class文件
+
+类加载器之间并不是继承关系，自定义类加载器只需继承classLoader抽象类，重写findClass和loadClass方法。如果需要打破双清委派原则，则需要重写loadClass方法
 
 双亲委派模型工作过程是如果一个类加载器收到类加载请求，首先不会自己去尝试加载这个类，而是将加载请求**委派给父类加载器**，如果父类无法加载该请求，才自己去尝试加载。
 

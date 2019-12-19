@@ -850,3 +850,166 @@ linux内核将线程当作一个进程进行CPU调度，内核维护一个可允
 - 热部署：由后台线程定式检查Web应用变化，重新加载整个Web应用。会清空session，比热加载更干净，彻底。
 - 热加载：Web容器启动一个后台线程，定期检查类文件变化，如果有变化，就重新加载类，不会清空session。
 
+**Tomcat后台线程**
+```java
+bgFuture = exec.scheduleWithFixedDelay(
+              new ContainerBackgroundProcessor(),//要执行的Runnable,需要周期性执行的任务类，也是containerBase内部类，containerbase是所有容器组件基类，
+              backgroundProcessorDelay, //第一次执行延迟多久
+              backgroundProcessorDelay, //之后每次执行间隔多久
+              TimeUnit.SECONDS);        //时间单位
+```
+**ContainerBackgroundProcessor实现**
+```java
+protected class ContainerBackgroundProcessor implements Runnable {
+
+    @Override
+    public void run() {
+        //请注意这里传入的参数是"宿主类"的实例
+        processChildren(ContainerBase.this);
+    }
+
+    protected void processChildren(Container container) {
+        try {
+            //1. 调用当前容器的backgroundProcess方法。
+            container.backgroundProcess();
+            
+            //2. 遍历所有的子容器，递归调用processChildren，
+            //这样当前容器的子孙都会被处理            
+            Container[] children = container.findChildren();
+            for (int i = 0; i < children.length; i++) {
+            //这里请你注意，容器基类有个变量叫做backgroundProcessorDelay，如果大于0，表明子容器有自己的后台线程，无需父容器来调用它的processChildren方法。
+                if (children[i].getBackgroundProcessorDelay() <= 0) {
+                    processChildren(children[i]);
+                }
+            }
+        } catch (Throwable t) { ... }
+```
+
+processChildren方法调用当前容器backprocess方法以及递归调用子孙backgroundprocess。这样就只需一个后台线程就能处理该容器下所有子容器，和tong
+
+**backgroundprocess方法实现**
+```java
+public void backgroundProcess() {
+
+    //1.执行容器中Cluster组件的周期性任务
+    Cluster cluster = getClusterInternal();
+    if (cluster != null) {
+        cluster.backgroundProcess();
+    }
+    
+    //2.执行容器中Realm组件的周期性任务
+    Realm realm = getRealmInternal();
+    if (realm != null) {
+        realm.backgroundProcess();
+   }
+   
+   //3.执行容器中Valve组件的周期性任务
+    Valve current = pipeline.getFirst();
+    while (current != null) {
+       current.backgroundProcess();
+       current = current.getNext();
+    }
+    
+    //4. 监听 触发容器的"周期事件"，Host容器的监听器HostConfig就靠它来调用
+    fireLifecycleEvent(Lifecycle.PERIODIC_EVENT, null);
+}
+```
+
+### **Tomcat热加载**
+tomcat热加载在context容器中实现
+```java
+public void backgroundProcess() {
+
+    //WebappLoader周期性的检查WEB-INF/classes和WEB-INF/lib目录下的类文件
+    Loader loader = getLoader();
+    if (loader != null) {
+        loader.backgroundProcess();        
+    }
+    
+    //Session管理器周期性的检查是否有过期的Session
+    Manager manager = getManager();
+    if (manager != null) {
+        manager.backgroundProcess();
+    }
+    
+    //周期性的检查静态资源是否有变化
+    WebResourceRoot resources = getResources();
+    if (resources != null) {
+        resources.backgroundProcess();
+    }
+    
+    //调用父类ContainerBase的backgroundProcess方法
+    super.backgroundProcess();
+}
+
+```
+context容器的WebappLoader调用context容器的reload方法。reload方法主要做了以下的事
+
+- 停止和销毁context容器及其所有子容器（wrapper），servlet实例
+- 停止和销毁context容器相关Listener和filter
+- 停止和销毁context容器pipeline和value
+- 停止和销毁context容器的类加载器，以及其加载的类文件资源
+- 启动context容器，重新创建前面被销毁的资源
+
+context关联session没有被销毁
+
+**启用tomcat热加载**
+```java
+Context.xml文件下
+
+<Context reloadable="true"/>
+```
+
+### **Tomcat热部署**
+热部署会重新部署web应用，原来context对象销毁（包括session），于是HOST就成为了部署发起者
+
+Host监听周期事件
+```java
+public void lifecycleEvent(LifecycleEvent event) {
+    // 执行check方法。
+    if (event.getType().equals(Lifecycle.PERIODIC_EVENT)) {
+        check();
+    } 
+}
+
+protected void check() {
+    if (host.getAutoDeploy()) {
+        // 检查这个Host下所有已经部署的Web应用
+        DeployedApplication[] apps =
+            deployed.values().toArray(new DeployedApplication[0]);
+            
+        for (int i = 0; i < apps.length; i++) {
+            //检查Web应用目录是否有变化
+            checkResources(apps[i], false);
+        }
+
+        //执行部署
+        deployApps();
+    }
+}
+```
+
+- web应用目录是否被删除，把相应context容器销毁
+- 是否有新的web应用目录加入，部署相应web应用
+
+HostConfig做的事比较宏观，检查web应用目录级别变化
+
+**tomcat类加载**
+
+tomcat类加载打破了jvm类加载的双亲委派原则
+
+**findClass方法实现流程**
+
+- 先在web应用本地目录下查找要加载的类
+- 如果没找到，交给父加载器查找，即AppClassLoader
+- 如果父加载器也没找到，抛出ClassNotFound
+
+
+**loadClass方法实现流程**
+
+- 先本地cache查找该类是否加载，也就是tomcat的类加载器是否已经加载
+- 如果tomcat类加载器没有加载，再看看系统类加载器是否加载过
+- 若无，让ExtClassLoader加载，**目的防止Web应用自己的类覆盖JRE的核心类**
+- 若无，就在本地Web应用目录下查找加载
+- 若无，说明不是web应用定义的类，由系统类加载器去加载。
+- 若无，throw exception
