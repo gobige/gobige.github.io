@@ -1013,3 +1013,129 @@ tomcat类加载打破了jvm类加载的双亲委派原则
 - 若无，就在本地Web应用目录下查找加载
 - 若无，说明不是web应用定义的类，由系统类加载器去加载。
 - 若无，throw exception
+
+## web应用隔离
+
+**WebAppClassLoader**
+我们部署两个web应用，两个web应用都有相同的servlet，tomcat自定义一个类加载器WebAppClassLoader，并给每个Web应用创建一个类加载器实例。context负责创建，维护实例，**不同加载器加载的类认为是不同的类**。
+**SharedClassLoader**
+两个web应用之间共享类库，通过增加一个SharedClassLoader来加载，作为WebAppClassLoader父加载器，如果webAppClassLoader没有加载到某个类，就委托父加载器去加载这个类，SharedClassLoader会在指定目录下加载共享类，在返回给webAppClassLoader。
+**CatalinaClassloader**
+CatalinaClassloader专门负责加载Tomcat自身的类，和SharedClassLoader是同一个级
+**CommonClassLoader**
+CommonClassLoader作为CatalinaClassloader和SharedClassLoader的父加载器，
+
+CommonClassLoader加载的类可被CatalinaClassloader和SharedClassLoader使用，而CatalinaClassloader和SharedClassLoader加载的类互相隔离，WebAppClassLoader可使用SharedClassLoader加载的类，但各个WebAppClassLoader实例之间相互隔离
+
+**默认加载路径**
+CommonClassLoader对应<Tomcat>/common/*
+CatalinaClassLoader对应 <Tomcat >/server/*
+SharedClassLoader对应 <Tomcat >/shared/*
+WebAppClassloader对应 <Tomcat >/webapps/<app>/WEB-INF/*目录
+
+JVM有条隐含的默认规则，如果一个类由类加载器A加载，那这个类依赖类也由相同类加载器加载。spring作为第三方JAR包，本身由SharedClassLoader来加载，spring又要加载业务类，但是业务类在web应用目录下，为了解决这个问题，tomcat使用**线程上下文加载器**。他保存在线程私有数据里，当启动web应用时，线程里设置线程上下文加载器，这样spring在启动时就将线程上下文加载器取出来，用来加载bean。同时JDBC也使用上下文类加载器加载不同数据库驱动
+
+获取上下文加载器
+```java
+cl = Thread.currentThread().getContextClassLoader();
+```
+
+- 每个web应用自己java类文件和依赖JAR包，分别放在WEB-INF/classes和WEB-INF/lib目录下
+- 多个应用共享Java类文件和JAR包，分别放在Web容器指定共享目录下
+- 常见classNotFound错误，应检查你的类加载器是否正确
+
+StandardContext启动方法中，将当前线程上下文加载器设置为WebAppClassLoader
+
+```java
+originalClassLoader = Thread.currentThread().getContextClassLoader();
+Thread.currentThread().setContextClassLoader(webApplicationClassLoader);
+
+// 启动方法结束后，恢复线程上下文加载器
+Thread.currentThread().setContextClassLoader(originalClassLoader);
+```
+
+## servlet管理
+
+wrapper容器用于管理servlet
+```java
+protected volatile Servlet instance = null;
+
+// 实例化servlet，
+public synchronized Servlet loadServlet() throws ServletException {
+    Servlet servlet;
+  
+    //1. 创建一个Servlet实例
+    servlet = (Servlet) instanceManager.newInstance(servletClass);    
+    
+    //2.调用了Servlet的init方法，这是Servlet规范要求的
+    initServlet(servlet);
+    
+    return servlet;
+}
+```
+
+默认为延迟加载servlet，通过loadOnStartup=true设置非延迟加载；但是wrapper是会创建的。每个容器组价都有自己pipeline，每个pipeline有一个Value链，每个容器组件有一个BasicValue。Wrapper也有Pipline和BasicValve（StandardWrapperValue）
+
+**standardWrapperValue的invoke过程**
+- 第一步，创建Servlet实例
+- 第二步，为当前请求创建Filter链
+- 第三步，调用这个Filter链
+
+Filter和servlet都可在web.xml文件里进行配置，filter作用域是整个web应用，context容器对他进行管理，使用Map集合保存filter，每个请求生成一个filter链，请求处理完了，filter链也被回收了。
+
+Listener用于监听容器内部发生事件，主要两类事件
+- 生命状态的变化，Context容器启动和停止，Session创建和销毁
+- 属性的变化，比如Context容器某个属性值变了，Session某个属性值变了以及新的请求来了
+
+```java
+// 监听属性值变化的监听器,属性值可变所以用copyonwritearray
+
+private List<Object> applicationEventListenersList = new CopyOnWriteArrayList<>();
+
+//监听生命事件的监听器，不能动态改变，没有现存安全问题
+private Object applicationLifecycleListenersObjects[] = new Object[0];
+```
+
+## 异步servlet
+
+新的请求会导致tomcat和jetty从线程池拿出一个线程处理请求，如果web应用需要较长时间处理请求（数据库查询/下游服务调用返回），tomcat线程一直不回收，占用系统资源，极端会导致线程饥饿。异步servlet会启动一个单独线程执行耗时请求，tomcat线程立即返回
+
+**使用方法**
+```java
+@WebServlet(urlPatterns = {"/async"}, asyncSupported = true)
+public class AsyncServlet extends HttpServlet {
+
+    // Web应用线程池，用来处理异步Servlet
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    public void service(HttpServletRequest req, HttpServletResponse resp) {
+        // 1. 调用startAsync获取异步上下文，上下文保存了请求和响应对象
+        final AsyncContext ctx = req.startAsync();
+
+       // 用线程池来执行耗时操作
+        executor.execute(new Runnable() {
+
+            @Override
+            public void run() {
+
+                //在这里做耗时的操作
+                try {
+                    ctx.getResponse().getWriter().println("Handling Async Servlet");
+                } catch (IOException e) {}
+
+                //3. 异步Servlet处理完了调用异步上下文的complete方法告诉tomcat，请求处理完成
+                ctx.complete();
+            }
+
+        });
+    }
+}
+```
+异步servlet默认30秒，如果30秒请求没处理完，Tomcat触发超时规则，向浏览器返回超时错误，此时web应用若在调用ctx.complete方法，会得到illegalstateException异常
+
+**startAsync**
+startAsync创建异步上下文代替tomcat线程释放时保存request和response对象；并且告诉tomcat当处理方法返回时，不要把响应发到浏览器。tomcat使用CoyoteAdaptor进行flush响应数据和销毁request和response。CoyoteAdapter判断请求如果是异步请求，把当前socket协议处理者processor缓存起来，将SocketWrapper对象和相应的Processor存到一个同步Map数据结构
+
+**complete**当请求处理完成时，调用request对象的action方法，action方法实现调用processor的processsocketevent方法，processsocketevent方法调用socketwrapper的processsocket方法，processSocket方法创建任务类，通过tomcat线程池处理
+
+如果你发现tomcat线程不够了，大量线程阻塞在等待web应用处理上，而web应用又没有优化空间，确实需要长时间处理，可以尝试使用异步servlet
