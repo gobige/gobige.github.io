@@ -1138,4 +1138,243 @@ startAsync创建异步上下文代替tomcat线程释放时保存request和respon
 
 **complete**当请求处理完成时，调用request对象的action方法，action方法实现调用processor的processsocketevent方法，processsocketevent方法调用socketwrapper的processsocket方法，processSocket方法创建任务类，通过tomcat线程池处理
 
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/21.png)
+
 如果你发现tomcat线程不够了，大量线程阻塞在等待web应用处理上，而web应用又没有优化空间，确实需要长时间处理，可以尝试使用异步servlet
+
+## springboot对容器的使用
+
+为了支持多种容器，springboot对容器进行了抽象，定义了WebServer接口
+```java
+public interface WebServer {
+    void start() throws WebServerException;
+    void stop() throws WebServerException;
+    int getPort();
+}
+```
+
+定义ServletWebServerFactory创建Web容器，返回webServer
+```java
+public interface ServletWebServerFactory {
+    WebServer getWebServer(ServletContextInitializer... initializers);
+}
+```
+ServletContextInitializer表示ServletContext初始化器
+```java
+public interface ServletContextInitializer {
+    void onStartup(ServletContext servletContext) throws ServletException;
+}
+```
+如果你想注册你自己的Servlet，可以实现一个ServletContextInitializer，在web容器启动时，springboot会把所有实现了ServletContextInitializer接口的类收集起来，统一调用onStartup方法
+
+springboot默认给我们注册了DispatcherSetvlet。
+
+**内嵌式Web容器的创建和启动**
+springboot通过抽象实现类AbstractApplicationContext实现refresh方法，refresh方法新建或刷新一个ApplicationContext，AbstractApplicationContext的子类可重写onRefresh方法，实现内嵌式web容器。springboot的refresh方法通过web容器工厂来创建web容器（调用tomcat或jetty的API创建各种组件）
+
+**servlet注册方式**
+
+- springboot启动类使用@ServletComponentScan注解来扫描注解了@WebServlet、@WebFilter、@WebListener的类。并注册到servlet容器中
+- 使用ServletRegistrationBean、FilterRegistrationBean和ServletListenerRegistrationBean三个类分别注册servlet，filter，listener。
+```java
+@Bean
+public ServletRegistrationBean servletRegistrationBean() {
+return new ServletRegistrationBean(new HelloServlet(),"/hello");
+}
+```
+- 动态注册,创建一个实现了ServletContextInitializer接口的类，并注册为一个bean，springboot负责调用onStartUp方法
+
+**容器定制**
+
+- 通过web容器工厂定制容器通用参数
+```java
+@Component
+public class MyGeneralCustomizer implements
+  WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
+  
+    public void customize(ConfigurableServletWebServerFactory factory) {
+        factory.setPort(8081);
+        factory.setContextPath("/hello");
+     }
+}
+```
+- 通过特定web容器工厂TomcatServletWebServerFactory进一步定制。
+```java
+class TraceValve extends ValveBase {
+    @Override
+    public void invoke(Request request, Response response) throws IOException, ServletException {
+
+        request.getCoyoteRequest().getMimeHeaders().
+        addValue("traceid").setString("1234xxxxabcd");
+
+        Valve next = getNext();
+        if (null == next) {
+            return;
+        }
+
+        next.invoke(request, response);
+    }
+}
+```
+
+tomcat和jetty处理请求都通过责任链模式，前者Pipeline-value，后者通过HandlerWrapper实现。jetty的责任链实现了**回溯的链式调用**（先调用Handler初始化方法，再调用各Handler请求处理方法）。jetty通过ScopedHandler实现回溯的链式调用。ScopedHandler通过递归的方式来设置_outScope和_nextScope两个变量。层层递归调用中需要用到一些变量，如__outerScope，保存了Handler链中的头节点，ScopedHandler通过线程私有数据ThreadLocal来保存变量，兼顾变量保存和线程安全问题
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/22.png)
+
+## tomcat日志框架
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/23.png)
+
+slf4j时常用的门面日志，对外提供一套通用的日志记录API，而具体的日志输出服务有log4j，logback等
+
+Servlet规范中定义了HttpServletRequest和HttpSession接口，Tomcat实现了这些接口，但具体实现细节并没有暴露给开发者，因此定义了两个包装类，RequestFacade和StandardSessionFacade。
+
+Tomcat是通过Manager来管理Session的，默认实现是StandardManager。StandardContext持有StandardManager的实例，并存放了HttpSessionListener集合，Session在创建和销毁时，会通知监听器。
+
+## tomcat的session同步
+
+session同步方式
+
+- 一种把所有Session数据放到一台服务器/数据库，集群中所有节点访问session服务器。
+- 集群中节点间进行session数据同步拷贝
+    - 将一个节点Session拷贝到集群中其他所有节点
+    - 将一个节点的Session数据拷贝到另一个备份节点
+
+
+**单播**：信息的接收和传递在两个节点之间进行，点对点通信。
+**组播**：一台主机向指定一组主机发送数据报包。
+
+每一个tomcat节点在启动时和运行时都会周期性发送组播心跳包，同一个集群内节点都在相同组播地址和端口监听这些信息；默认3s内不发送组播报文节点就会被认为已经奔溃了，从集群中删去。
+
+**tomcat集群通信配置**
+```java
+// server.xml添加
+<Cluster className-"org.apache.catalina.ha.tcp.SimpleTcpCluster/"
+```
+
+tomcat在集群规模少的时候使用deletamanager管理session，规模大时使用backmanager管理。
+
+## JMX
+JMX是一个为应用程序，设备，系统植入监控管理功能的框架。JMX通过管理MBean监控业务资源，MBean在JMX MBean服务器注册。
+我们可以使用**JMX**来监控tomcat的指标（吞吐量，响应时间，错误数，线程池，CPU，JVM内存）
+
+在tomcat的bin目录下新建一个setenv.sh文件
+```java
+export JAVA_OPTS="${JAVA_OPTS} -Dcom.sun.management.jmxremote"
+export JAVA_OPTS="${JAVA_OPTS} -Dcom.sun.management.jmxremote.port=9001"
+export JAVA_OPTS="${JAVA_OPTS} -Djava.rmi.server.hostname=x.x.x.x"
+export JAVA_OPTS="${JAVA_OPTS} -Dcom.sun.management.jmxremote.ssl=false"
+export JAVA_OPTS="${JAVA_OPTS} -Dcom.sun.management.jmxremote.authenticate=false"
+```
+
+使用Jconsole ip:port 访问tomcat运行情况
+
+**常用tomcat指标查看命令**
+```java
+// 找到tomcat进程ID
+ps -ef | gerp tomcat
+
+// 查看tomcat进程状态信息
+cat/proc/<pid>/status
+
+// 查看CPU和内存使用情况
+top -p <pid>
+
+// 查看tomcat网络连接
+netstat -na | grep 8080
+
+// 查看网络流量
+ifstat
+```
+
+**tomcat I/O模型选择**
+一般情况默认使用NIO，除非WEB应用用到了TLS加密传输，而且对性能要求极高，可以考虑使用APR。APR通过OpenSSL处理TLS握手和加/解密。效率更高。
+如果tomcat跑在windows平台，HTTP请求量很大，可以考虑NIO.2，因为Windows平台从操作系统层面真正实现了异步I/O，能够体现异步I/O效果。而linux只是在应用层面通过epoll模拟异步I/O模型
+
+**线程数量设置**
+
+- 利特尔法则：系统中请求数 = 请求的到达速率 * 每个请求处理时间
+
+这样得到的每一个线程都有任务执行，但是对于I/O密集型应用，还是会在用户空间和内核空间之间的拷贝上发生阻塞问题，所以这类应用需增加线程数量
+
+- 线程池大小 - （线程I/O阻塞时间 + 线程CPU时间）/线程CPU时间
+
+总结：
+
+- 请求处理时间越长，所需线程数越多，前提CPU核数足够
+- I/O等待时间越长，所需线程数越多，前提CPU时间和I/O时间比率要足够准确
+- 请求速率越快，所需线程数越多，前提CPU核数足够
+
+具体的线程个数，要通过公式和实际压测调整看效果，达到最优。先设置一个较小线程数，进行压测，达到系统极限时（错误数增加，响应时间大幅增加），逐步加大线程数，当增加到某个值，效果再也没提升，甚至TPS下降，那可认为时最佳线程数
+
+## tomcat拒绝连接原因
+
+**java.net.SocketTimeoutException**
+
+- 连接超时：指socket.connect方法超时，常常是因为网络不稳定
+- 读取超时：指socket.read方法超时，可能是下游服务响应过长
+
+**java.net.BindException: Address already in use: JVM_Bind**
+端口被占用
+
+**java.net.ConnectException: Connection refused: connect**
+当客户端调用new socket(ip,port)或socke.connect函数时，可能抛出该异常。表示找不到该IP或port
+
+**java.net.SocketException: Socket is closed**
+通信一方主动关闭了Socket连接，而又进行读写时会报错
+
+**java.net.SocketException: Connection reset/Connect reset by peer: Socket write error**
+通信一方关闭socket，此时另一方正在进行**写**数据，报Connect reset by peer错误；此时另一方正在进行**读**数据，报Connection reset错误
+
+**java.net.SocketException: Broken pipe**
+通信一方收到Connect reset by peer后，依旧写数据会报错误
+
+**java.net.SocketException: Too many open files**
+进程打开文件句柄数超过限制。通常出现在并发用户数大的情况下，也可能是大量未关闭未使用socket连接
+
+**maxConnections和acceptCount**
+在TCP建立连接的三次握手过程中，服务端恢复syn+ack时，将这个连接保存到**半连接队列**。客户端返回ACK完成握手，服务端将链接移入accept队列，等待tomcat取走连接。
+
+我们咋创建serversocket时会设置backlog值也就是tomcat中**acceptcount**，tomcat有somaxconn值，默认为128，tomcat会在两者间选择最小值作为accept队列大小。高并发情况下，tomcat来不及处理新连接时，会堆积在accept队列中，当满时，会报connection reset异常
+
+maxConnections值tomcat任意时刻接收和处理最大连接数。满时acceptor线程不再从accept队列中取走连接。默认值根据IO模型有关（NIO 10000 APR 8192）
+
+综述：acceptCount设置过大，请求等待时间较长，设置过小，高并发情况下会触发reset错误
+
+## 定位CPU使用率高问题
+
+- 使用TOP查看具体占用高CPU进程
+- top -H -P <PID> 查看具体进程占用情况
+- 查看其中线程情况
+- 判断是单个线程占用过高还是，线程切换问题（vmstat查看操作系统层面线程上下文切换活动，）
+
+
+## 操作系统层面调优
+通过调整linux操作系统的默认值限制
+/etc/security/limis.conf文件中：
+```java
+// 调整TCP缓冲区大小到16MB
+sysctl -w net.core.rmem_max = 16777216
+sysctl -w net.core.wmem_max = 16777216
+sysctl -w net.ipv4.tcp_rmem =“4096 87380 16777216”
+sysctl -w net.ipv4.tcp_wmem =“4096 16384 16777216”
+
+// 高并发情况小调整TCP连接队列大小
+sysctl -w net.core.somaxconn = 4096
+
+// 控制java程序传入数据包队列大小
+sysctl -w net.core.netdev_max_backlog = 16384
+sysctl -w net.ipv4.tcp_max_syn_backlog = 8192
+sysctl -w net.ipv4.tcp_syncookies = 1
+
+// 增加端口使用范围
+sysctl -w net.ipv4.ip_local_port_range =“1024 65535”
+sysctl -w net.ipv4.tcp_tw_recycle = 1
+
+// 为特定用户增加文件句柄数
+用户名 hard nofile 40000
+用户名 soft nofile 40000
+
+// 使用合适的内核可用的拥塞控制算法列表 cubic
+sysctl -w net.ipv4.tcp_congestion_control = cubic
+```
+
+jetty的调优从两点出发，acceptors个数应设为大于1，小于cpu核数；threadPoll队列通过和tomcat线程池一样，通过调试观察最佳线程数
