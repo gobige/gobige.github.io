@@ -57,3 +57,39 @@ CPU获取数据流程
 - 经历减少循环内部缓存不命中数量
 - 对局部变量的反复引用是好的，提高了时间局部性
 - 步长为1的引用模式是好的，提高了空间局部性
+
+
+## 写入方式
+
+**写直达**
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/52.png)
+
+**写回**
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/computer-system-Perspective/53.png)
+
+## 缓存一致性问题
+
+多核模式下，每个核的L1，L2的数据由于没有写回L3或主内存造成的数据不一致问题，叫做**缓存一致性问题**
+
+**解决方法**
+
+- 写传播：一个CPU核心里，cache数据更新，必须能够传播到其他对应节点的cache line里。
+- 事务串行化：一个CPU核心里读取和写入在其他节点看来，顺序是一样的。（CPU cache事务串行化，对cache block加锁）
+
+解决cpu cache之间的一致性，基于MESI协议，通过总线广播信号的方式。
+
+**总线嗅探**
+把所有读写请求通过BUS广播给所有CPU核心，让各个核心去嗅探这些请求，再根据本地情况进行响应
+
+**写失效**，写失效协议里，只有一个CPU核心负责写入数据，其他核心，只是同步读取这个写入。写入后，广播一个失效请求告诉其他CPU核心。其他CPU核心，只判断自己是否也有失效版本的cache block，也标记失效。
+
+**写广播**，一个写入请求广播到所有CPU核心，同时更新各个核心里cache。（传送数据需占用更多总线带宽）
+
+**MESI协议**,是一种写失效协议。
+
+- M:modified表示已修改的数据，也就是前面说的脏数据。
+- E：exclusive表示独占，对应只有一个cache line加载当前CPU核的cache。其他CPU核没有加载，当前状态下数据可以自由写入，不用告知其他cpu核
+- S：shared表示共享；当前状态下，修改cache数据前，先广播请求，失效其他cache里的数据。再更新数据，这个操作叫做RFO。
+- I：Invalidated表示已失效，数据已失效，不可信。
