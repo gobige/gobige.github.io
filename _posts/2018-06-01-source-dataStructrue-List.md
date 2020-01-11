@@ -58,7 +58,7 @@ ArrayList的继承关系图
 
 arrayList数据结构是对象数组
 ```java
-Object[] elementData; 
+transient Object[] elementData; // 因为数组中不是所有内存空间都有数据，为了避免空数据被外部方法序列化，内部使用私有方法writeObject和readObject完成序列化和反序列化
 ```
 
 它的三种构造方法，都会开辟一片内存来放数组
@@ -115,7 +115,7 @@ clone 该列表（浅度克隆）
     }
 ```  
 
-通过数组下标获取元素 **某些情况下查询速度很快**
+通过数组下标获取元素 **某些情况下查询速度很快**，而RandomAccess接口也标志了能实现快速访问
 ```java 
     public E get(int index) {
         rangeCheck(index);
@@ -708,3 +708,24 @@ clear方法就和arraylist和vector一样的效率了
         return result;
     }
 ```
+
+**ArrayList和LinkList对比**
+
+插入：
+
+- 头部插入：LinkedList快
+- 中部插入：ArrayList快，省去了遍历的过程
+- 尾部插入：ArrayList快，省去了遍历的过程
+
+
+删除：
+
+- 头部删除：LinkedList快
+- 中部删除：ArrayList快，省去了遍历的过程
+- 尾部删除：ArrayList快，省去了遍历的过程
+
+
+遍历：
+
+- for遍历：arrayList快
+- iterator遍历：差不多
