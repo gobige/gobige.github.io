@@ -51,7 +51,7 @@ transient int modCount;
 // 下一次扩容容量
 int threshold;
 // 容量扩容增长因子
-final float loadFactor;
+final float loadFactor; // 当查询操作较为频繁时，我们可以适当地减少加载因子；如果对内存利用率要求比较高，我可以适当的增加加载因子。
 ```
 
 Node静态内部类，实现了entry接口,具有下列变量
@@ -523,6 +523,8 @@ KeySpliterator
 ValueSpliterator
 EntrySpliterator
 
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/3.png)
 
 **LinkedHashMap类**
 继承HashMap,下面是linkedHashMap的结构(可以看出来LinkedHashMap完全是一个链表的结构，而且是双向链表，**查询的时候会比hashMap慢**)

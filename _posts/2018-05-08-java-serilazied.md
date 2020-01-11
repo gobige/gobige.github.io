@@ -53,3 +53,24 @@ Java序列化技术正是将对象转变成一串由二进制字节组成的数�
 - 被transient关键字修饰的变量不再能被序列化，一个静态变量不管是否被transient修饰，均不能被序列化。
 
 - 对象的序列化可以通过实现两种接口来实现，若实现的是Serializable接口，则所有的序列化将会自动进行，若实现的是Externalizable接口，则没有任何东西可以自动序列化，需要在writeExternal方法中进行手工指定所要序列化的变量，这与是否被transient修饰无关。
+
+### Java序列化的缺陷
+
+大多数RPC框架很少使用JDK提供的Java序列化，
+
+- 无法跨语言：如果基于不同于以编写的应用程序相互通信，则服务实现两个应用服务之间传输对象序列化和反序列化
+- 易被攻击：java安全编码方针中说明，对不信任数据进行反序列化，是很危险的。对于长时间进行反序列化对象，会导致hashCode方法调用次数呈次方爆发式增长，从而引发栈溢出异常。
+- 序列化后流太大：Java序列化使用objectOutputStream实现对象转二进制比byteBuffer实现的二进制编码数组都大几倍。
+- 序列化性能太差：和上面一样，序列化速度比ByteBuffer慢几倍
+
+**Protobuf**
+Protobuf在总多序列化框架中，无论编码，解码，速度，二进制流压缩大小都名列前茅
+
+Protobuf采用T-L-V数据格式，
+
+- T表示正数序列，代表对象每个字段
+- L表示Value的字节长度
+- V表示字段值经过编码后的值
+
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/4.png)
