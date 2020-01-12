@@ -44,6 +44,17 @@ tags: java并发
 - time_waiting；超时等待，在waiting指定时间后自行返回
 - terminated：终止状态，当前线程已经执行完毕
 
+**线程上下文切换优化**
+
+1. 减少锁持有时间，Synchronized 同步锁资源，不仅带来线程上下文切换，还可能会增加进程间上下文切换
+2. 降低锁粒度，通过锁分离和锁分段来避免所有线程对一个锁资源竞争过于激烈
+3. 乐观锁 
+4. wait/notifyAll导致过早唤醒其他未满足需求线程，最好指定唤醒
+5. 合理设置线程池大小，避免创建过多线程
+6. 使用协程实现非阻塞等待
+7. 减少垃圾回收
+
+
 **java中线程状态操作**
 
 - interrupted：中断操作，表示一个运行中的线程是否被其他线程进行中断操作。在java中其他线程调用被中断线程的interrupt()方法进行中断操作（也可调用Thread的静态方法interrupted()对当前线程进行中断操作，同时**中断标志位**会被清除）
@@ -143,7 +154,70 @@ synchronized关键字可以使用在方法，代码块上，应用在实例方�
 
 **synchronized底层实现**
 
-在java的锁机制中，在java或者类
+Synchronized是**JVM**实现的一种**内置锁**，锁的获取和释放是由JVM**隐式实现**。基于底层操作系统的**Mutex Lock**实现，每次获取和释放操作都会带来**用户态和内核态切换**
+
+通常Synchronized实现同步锁的方式有两种，一种是修饰**方法**，一种是修饰**方法块**。前者使用了**ACC_SYNCHRONIZED访问标志**来区分一个方法是否是同步方法；后者是由**monitorenter和monitorexit指令**来实现同步的；都是对**Monitor对象**作持有和释放操作
+
+**synchronized流程**
+多个线程同时访问时，先被存放在**EntryList** 集合，设置**block状态**，线程获取到对象的Monitor（底层操作系统的Mutex Lock）后，**持有Mutex**；若线程调用**wait()**方法，**释放Mutex**，线程会进入**WaitSet集合**，等待被唤醒
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/5.png)
+
+java对象实例在堆内存被分为三个部分：
+
+- 对象头
+	- Mark Word：记录了对象和锁的信息
+	- 指向类指针
+	- 数组长度
+- 实例数据
+- 对齐填充
+
+**Mark Word**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/6.png)
+
+Synchronized同步锁就是从**偏向锁**开始的，随着竞争越来越激烈，偏向锁升级到**轻量级锁**，最终升级到**重量级锁**
+
+- **偏向锁**：用来优化**同一线程多次申请同一个锁**的竞争。当一个线程再次访问这个同步代码或方法时，该线程只需去对象头的MarkWord中去判断一下是否有**偏向锁指向它的ID**，无需再进入Monitor去竞争对象了。一旦出现**其它线程竞争锁**资源时，偏向锁就会被**撤销**。偏向锁的撤销需要等待全局**安全点**，暂停持有该锁的线程，同时检查该线程**是否还在执行**该方法，如果是，则**升级锁**，反之则被**其它线程抢占**
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/3.png) 
+
+高并发，大量线程竞争统一而锁时，偏向锁的撤销，stop world会带来更大的性能消耗
+
+- **轻量级锁**：适用于线程交替执行同步块
+- **自旋锁**：轻量级锁CAS抢锁失败线程进入阻塞状态，如果锁的释放很快，那又要申请锁资源。JDK1.7默认启用自旋锁，但自旋次数不宜过多，因为会长时间占用CPU
+- **重量级锁**：
+```java
+-XX:-UseBiasedLocking // 关闭偏向锁
+-XX:-UseSpinning //参数关闭自旋锁优化(默认打开)
+-XX:PreBlockSpin //参数修改默认的自旋次数。JDK1.7后，去掉此参数，由jvm控制
+-XX:+UseHeavyMonitors  //设置重量级锁
+```
+
+### 乐观锁
+
+悲观锁在高并发的场景下，激烈的锁竞争会造成线程阻塞，大量阻塞线程会导致系统的上下文切换，增加系统的性能开销。
+乐观锁相比悲观锁来说，不会带来死锁、饥饿等活性故障问题，没有因竞争造成的系统开销。
+
+**机制**
+
+CAS是实现乐观锁的核心算法，它包含了3个参数：V（需要更新的变量）、E（预期值）和N（最新值）
+
+**CPU层原子操作**
+
+- 总线锁定：处理器要操作一个共享变量，总线上会发出一个Lock信号，其它处理器就不能操作该变量。但是会导致大量阻塞。
+- 缓存锁定：处理器对缓存中的共享变量进行了操作，通知其它处理器放弃存储该共享资源或者重新读取该共享资源
+
+**LongAdder**
+
+长时间不断重试CAS，CPU会有非常大的执行开销。LongAdder通过**降低**操作共享变量的**并发数**，将变量的操作压力**分散到多个变量**值，每个写线程的value值分散到一个数组，不同线程命中到数组不同槽中
+最后在读取值的时候会将原子操作的共享变量与各个分散在数组的value值相加，返回一个**近似准确**的数值，**最终返回值**为一个**准确的值**
+
+
+### 动态编译锁消除/锁粗化
+
+- **锁消除**：JIT编译器动态编译同步块时，借助于逃逸分析，判断同步块使用锁对象是否**只被一个线程访问**，如果确认JIT在编译时不会生成synchronized标志
+- **锁粗化**：JIT动态编译时，如果相邻同步块使用同一个锁实例则会**合并几个同步块**，避免**反复申请，释放锁**带来的性能开销
+- **锁粒度减小**：锁对象是数组或队列时，因为竞争激励可能会升级为重量级锁，**考虑将一个数组和队列对象拆成多个小对象，来降低锁竞争，提升并行度**，如ConcurrentHashMap。
+
 
 ### 并发的基础 volatile
 1. 禁止cpu对指令进行重排序
@@ -184,13 +258,12 @@ java中变量，可以分为**成员变量**以及方法**局部变量**
 - 在构造函数，不能让这个被构造的对象被其他线程可见，也就是说该对象引用不能在构造函数中“逸出”
 
 ### 漫谈juc
-lock：类似于1.5之前的synchronize，
+lock：类似于1.5之前的synchronize，显示获取和释放锁。基本操作是通过乐观锁来实现，但由于Lock锁也会在阻塞时被挂起，因此它依然属于悲观锁
 
 **lock和synchronize的区别**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/4.png)
 
-- 失去了像synchronize关键字隐式加锁解锁的便捷性，但是拥有了锁获取和释放的可操作性
-- 以及可中断的获取锁，超时获取锁等同步特性
-- synchronize同步块碰到异常会自动释放锁，而lock必须使用unlock主动释放锁
+在并发量不高，竞争不激烈情况下，Synchronized同步锁通过分级锁优势，性能和Lock差不多；但高负载，高并发，Synchronized升级为重量锁，没有Lock稳定
 
 **Lock接口定义的方法**
 
@@ -203,10 +276,7 @@ void unlock();
 Condition newCondition();
 ```
 
-**ReentrantLock**
-
-reentrantlock实现了lock方法，而整个锁的基础实现靠的是Sync这个内部类
-
+**Sync**
 ```java
 private final Sync sync;
 ```
@@ -655,6 +725,9 @@ private void doReleaseShared() {
 
 ### ReentrantLock
 
+**锁获取过程**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/5.png)
+
 ReentrantLock **重入锁**，支持重入性，表示能够对共享资源重复加锁，当前线程获取该锁再次获取不会被阻塞（线程重入，计数+1；释放锁时，也要释放重入的次数）(降低上下文切换，降低性能开销，保证系统最大的吞吐量)
 ```java
 final boolean nonfairTryAcquire(int acquires) {
@@ -788,7 +861,24 @@ public final boolean hasQueuedPredecessors() {
 
 
 ### ReentrantReadWriteLock
-**读写锁**允许同一时间被多个读线程访问，但在写线程访问时，所有读线程和写线程会被阻塞;支持可重入性.2同时支持锁降级,当一个线程获取到写锁后,有获取读锁,在释放写锁,那么自动降级为读锁
+
+**读写锁**
+
+读写锁内部维护了两个锁，一个是用于读操作的ReadLock，一个是用于写操作的WriteLock
+
+1. 允许同一时间被多个读线程访问，但在写线程访问时，所有读线程和写线程会被阻塞;支持可重入性.
+2. 同时支持锁降级,当一个线程获取到写锁后,又获取读锁,在释放写锁,那么自动降级为读锁
+
+读写锁自定义同步器（继承AQS）在同步状态state上使用高16位表示读，低16位表示写维护多个读线程和一个写线程的状态。
+
+**获取写锁过程**
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/6.png)
+
+**获取读锁过程**
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/7.png)
+
 
 读写锁实现了ReadWriteLock接口
 ```java
@@ -945,6 +1035,13 @@ void processCachedData() {
 }
 ```
 
+### StampedLock
+
+读取很多、写入很少的情况下，ReentrantReadWriteLock会造成写进程饥饿问题（写进程因为迟迟无法获取到锁一直等待）
+
+StampedLock控制锁有三种模式: 写、悲观读以及乐观读。获取锁时会返回一个票据stamp，获取的stamp除了在释放锁时需要校验。
+乐观读模式下，stamp还会作为读取共享资源后的二次校验
+
 
 ### 使用LockSupport 阻塞和唤醒线程
 
@@ -1079,6 +1176,10 @@ final boolean transferForSignal(Node node) {
 
 ### ConcurrentHashmap
 **HashMap获得线程安全的实现方式**
+
+JDK1.7中，ConcurrentHashMap就使用了分段锁Segment减小了锁粒度
+
+
 - 使用Hashtable
 - 对hashMap对象加锁 synchronize关键字
 - Collections.synchronizedMap() 其实现也是使用synchronize关键字对象加锁
@@ -1526,6 +1627,8 @@ public boolean add(E e) {
 读写锁和cow区别
 - **读写锁**在获取到读锁时，写线程是不能操作的，反之，写锁获取的时候，读线程是要阻塞的，从而解决“脏读”等问题，而**cow**是牺牲实时性而保证数据最终一致性，读线程在写线程操作期间，对数据的获取时延时的
 
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/8.png)
+
 ### ThreadLocal
 在线程安全方面除了用synchronize和lock来控制临界区资源，这种方式无疑都会造成线程的阻塞，而我们上面提到的cow思想，其实java也提供了threadLocal这个类
 
@@ -1742,11 +1845,43 @@ BlockingQueue的实现类
 - LinkedBlockingDeque 链表结构有界双端队列
 - DelayQueue 无界阻塞队列，只有当数据对象的延迟时间到达时才能入队
 
-### ThreadPoolExecutor
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/12.png)
 
-线程池的出现降低了线程创建和销毁所带来的消耗2提升了连接后数据的响应速度3管理了线程，避免无限制的创建线程
+### 线程池
 
-一个完整的线程池任务调用链 任务调用-》核心线程池获取资源（线程有余，返回，执行）-》阻塞队列（队列有余，加入队列，返回）-》线程池（=线程有余，分配，返回）=》按照线程饱和策略执行
+**线程实现模型**
+
+- **1:1线程模型（轻量级进程和内核线程一对一相互映射）**：KLT（内核线程）由操作系统内核支持线程，通过调度器对线程切换。Linux通过fork()创建子进程代表内核线程。新的进程被分配资源，然后复制父进程所有值到新
+进程中，只有PID等值不一致。这种方式冗余数据，浪费内存，消耗CPU时间初始化数据。LWP（轻量级进程）LWP使用clone调用创建线程，部分复制父进程资源，剩余通过指针共享
+- **N:1线程模型（用户线程和内核线程实现的N:1）**：在用户空间完成线程创建，同步，销毁和调度，不需要内核的帮助。避免用户态和内核态空间切换
+- **N:M线程模型**：N:1线程模型的缺点在于操作系统不能感知用户态的线程，因此容易造成某一个线程进行系统调用内核线程时被阻塞，从而导致整个进程被阻塞。N:M线程模型支持用户态菜鸟仓通过LWP与内核线程连接，用户态的线程数量和内核态的LWP数量是N:M的映射关系
+
+**协程**
+
+可以把协程看作是一个类函数或者一块函数中的代码，一个线程可创建多个协程。协程使用N:M线程模型。适用于I/O密集型应用，避免上下文频繁切换
+
+java可通过Kilim协程框架来实现协程
+
+
+- Scheduler是Kilim实现协程的核心调度器，Scheduler负责分派Task给指定的工作者线程
+- Mailbox对象类似一个邮箱，协程之间可以依靠邮箱来进行通信和数据共享，避免了线程安全问题
+- Fiber是实现N:M线程映射的关键
+
+
+**线程池作用**
+1. 线程池的出现降低了线程创建和销毁所带来的消耗
+2. 提升了连接后数据的响应速度
+3. 管理了线程，避免无限制的创建线程
+
+
+**Java提供线程池**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/9.png)
+
+
+**线程池处理请求流程**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/10.png)
+
+建议使用ThreadPoolExecutor控制线程数量
 
 ThreadPoolExecutor构造方法入参
 - corePoolSize 核心线程池大小
@@ -1760,14 +1895,20 @@ ThreadPoolExecutor构造方法入参
 - shutdown 中断所有没有执行任务
 - isTerminated 所有线程是否都关闭成功
 
-**线程池线程的配置**
-- cpu密集型任务：cpu数量 + 1
-- IO密集型任务：2 * cpu数量
+**线程池最大线程的配置**
+- cpu密集型任务：cpu核心数量 + 1
+- IO密集型任务：2 * cpu核心数量
 - 需要按优先级执行任务：使用PriorityBlockingQueue队列
 - 等待长时间返回结果任务：尽量多配制线程池
+ 
+```java
+线程数=N（CPU核数）*（1+WT（线程等待时间）/ST（线程时间运行时间））
+```
 
-### ScheduledThreadPoolExecutor
-执行延迟任务，相比Timer只能使用一个线程，可配置多线程执行，可配置延迟任务，并且可返回任务结果FutureTask
+JDK自带的工具VisualVM来查看WT/ST比例,根据自己的业务场景，从“N+1”和“2N”两个公式中选出一个适合的，计算出一个大概的线程数量，之后通过实际压测，逐渐往“增大线程数量”和“减小线程数量”这两个方向调整，然后观察整体的处理时间变化，最终确定一个具体的线程数量
+
+
+阿姆达尔定律指出优化串行是优化系统性能的关键。我们生产中有多个不同类型任务要执行，应该分别创建线程池。过分批次依赖，建议拆开服务，分别部署
 
 ### futrueTask
 - 获取任务执行结果的异步任务  具有未启动，启动中，已完成三个状态；
@@ -1836,3 +1977,5 @@ Semaphore可以理解为信号量，可支持公平/非公平，经常拿来做�
 - exchange(V x)  交换线程数据
 
 - exchange(V x, long timeout, TimeUnit unit) 超时交换线程数据
+
+

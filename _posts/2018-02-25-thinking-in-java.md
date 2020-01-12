@@ -2,11 +2,11 @@
 layout: post
 title: '《java编程思想》笔记'
 subtitle: 《java编程思想》笔记和随想
-date: 2017-09-13
-categories: mysql
+date: 2018-02-25
+categories: java
 author: yates
 cover: 'http://cctv.com'
-tags: mysql
+tags: java
 ---
 
 javadoc 只会对public和 protect 访问级别进行文档生成可见，

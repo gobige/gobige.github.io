@@ -186,6 +186,39 @@ service iptables save
 - unzip 解压文件
 - dump 备份文件
 - restore 还原备份文件
+- vmstat 监控进程上下文切换情况
+	- procs：
+		- r：等待运行的进程数
+		- b：处于非中断睡眠状态的进程数
+	- memory：
+		- swpd：虚拟内存使用情况
+		- free：空闲的内存
+		- buff：用来作为缓冲的内存数
+		- cache：缓存大小
+	- swap：
+	    - si：从磁盘交换到内存的交换页数量
+	    - so：从内存交换到磁盘的交换页数量
+	- io：
+	    - sibi：发送到块设备的块数
+	    - bo：从块设备接收到的块数
+    - system：
+        - in：每秒中断数
+        - cs：每秒上下文切换次数
+    - cpu
+        - us：用户CPU使用时间
+        - sy：内核CPU系统使用时间
+        - id：空闲时间
+        - wa：等待I/O时间
+        - st：运行虚拟机窃取的时间
+- pidstat：监测具体线程上下文切换
+    - u：默认参数，显示各个进程的cpu使用情况；
+    - r：显示各个进程的内存使用情况；
+    - d：显示各个进程的I/O使用情况；
+    - w：显示每个进程的上下文切换情况；
+    - p：指定进程号；
+    - t：显示进程中线程的统计信息
+    - cswch/s：每秒主动任务上下文切换数量
+    - nvcswch/s：每秒被动任务上下文切换数量
 
 **linux插件**
 lrzsz是一款在linux里可代替ftp上传和下载的程序：  yum install lrzsz  -y  
