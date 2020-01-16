@@ -27,7 +27,7 @@ java虚拟机在程序运行中会将内存划分为不同的数据区域，这�
 
 - Java堆：jvm管理最大的内存区域，GC发生区域，线程共享的区域，存放对象实例和数组，会发生OutOfMemoryError。被分为新生代和老年代，新生代又划分为Eden和Survivor区，Survivor由From Survivor和To Survivor组成。
 
-- 方法区：线程共享的区域，GC发生区域，存放jvm加载的类信息（类版本，字段，方法，接口，父类），常量（运行时常量池，字符串常量池（String = "abc"），基本类型常量（final修饰变量），符号引用(类和方法全限定名，字段名称和描述符)，），静态变量，即时编译代码，会发生OutOfMemoryError。**方法区是JVM规范的一部分**，HotSpot虚拟机使用**永久代实现**了JVM规范的方法区
+- 方法区：线程共享的区域，GC发生区域，存放jvm加载的类信息（类版本，字段，方法，接口，父类），常量（运行时常量池，字符串常量池（String a = "abc"），基本类型常量（final修饰变量）），静态变量，即时编译代码，会发生OutOfMemoryError。**方法区是JVM规范的一部分**，HotSpot虚拟机使用**永久代实现**了JVM规范的方法区
 
 - 直接内存：NIO存放缓存，受本机内存影响会发生OutOfMemoryError
 
