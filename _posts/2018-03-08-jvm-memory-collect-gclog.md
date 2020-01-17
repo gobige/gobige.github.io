@@ -47,6 +47,17 @@ G1收集器：是一款支持并行和并发，充分利用多CPU,多核优势�
 
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/9.png)
 
+
+### GC日志设置
+```java
+-XX:+PrintGC 输出GC日志
+-XX:+PrintGCDetails 输出GC的详细日志
+-XX:+PrintGCTimeStamps 输出GC的时间戳（以基准时间的形式）
+-XX:+PrintGCDateStamps 输出GC的时间戳（以日期的形式，如 2013-05-04T21:53:59.234+0800）
+-XX:+PrintHeapAtGC 在进行GC的前后打印出堆的信息
+-Xloggc:../logs/gc.log 日志文件的输出路径
+```
+
 ### GC日志的理解
 下面是一段GC日志
 
@@ -59,3 +70,24 @@ GC发生时间：【GC停顿类型--【GC发生区域（名字跟收集器有关
 - GC停顿类型，分为minorygc和fullGC，而发生FullGC的原因可能是分配担保失败，也可能是程序中调用system.gc发生
 - GC发生区域，一般会根据使用的收集器区分新生代，老年代区域
 - 花费时间，收集器会给出具体时间数据，user-用户消耗cpu时间，sys-代表内核消耗cpu时间，real-操作开始到结束的墙钟时间（包含非运算使劲按等待消耗，如io，线程阻塞）
+
+### GC调优
+
+**降低minor GC 频率，增加年轻代空间**
+单次Minor GC由两部分组成T1（扫描新生代），T2（复制存活对象），如果堆内存较多长期存活对象，那么Eden区越大，Minor GC时间越长；如果短对象多，那么Eden区越大，MinorGC时间不会显著增加；所以，单次Minor GC时间更多取决于GC后存活对象数量，而非Eden区大小
+
+**降低Full GC频率**
+
+- 减少创建大对象，一次性查询很多字段的对象，大对象直接创建在老年代。
+- 增大堆内存空间
+- 选择合适GC回收期
+
+**设置Eden，Survivor区比例**
+
+```java
+java -XX:+PrintFlagsFinal -version | grep HeapSize // 查看JVM堆内存分配
+
+-XX:+UseAdaptiveSizePolicy // JVM动态调整Java堆中各个区域大小以及进入老年代年龄，-XX：NewRatio和-XX：SurvivorRatio会失效，JDK8默认开启
+```
+
+**有时候通过工具只能猜测到可能是某些地方出现了问题，而实际排查则要结合源码做具体分析。**
