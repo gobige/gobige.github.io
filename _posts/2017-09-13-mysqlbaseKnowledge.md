@@ -110,10 +110,10 @@ update ignore 发生错误更新继续
 - alter table 表名 change 原字段名  新字段名 字段类型
 - alter table 表名 drop column 字段名
  
-**视图的创建**
-create view
 
-视图规则和限制
+## **视图**
+
+**视图规则和限制**
 
 - 唯一命名
 - 创建没有数量限制 
@@ -123,61 +123,80 @@ create view
 - 和表一起用
 
 
-优点 
+**优点**
+
 - 隐藏复杂sql
 - 格式化检索数据
 
-视图的更新 
+**视图的更新**
 
 如果视图定义中有 分组，联结，子查询，并，聚集函数，distinct，导出计算列不能进行更新
 
-**存储过程**
-Why use produce
+## **存储过程**
+
+**Why use produce**
 
 - 简化复杂操作
 - 封装处理过程
 - 简化对变动的管理
 - 提高性能
 
+**create procedure**
 CREATE PROCEDURE PROCEDURE1(OUT VAR1 DECIMAL(8,2),IN VAR2,INOUT VAR3) BEGIN SELECT * from table END;
-Delimiter // 告诉命令行使用//作为新的结束分隔符
-使用存储过程  CALL PROCEDURE1(@VAR1,VAR2,@VAR3)
-删除存储过程 DROP PROCEDURE PROCEDURE1 IF EXISTS;
-检查存储过程  SHOW CREATE PROCEDURE PRO1;
 
-**游标**
+
+**Delimiter**
+
+告诉命令行使用//作为新的结束分隔符
+
+- **使用存储过程**  CALL PROCEDURE1(@VAR1,VAR2,@VAR3)
+- **删除存储过程** DROP PROCEDURE PROCEDURE1 IF EXISTS;
+- **检查存储过程**  SHOW CREATE PROCEDURE PRO1;
+
+## **游标**
+
 只可用在存储过程中
 
-创建游标
-CREATE PROCEDURE pro1 ()BEGINDECLARE cur1 CURSOR FOR SELECT *FROMuser_body_info;END;
+**创建游标**
 
-打开游标 
+CREATE PROCEDURE pro1 ()BEGIN DECLARE cur1 CURSOR FOR SELECT *FROM user_body_info;END;
+
+**打开游标 **
+
 OPEN cur1
 
-检索游标内容
+**检索游标内容**
+
 Fetch 
 
-**触发器**
+## **触发器**
 每个表支持最多6个
 
-创建触发器 
+**创建触发器 **
+
 CREATE TRIGGER tri1 AFTER INSERT ON user_body_info FOR EACH ROW SELECT 'insert success aytes'
 
-**事务**
-开启事务 
+## **事务**
+
+**开启事务 **
+
 START TRANSACTION;
 
-回退 
+**回退 **
+
 ROLLBACK
 
-提交事务 
+**提交事务** 
+
 commit
 
-保留点 
+**保留点** 
+
 SAVEPOINT p1
 
 
-**显示mysql服务器状态**
+## **显示mysql服务器状态**
+
 show status;
 
 https://www.cnblogs.com/zuxing/articles/7761262.html
@@ -196,23 +215,25 @@ SELECT "welecome to my blog!";
 **计算器**
 select ((4 * 4) / 10 ) + 25;
 
-## 字符串操作相关函数
+## **字符串操作相关函数**
+
 **拼接**
 
-select CONCAT(f_name, " ", l_name) from table
+select **CONCAT**(f_name, " ", l_name) from table
 
 注意：如有任何一个参数为 NULL ，则返回值为NULL
 
-CONCAT_WS(separator,str1,str2,...)
+**CONCAT_WS**(separator,str1,str2,...)
 
 注意：第一个参数是其它参数的分隔符。如果分隔符为 NULL ，则结果为 NULL
 
-REPEAT(str ,count)
+**REPEAT**(str ,count)
 
 由重复的字符串str组成的字符串,字符串str的数目等于count
 注意：若 count <= 0, 则返回一个空字符串。若str 或 count 为 NULL ，则返回 NULL
 
 **字符串处理**
+
 LTrim ---左去除空格
 RTrim---右去除空格
 Left(str,len) ---返回str左边几个字符
@@ -223,55 +244,57 @@ Lower()----文本转小写
 Soundex 返回串的soundex值
 
 **统计**
-CHAR_LENGTH(str)
-不管汉字还是数字或者是字母都算是一个字符
 
-Length(str)
-是计算字段的长度一个汉字是算三个字符,一个数字或字母算一个字符
+- **CHAR_LENGTH(str)**:不管汉字还是数字或者是字母都算是一个字符
+
+- **Length(str)**:是计算字段的长度一个汉字是算三个字符,一个数字或字母算一个字符
 
 
 ## 日期函数
-AddDate()  增加一个日期
-AddTime()  增加一个时间
-CurDate()   返回当前日期
-CurTime()   返回当前时间
-Date(time)  返回当前时间日期部分
-Datediff(tim1,tim2) 两个时间日期之差
-DATE_FORMAT(date,format) 格式化时间
-Day()返回日期天数部分
-dayOFweek  对于一个日期，返回对应的星期几
-Hour()  返回小时部分
-Minute() 返回分钟部分
-Month（） 返回月份部分
-Now() 返回当前时间
-Second()  返回时间秒部分
-Time()  返回一个日期时间时间部分
-Year()  返回一个日期年份部分
+
+- **AddDate()**  增加一个日期
+- **AddTime()**  增加一个时间
+- **CurDate()**   返回当前日期
+- **CurTime()**   返回当前时间
+- **Date(time)**  返回当前时间日期部分
+- **Datediff(tim1,tim2)** 两个时间日期之差
+- **DATE_FORMAT(date,format)** 格式化时间
+- **Day()**返回日期天数部分
+- **dayOFweek**  对于一个日期，返回对应的星期几
+- **Hour()**  返回小时部分
+- **Minute()** 返回分钟部分
+- **Month()** 返回月份部分
+- **Now()** 返回当前时间
+- **Second()**  返回时间秒部分
+- **Time()**  返回一个日期时间时间部分
+- **Year()**  返回一个日期年份部分
 
 ## 数值处理函数
-Abs()  返回绝对值
-Cos()  返回角度余弦
-Exp()  返回一个数的指数
-Mod()  返回除操作的余数
-Pi()  返回圆周率
-Rand()  返回随机数
-Sin()  返回角度正弦
-Sqrt()  返回一个数的平方根
-Tan()   返回一个角度的正切
+
+- **Abs()**  返回绝对值
+- **Cos()**  返回角度余弦
+- **Exp()**  返回一个数的指数
+- **Mod()**  返回除操作的余数
+- **Pi()**  返回圆周率
+- **Rand()**  返回随机数
+- **Sin()**  返回角度正弦
+- **Sqrt()**  返回一个数的平方根
+- **Tan()**   返回一个角度的正切
 
 
 ## 聚合函数
-AVG()  返回某列平均值  忽略null
-Count()  查询行数 指定列忽略 *不忽略
-MAX（）  返回某列最大值   忽略null
-Min（）  某列最小  忽略null
-Sum() 某列值和  忽略null
+- **AVG()**  返回某列平均值  忽略null
+- **Count()**  查询行数 指定列忽略 *不忽略
+- **MAX()**  返回某列最大值   忽略null
+- **Min()**  某列最小  忽略null
+- **Sum()** 某列值和  忽略null
 
-Group by 分组包含null，和聚集函数一起使用  
-having 过滤分组 ，where过滤行
+- **Group by** 分组包含null，和聚集函数一起使用  
+- **having** 过滤分组 ，where过滤行
 
-没有联结条件的表关系返回的结果是笛卡尔集
-自连 左连 右连 内联 外联
+**没有联结条件**的表关系返回的结果是**笛卡尔集**
+
+**自连 左连 右连 内联 外联**
 
 **导出整个数据库(导出文件默认是存在mysql\bin目录下)**
 
