@@ -22,14 +22,10 @@ tags: devTool
 ## [Elements]自由编辑你的网站布局
 进入开发者模式后，我们会发现整个网页的dom元素结构和html，css内容展示了出来，当鼠标移到相应代码上会聚焦相应的代码区域到网页
 
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-02-chorme-developer-compass/1.gif)
-
-
+ 
 ## [Device Toolbar]设备工具栏-检查网站的响应
 为了建立响应式网站，Chrome 开发工具有"Toggle 设备工具栏"(左上角)选项，可以用来以不同的分辨率查看网站。 它还为 iPhone、 iPad 和 Nexus 等移动设备提供了特定的视图
-
-![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-09-02-chorme-developer-compass/2.png)
-
+ 
 
 ## [Sources] 调试 JS
 最常用的 Chrome 开发工具面板，可用于分析、调试和编辑网站的 JavaScript，HTML 和 CSS
