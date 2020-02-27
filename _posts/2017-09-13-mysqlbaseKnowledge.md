@@ -92,7 +92,10 @@ truncate 表名(效率高)；delete 表名；
 **插入数据**
 insert into MyClass values(1,'Tom',96.45),(2,'Joan',82.99), (2,'Wang', 96.59);
 
-insert table1 select from table2
+**表复制语句**
+
+**insert** table1 **select** from table2：table1已经存在
+**select into** table1 from table2：table1不存在
 
 **查询数据**
 select * from MyClass order by id limit 0,2;
