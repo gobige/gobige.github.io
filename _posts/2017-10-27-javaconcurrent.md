@@ -83,7 +83,11 @@ java运行时数据区域如下
 
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/1.png)
 
-CPU的处理速度和主存的读写速度不是一个量级的，为了平衡这种巨大的差距，每个CPU都会有缓存，通常是三级缓存，L1,L2,L3;L1是最接近CPU的，容量最小，速度最快，每个核上有两个L1Cache，一个存数据 L1d Cache，一个存指令 L1i Cache)。L2 Cache大一些，速度要慢一些，一般情况下每个核上都有一个独立的L2Cache；L3Cache是三级缓存中最大的一级，同时也是最慢的一级，在同一个CPU插槽之间的核共享一个L3Cache
+CPU的处理速度和主存的读写速度不是一个量级的，为了平衡这种巨大的差距，每个CPU都会有缓存，通常是三级缓存，L1,L2,L3;
+
+- **L1**是最接近CPU的，**容量最小，速度最快，每个核上有两个L1Cache，一个存数据 L1d Cache，一个存指令 L1i Cache**)。
+- **L2** Cache大一些，速度要慢一些，一般情况下每个核上都有**一个独立的L2Cache**；
+- **L3**Cache是三级缓存中最大的一级，同时也是最慢的一级，在同一个CPU插槽之间的核**共享一个L3Cache**
 
 线程A和线程B要完成通信，如下
 
@@ -195,7 +199,7 @@ Synchronized同步锁就是从**偏向锁**开始的，随着竞争越来越激�
 ### 乐观锁
 
 悲观锁在高并发的场景下，激烈的锁竞争会造成线程阻塞，大量阻塞线程会导致系统的上下文切换，增加系统的性能开销。
-乐观锁相比悲观锁来说，不会带来死锁、饥饿等活性故障问题，没有因竞争造成的系统开销。
+乐观锁相比悲观锁来说，不会带来**死锁、饥饿**等活性故障问题，没有因竞争造成的系统开销。
 
 **机制**
 
@@ -263,7 +267,7 @@ lock：类似于1.5之前的synchronize，显示获取和释放锁。基本操�
 **lock和synchronize的区别**
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/4.png)
 
-在并发量不高，竞争不激烈情况下，Synchronized同步锁通过分级锁优势，性能和Lock差不多；但高负载，高并发，Synchronized升级为重量锁，没有Lock稳定
+在并发量不高，竞争不激烈情况下，Synchronized同步锁通过**分级锁优势**，性能和Lock差不多；但**高负载，高并发**，Synchronized升级为**重量锁**，没有Lock稳定
 
 **Lock接口定义的方法**
 
@@ -608,7 +612,8 @@ private void doAcquireInterruptibly(int arg)
 ```
 
 
-** 超时等待式获取锁（tryAcquireNanos()方法）**
+**超时等待式获取锁（tryAcquireNanos()方法**
+
 ```java
 public final boolean tryAcquireNanos(int arg, long nanosTimeout)
 		throws InterruptedException {
@@ -869,7 +874,7 @@ public final boolean hasQueuedPredecessors() {
 1. 允许同一时间被多个读线程访问，但在写线程访问时，所有读线程和写线程会被阻塞;支持可重入性.
 2. 同时支持锁降级,当一个线程获取到写锁后,又获取读锁,在释放写锁,那么自动降级为读锁
 
-读写锁自定义同步器（继承AQS）在同步状态state上使用高16位表示读，低16位表示写维护多个读线程和一个写线程的状态。
+读写锁自定义同步器（继承AQS）在同步状态state上使用**高16位表示读，低16位表示写**,维护多个读线程和一个写线程的状态。
 
 **获取写锁过程**
 
