@@ -49,11 +49,12 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
 
 **更改文件权限**
 
-- 更改文件属组，chgrp 属组名 文件名  
 - 更改文件属主 chown 属主名 文件名  
+- 更改文件属组 chgrp 属组名 文件名  
 - 更改文件权限 chmod xyz 文件或目录
 
- xyz分别代表owner，group，ohters的权限，以数字赋值，权限rwx对应数字权限分别是4,2,1 比如 chmod 777 testfile
+ xyz：代表owner，group，ohters的权限，
+ 数字赋权：权限rwx对应数字权限分别是4,2,1  例： chmod 777 testfile
 
 **常用文件操作(增删改)指令**
 
@@ -79,6 +80,7 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
 
 **查看文件**
 
+- file [file1] 显示文件类型
 - cat 查看文件所有内容
     - cat test 查看test文件内容
     - cat -n test 显示行号
@@ -94,20 +96,28 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
 
 **文件对比，识别，查找，创建，统计**
 
-- cmp [file1] [file2] 对比两个文件是否相同，返回第一个不相同的位置
-- diff [file1] [file2] < 标识后面文件比前面文件少的内容，> 表示前面文件比后面文件多的内容
-- file [file1] 显示文件类型
+- 文件对比
+	- cmp [file1] [file2] 对比两个文件是否相同，返回第一个不相同的位置
+	- diff [file1] [file2] < 标识后面文件比前面文件少的内容，> 表示前面文件比后面文件多的内容
 - find 查找文件
     - find . -name "*.txt" 在当前目录下及子目录下查询后缀为txt的文件
     - find . -ctime -20 查找当前目录及子目录 20天内更新过文件列出
 - touch 修改文件或目录时间属性，若不存在则创建文件
     - touch [file] 创建file文件
-- which 在环境变量$PATH设置的目录里查找符合条件的文件
-- whereis 查找二进制，源代码，man手册页，
-- wc 统计文件行数，字数，字节数
-- grep xx.txt aa.txt 查找文件
+- 文件查找
+	- which 在环境变量$PATH设置的目录里查找符合条件的文件
+	- whereis 查找二进制，源代码，man手册页，
+	- grep xx.txt aa.txt 查找文件
+- 文件统计
+	- wc 统计文件行数，字数，字节数
 
+**文件备份，恢复**
 
+- gzip 压缩文件
+    - gzip [file1][file2] 压缩文件1，文件2
+- unzip 解压文件
+- dump 备份文件
+- restore 还原备份文件
 
 
 **磁盘相关**
@@ -131,6 +141,7 @@ yum remove <package> 删除软件包命令
 - ping 检查主机连通性
 
 **防火墙设置**
+
 停止防火墙
 systemctl stop firewalld
 
@@ -155,37 +166,16 @@ service iptables save
 
 **系统相关**
 
-- kill [pid] 杀死进程
-- kill -KILL [pid] 强制杀死进程
-- kill -s 9 [pid] 彻底杀死进程
-- last 显示系统开机以来每月初登入者信息
-    - last -3 展示最近3个 用户
-- date 显示系统时间
-- lastb 显示登录失败用户信息
-- logname 显示当前登录用户名称
+**系统信息查看**
+
 - ps 显示进程信息
     - ps -u root 显示root用户信息
-- showdown 关闭linux服务器
-    - showdown -h now 立即关闭linux服务器
 - top 实时显示系统状态
 - pstree 以树状图显示所有行程状态
-- reboot 重启linux服务器
-- sudo 以管理员身份执行
-- su 更换使用者身份
 - free 显示内存状况
-- clear 清屏
 - export 设置显示环境变量
     - export -p 显示当前环境变量
     - export hostname=yates 设置环境变量
-- passwd 修改用户密码
-- rdate 显示远端主机日期和时间
-    - rdate -p 192.168.1.120 显示远端主机日期密码
-
-- gzip 压缩文件
-    - gzip [file1][file2] 压缩文件1，文件2
-- unzip 解压文件
-- dump 备份文件
-- restore 还原备份文件
 - vmstat 监控进程上下文切换情况
 	- procs：
 		- r：等待运行的进程数
@@ -219,10 +209,36 @@ service iptables save
     - t：显示进程中线程的统计信息
     - cswch/s：每秒主动任务上下文切换数量
     - nvcswch/s：每秒被动任务上下文切换数量
+	
+**用户信息查看**
+
+- last 显示系统开机以来每月初登入者信息
+    - last -3 展示最近3个 用户
+- lastb 显示登录失败用户信息
+- date 显示系统时间
+- logname 显示当前登录用户名称
+- sudo 以管理员身份执行
+- su 更换使用者身份
+- rdate 显示远端主机日期和时间
+    - rdate -p 192.168.1.120 显示远端主机日期密码
+
+**小心使用**
+
+- kill [pid] 杀死进程
+- kill -KILL [pid] 强制杀死进程
+- kill -s 9 [pid] 彻底杀死进程
+- showdown 关闭linux服务器
+    - showdown -h now 立即关闭linux服务器
+- reboot 重启linux服务器
+- clear 清屏
+- passwd 修改用户密码
+
 
 **linux插件**
+
 lrzsz是一款在linux里可代替ftp上传和下载的程序：  yum install lrzsz  -y  
 
 **配置相关**
-echo $PATH  显示系统环境变量配置
-export PATH=$PATH:/usr/{name} 添加新的系统环境变量(当前窗口临时添加，etc/profil文件添加才能永久添加，然后使用source指令生效配置)
+
+- echo $PATH  显示系统环境变量配置
+- export PATH=$PATH:/usr/{name} 临时添加添加新的系统环境变量。etc/profil文件添加才能永久添加，然后使用source指令生效配置)
