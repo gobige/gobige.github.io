@@ -184,7 +184,7 @@ Synchronized同步锁就是从**偏向锁**开始的，随着竞争越来越激�
 
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/3.png) 
 
-高并发，大量线程竞争统一而锁时，偏向锁的撤销，stop world会带来更大的性能消耗
+高并发，大量线程竞争同一个锁时，偏向锁的撤销，stop world会带来更大的性能消耗
 
 - **轻量级锁**：适用于线程交替执行同步块
 - **自旋锁**：轻量级锁CAS抢锁失败线程进入阻塞状态，如果锁的释放很快，那又要申请锁资源。JDK1.7默认启用自旋锁，但自旋次数不宜过多，因为会长时间占用CPU
@@ -212,7 +212,7 @@ CAS是实现乐观锁的核心算法，它包含了3个参数：V（需要更新
 
 **LongAdder**
 
-长时间不断重试CAS，CPU会有非常大的执行开销。LongAdder通过**降低**操作共享变量的**并发数**，将变量的操作压力**分散到多个变量**值，每个写线程的value值分散到一个数组，不同线程命中到数组不同槽中
+长时间不断重试CAS，CPU会有非常大的执行开销。LongAdder通过**降低**操作共享变量的**并发数**，将变量的操作压力**分散到多个变量**值（变量数量不能超过CPU核数），每个写线程的value值分散到一个数组，不同线程命中到数组不同槽中
 最后在读取值的时候会将原子操作的共享变量与各个分散在数组的value值相加，返回一个**近似准确**的数值，**最终返回值**为一个**准确的值**
 
 
@@ -1042,10 +1042,12 @@ void processCachedData() {
 
 ### StampedLock
 
-读取很多、写入很少的情况下，ReentrantReadWriteLock会造成写进程饥饿问题（写进程因为迟迟无法获取到锁一直等待）
+读取很多、写入很少的情况下，ReentrantReadWriteLock会造成**写进程饥饿问题**（写进程因为迟迟无法获取到锁一直等待）
 
-StampedLock控制锁有三种模式: 写、悲观读以及乐观读。获取锁时会返回一个票据stamp，获取的stamp除了在释放锁时需要校验。
-乐观读模式下，stamp还会作为读取共享资源后的二次校验
+StampedLock控制锁有三种模式: 写、悲观读以及乐观读。
+
+- 获取锁时会返回一个**票据stamp**，获取的stamp除了在释放锁时需要校验。
+- 乐观读模式下，stamp还会作为读取共享资源后的二次校验
 
 
 ### 使用LockSupport 阻塞和唤醒线程
@@ -1061,11 +1063,12 @@ void unpark(Thread thread):  唤醒线程
 ### condition 语言级别的等待/通知机制
 
 condition相较于比较底层的wait和notify方式，具有
-支持中断操作
-支持多个等待队列
-支持超时设置
 
-condition适合lock配合一起使用，lock.newcondition(),该方法会new 出一个ConditionObject对象，也就是AQS的一个内部类，condition内部也会维持一个单向的等待队列；lock因为配合condition使用，所以一个lock除了拥有一个同步队列，还可以拥有多个等待队列
+- 支持中断操作
+- 支持多个等待队列
+- 支持超时设置
+
+condition适合lock配合一起使用，lock.newcondition(),该方法会new 出一个ConditionObject对象，也就是AQS的一个内部类，condition内部也会维持一个**单向的等待队列**；lock因为配合condition使用，所以一个lock除了拥有一个同步队列，还可以拥有多个等待队列
 
 
 condition.await 使当前获得锁的线程进入等待队列
@@ -1140,8 +1143,12 @@ while (!isOnSyncQueue(node)) {
         break;
 }
 ```
-整个过程是调用condition.await()方法后，会使得当前线程释放lock然后加入到等待队列中，直至被signal/signalAll后会使得当前线程从等待队列中移至到同步队列中去，直到获得了lock后才会从await方法返回，或者在等待时被中断会做中断处理
-要想退出等待状态1. 逻辑走到break退出while循环（当前线程被中断）；2. while循环中的逻辑判断为false（当前处于等待队列的线程被移动到同步队列）
+整个过程是调用**condition.await()**方法后，会使得**当前线程释放lock**然后**加入到等待队列中**，直至被**signal/signalAll**后会使得当前线程从**等待队列中移至到同步队列**中去，直到**获得了lock后才会从await方法返回**，或者在等待时被中断会做**中断处理**
+
+**退出等待状态**
+
+1. 逻辑走到break退出while循环（当前**线程被中断**）；
+2. while循环中的逻辑判断为false（当前处于等待队列的线程被**移动到同步队列）
 
 **等待队列的唤醒**
 ```java
@@ -1182,18 +1189,19 @@ final boolean transferForSignal(Node node) {
 ### ConcurrentHashmap
 **HashMap获得线程安全的实现方式**
 
-JDK1.7中，ConcurrentHashMap就使用了分段锁Segment减小了锁粒度
-
-
 - 使用Hashtable
 - 对hashMap对象加锁 synchronize关键字
 - Collections.synchronizedMap() 其实现也是使用synchronize关键字对象加锁
 - concurrenthashmap 性能，线程安全都能保证，推荐
 
-ConcurrentHashMap就是线程安全的map，其中利用了锁分段的思想提高了并发度
+JDK1.7中，ConcurrentHashMap使用了分段锁Segment减小了锁粒度,提高了并发度
+
 
 在理解concurrentHashmap之前我希望你看过hashmap的源码，因为concurrenthashmap大体的结构，插入去除思想跟hashMap是差不多的，这里我只会解析不同的地方 [HashMap源码解析入口](http://muyibeyond.cn/2018/06/01/source-dataStructrue-map.html)
 **ConcurrentHashmap重要的变量**
+
+```java
+
 concurrenthashmap的Node元素内key对象和value对象,table,等变量都加了volitile关键字
 
 nextTable volatile Node<K,V>[] nextTable; //扩容时使用，平时为null，只有在扩容的时候才为非null
@@ -1201,6 +1209,8 @@ nextTable volatile Node<K,V>[] nextTable; //扩容时使用，平时为null，�
 sizeCtl volatile int sizeCtl; 标识table数组大小，**当值为负数时：**如果为-1表示正在初始化，如果为-N则表示当前正有N-1个线程进行扩容操作；**当值为正数时：**如果当前数组为null的话表示table在初始化过程中，不为null代表数组需容量
 
 sun.misc.Unsafe U 在ConcurrentHashMapde的实现中可以看到大量的U.compareAndSwapXXXX的方法去修改ConcurrentHashMap的一些属性。这些方法实际上是利用了CAS算法保证了线程安全性
+
+````
 
 **几个重要的方法**
 ```java
@@ -1519,7 +1529,7 @@ private static class Node<E> {
 	volatile Node<E> next;
 	}
 
-//  设置链表头节点和为节点	
+//  设置链表头节点和尾节点	
 private transient volatile Node<E> head;
 private transient volatile Node<E> tail;
 	
@@ -1856,14 +1866,14 @@ BlockingQueue的实现类
 
 **线程实现模型**
 
-- **1:1线程模型（轻量级进程和内核线程一对一相互映射）**：KLT（内核线程）由操作系统内核支持线程，通过调度器对线程切换。Linux通过fork()创建子进程代表内核线程。新的进程被分配资源，然后复制父进程所有值到新
-进程中，只有PID等值不一致。这种方式冗余数据，浪费内存，消耗CPU时间初始化数据。LWP（轻量级进程）LWP使用clone调用创建线程，部分复制父进程资源，剩余通过指针共享
-- **N:1线程模型（用户线程和内核线程实现的N:1）**：在用户空间完成线程创建，同步，销毁和调度，不需要内核的帮助。避免用户态和内核态空间切换
+- **1:1线程模型（轻量级进程和内核线程一对一相互映射）**：KLT（内核线程）由操作系统内核支持线程，通过调度器对线程切换。Linux通过**fork()创建子进程代表内核线程**。新的进程被分配资源，然后**复制父进程所有值**到新
+进程中，只有**PID等值不一致**。这种方式**冗余数据，浪费内存，消耗CPU时间**初始化数据。**LWP（轻量级进程）**LWP使用clone调用创建线程，**部分复制父进程资源**，剩余通过**指针共享**
+- **N:1线程模型（用户线程和内核线程实现的N:1）**：在**用户空间完成线程创建，同步，销毁和调度**，不需要内核的帮助。避免用户态和内核态空间切换
 - **N:M线程模型**：N:1线程模型的缺点在于操作系统不能感知用户态的线程，因此容易造成某一个线程进行系统调用内核线程时被阻塞，从而导致整个进程被阻塞。N:M线程模型支持用户态菜鸟仓通过LWP与内核线程连接，用户态的线程数量和内核态的LWP数量是N:M的映射关系
 
 **协程**
 
-可以把协程看作是一个类函数或者一块函数中的代码，一个线程可创建多个协程。协程使用N:M线程模型。适用于I/O密集型应用，避免上下文频繁切换
+可以把协程看作是一个**类函数或者一块函数中的代码**，一个线程可创建多个协程。协程使用N:M线程模型。适用于I/O密集型应用，避免上下文频繁切换
 
 java可通过Kilim协程框架来实现协程
 
@@ -1945,7 +1955,12 @@ CyclicBarrier
 
 - void reset() 初始化屏障（再来一次）
 
-- **CountDownLatch强调一个线程等待多个线程事件达成；CyclicBarrier强调多个线程等待多个线程某个事件达成 2. CyclicBarrier提供方法更多，可在多个线程某个事件达成的时候执行barrierAction事件 3. CountDownLatch是不能复用的，而CyclicLatch是可以复用的**
+
+**区别**
+
+- CountDownLatch，CyclicBarrier都是强调等待的线程数达到某个计数值，然后返回继续wait方法处理流程
+- CyclicBarrier提供方法更多，可在多个线程某个事件达成的时候执行barrierAction事件
+- CountDownLatch是不能复用的，而CyclicLatch达成事件后又会继续重新，计数。是可以复用的
 
 
 ### Semaphore
