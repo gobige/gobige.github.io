@@ -1555,7 +1555,7 @@ boolean casNext(Node<E> cmp, Node<E> val) {
 }
 ```
 
-队列的增加元素（offset）是在链表头进行和删除元素（poll）是在链表尾进行，想想如果两个线程对其同时操作offset，poll；前者快，链表越来越长，后者快，链表越来越短；而在两者操作的交集区域（临界点）就会出现offset->poll->offset和poll->offset->poll问题
+队列的增加元素（offer）是在链表尾进行和删除元素（poll）是在链表头进行，想想如果两个线程对其同时操作offset，poll；前者快，链表越来越长，后者快，链表越来越短；而在两者操作的交集区域（临界点）就会出现offset->poll->offset和poll->offset->poll问题
 
 
 **offse源码**
