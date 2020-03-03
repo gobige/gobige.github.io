@@ -75,7 +75,7 @@ graph LR
     C -->|否| E[二次标记] --> F(GC回收)
 ``` 
 
-![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/42.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/42.jpg)
 
 ### jvm内存回收
 
@@ -139,7 +139,7 @@ graph LR
     I -->|是| G[minor GC]
 ``` 
 
-![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/43.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/43.jpg)
 
 **长期存活对象直接进入老年代**
 
@@ -157,4 +157,4 @@ graph LR
     C --> |否| A(minor GC)
 ``` 
 
-![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/44.png)
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/44.jpg)
