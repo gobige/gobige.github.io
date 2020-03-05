@@ -726,6 +726,9 @@ clear方法就和arraylist和vector一样的效率了
 
 
 遍历：
+ 
+- List中，增强for循环使用方便，但性能较差，不适合处理超大量级的数据。
 
-- for遍历：arrayList快
-- iterator遍历：差不多
+- List中，迭代器的遍历速度要比增强for循环快很多
+
+- List中，fori最快。
