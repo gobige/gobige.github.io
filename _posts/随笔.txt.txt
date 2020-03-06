@@ -238,3 +238,26 @@ spring cloud Sleuth：服务链路治理：
 zipkin 支持web和mq
 
 服务治理：架构设计是否合理，哪些链路时关键链路，链路容量水位趋势，系统变更管理和审计，微观上，系统依赖了什么，有哪些配置，主观与客观质量
+
+
+ properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+
+使用springcloud作为微服务，在一个活动结束返还库存的任务中，因为商品很多，造成服务调用发生超时行为，hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds: 10000
+feign.client.config.default.readTimeout: 10000
+ribbon.ReadTimeout: 10000
+
+设置服务调用超时等待时间
+ 
+1 定义用户真正的需求目的
+2 结合基本操作解决问题，
+
+
+spring framwork 的beanutil.copyProperty
+1.基于set get赋值，
+2.两个变量类型不一样，不会赋值
+3.是一种浅度克隆，赋值的如果是引用数据类型，不会重新生成对象

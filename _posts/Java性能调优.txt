@@ -41,7 +41,7 @@
 ## String字符串优化
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/1.png)
 
-java6版本使用offset和cou可高效共享数组，节省内存，但可能导致内存泄漏
+java6版本使用offset和count，可高效共享数组，节省内存，但可能导致内存泄漏
 java7/8版本去除offset和count，同时**substring**方法不在共享char[]，避免了内存泄漏
 java9char字段改为byte字段，通过coder识别该字符串是否只有单字节编码内字符
 

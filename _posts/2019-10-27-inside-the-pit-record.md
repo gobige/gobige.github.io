@@ -12,10 +12,10 @@ tags: 编码
 ## 记录一些实践中踩过的坑
  
 ### 资源文件在java工程中的目录问题
-这个问题是一老友问的我。情况是这样的，我们一般的java工程目录都是分为java，test,resource目录，一般资源，配置文件都是放在resource下，老友把文件放在java目录和
-和java源文件放在一起，通过代码读取资源文件中的数据，怎么也读取不到，于是问我为什么，我看了下这个问题，然后自己试了试，确实是不行的。想了想，然后在target目录下吧编译好的class
-目录打开，发现并没有找到该资源文件，于是这个问题就明了了，java编译过程中只会识别java后缀的文件进行编译，而在之后的类加载过程中也只会读取class后缀的文件，所以自然在java目录下存放资源文件就不能被读取了。
-而存放于resource目录下的文件会直接作为resource root移除target包下
+这个问题是一老友问的我。情况是这样的，我们一般的java工程目录都是分为java，test,resource目录，一般资源，配置文件都是放在resource下，老友把**资源文件放在java目录**和
+和java源文件放在一起，通过**代码读取配置文件中的数据，怎么也读取不到**，于是问我为什么，我看了下这个问题，然后自己试了试，确实是不行的。想了想，然后在target目录下把编译好的class
+目录打开，发现并没有找到该资源文件，于是这个问题就明了了，java编译过程中只会识别java后缀的文件进行**编译**，而在之后的**类加载过程**中也只会读取class后缀的文件，所以自然在java目录下存放资源文件就不能被读取了。
+而存放于resource目录下的文件会直接作为resource root移到target包下
 
 ### jpa之你真的了解jpa的执行机制吗？
 
@@ -45,8 +45,8 @@ int update***(String col1, Integer col2);
 ```java
 `contractBeginTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT ''
 ```
-该字段是在记录产生的时候默认赋值为'0000-00-00 00:00:00'，通过jpa获取这条记录的时候，我发现jpa是读取不到该字段的值的，也就是说该字段在java对象中值为null，那么之前奇怪的现象就
-恍然大悟了，jpa在flush update的时候该字段更新为null，而数据库DDL定义该字段是非空的，所以造成了该问题的出现。
+该字段是在记录产生的时候默认赋值为'0000-00-00 00:00:00'，通过jpa获取这条记录的时候，我发现jpa是读取不到该字段的值的，也就是说**该字段映射到java对象中值为null**，那么之前奇怪的现象就
+恍然大悟了，jpa在**flush update**的时候该字段更新为null，而数据库**DDL定义**该字段是**非空**的，所以造成了该问题的出现。
 
 **解决方案** 因为该字段只是一个签订日期的含义，所以直接赋值为java中的元时间。
 
@@ -54,7 +54,7 @@ int update***(String col1, Integer col2);
 **当jpa使用默认自带封装持久层查询方法**
 
 整个服务方法大致是这样写的
-```
+```java
 // 步骤1，自带封装findById方法
 select status from user where address = 111; // 此时status为1
 
@@ -69,9 +69,9 @@ select status from user where user_id = 1; // 此时数据库中status为0，但
 
 ![此处输入图片的描述](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2019-10-18-inside-the-pit-record/4.png)
 
-**解决方案** 在继承JpaRepository的dao方法，也就是上述步骤2的update方法的modifying注解使用@Modifying(clearAutomatically = true)
+**解决方案** 在继承JpaRepository的dao方法，也就是上述步骤2的update方法的modifying注解使用**@Modifying(clearAutomatically = true)**
 
 
-**e.printStackTrace()**
+**e.printStackTrace()导致堆栈溢出**
 
 e.printStackTrace() 方法打印堆栈信息到控制台，如果异常处理区域设置过大且堆栈信息过多，加上该请求频繁，会造成字符串常量池很快就满了，多线程会造成死锁，进而导致服务器的奔溃
