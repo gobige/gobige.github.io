@@ -168,12 +168,19 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 ```
 插入一个node节点:
+
 ① 先将key值**hash计算（查询会很快）**， 
+
 ② 如果table为null或者数组没有一个node节点则调用resize进行扩容(resize方法扩容会**重新计算集合中元素的位置**，重新插入，所以我们在使用hashmap作为集合进行数据的封装时候，最好是**指定集合的初始化大小**)
+
 ③ **(n - 1) & hash**请记住这个公式，通过hash值和整个table数组的大小n使用**与运算**快速的计算出插入的node应该位于该table数组中的位置 
+
 ④ 如果计算出来的位置**没有指针引用到任何对象**，那么调用newNode方法直接创建node节点存入该位置，这时我们会发现（**hashMap的key，value都可为null,key为null有且只有一个node对象**）
+
 ⑤ 如果该位置已经有node对象了，通过**key是否是同一个对象或者key对象自身实现的equal方法判定是否相等**判断存入的是node对象**是否应该存入该位置** 
+
 ⑥ 如果存入的key和该位置已存在key相等，那么**只更新该位置node对象的value（key对象在hashmap中唯一）** 
+
 ⑦ 如果不相等则获取**该位置node对象指向的下一个节点**，判断下一个节点的**是否为null**，如果为null则将创建节点赋值key，value存入，如果不为null，则继续判断是否key值相等，相等则更新该节点value，不相等则继续查找下一节点，理论节点数量是可无穷存储的**（由此可以看出hashmap是一个数组链表的存储结构）**，但是如果链表结构过长，hashmap会使用**treeifyBin**方法将链表中的node对象**替换为treeNode对象**进行存储
 
 treeNode类结构（**就是一个红黑树的结构**）

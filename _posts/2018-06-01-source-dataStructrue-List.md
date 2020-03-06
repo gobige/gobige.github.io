@@ -125,7 +125,7 @@ clone 该列表（浅度克隆）
 ```
 
 增加一个元素,先对列表扩容（调用array.copy浅度克隆，modacout+1） **元素可重复，可为null 插入相对耗时**
-```
+```java
     public boolean add(E e) {
         ensureCapacityInternal(size + 1);  // Increments modCount!!
         elementData[size++] = e;
@@ -134,7 +134,7 @@ clone 该列表（浅度克隆）
 ```
 
 删除指定位置元素 增加modcount 把index位置以右元素左移，把最后元素赋值为null **删除相对耗时 这也是为什么删除，指定位置增加操作要使用迭代器来进行才能保证删除，增加的的正确性**
-```
+```java
     public E remove(int index) {
         rangeCheck(index);
 
@@ -152,7 +152,7 @@ clone 该列表（浅度克隆）
 ```
 
 删除某个元素 modcount+ 遍历删除，内存地址一样元素 把该元素以右元素左移 最后一个元素赋值为null
-```
+```java
     public boolean remove(Object o) {
         if (o == null) {
             for (int index = 0; index < size; index++)
@@ -172,7 +172,7 @@ clone 该列表（浅度克隆）
 ```
 
 清除列表元素  modcount++ 遍历赋值元素为null，
-```
+```java
    public void clear() {
         modCount++;
 
@@ -277,7 +277,7 @@ clone 该列表（浅度克隆）
 ```
 
 获取该列表的迭代器 每次调用该方法都会生成一个新的迭代对象
-```
+```java
 iterator()
 
  private class Itr implements Iterator<E> {
