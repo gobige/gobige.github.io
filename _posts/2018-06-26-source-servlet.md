@@ -19,6 +19,7 @@ Servlet容器用来加载和管理业务类。HTTP服务器不直接跟业务类
 
 
 ### Servlet请求流程：
+
 资源请求-->HTTP服务器封装请求信息到ServletRequest对象-->servlet容器调用service方法-->根据请求URL和servlet映射关系，找到相应servlet（如果未加载则利用反射创建servlet，调用init初始化）
 -->调用servlet的service处理请求-->返回ServletResponse对象给HTTP服务器-->服务器返回给客户端
 
@@ -41,10 +42,23 @@ listener 工作流程：web应用在servlet容器中运行，servlet容器内部
 前者是干预过程的，是基于过程行为的；后者是基于状态，任何行为改变同一个状态，触发事件是一致的
 
 **springMVC容器，spring容器，servlet容器**
-tomcat等服务器启动时创建全局上下文环境servletcontext，期间触发容器初始化事件，Spring的ContextLoaderListener监听到后，调用contextInitialized方法初始化全局spring根容器（IOC容器）并放入servletcontext中。
-tomcat还会扫描servlet，比如springmvc的dispatchservlet，dispatchservlet初始化时建立自己容器也就是springmvc容器，他可以通过servletcontext拿到spring根容器，并将其设置为springmvc父容器，这也就是为什么controller能访问service服务，而service不可以访问controller
 
-https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/1.jpg
+容器加载流程
+```mermaid
+graph TD
+    A(tomcat等web服务器启动) 
+-->B[创建全局上下文servletcontext--触发容器初始化时间]
+-->C[Spring的ContextLoaderListener监听]
+-->D[Spring初始化全局spring根容器--放入ServletContext]
+-->E[web服务器扫描Servlet]
+-->F[扫描到SpringMVC的DistpatchServlet]
+-->G[DistpatchServlet初始化创建SpringMVC容器]
+-->H[通过ServletContext拿到Spring容器--设置为SpringMVC的父容器] 
+```
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/24.jpg)
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/1.jpg)
 
 
 servlet接口源码
