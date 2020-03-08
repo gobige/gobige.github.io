@@ -453,7 +453,9 @@ acceptor接受到新的socket连接后，把socket交给poller查询I/O事件（
 
 java NIO提供两种buffer来接收数据，HeapByteBuffer和DirectByteBuffer
 
-使用HeapByteBuffer接受网络数据时，需要吧数据从内核拷贝到一个临时本地内存，再从临时本地内存拷贝到JVM堆（GC会造成堆地址失效），而**本地内存到JVM堆拷贝过程中JVM可以保证不做GC**（Hotspot VM层面，这时是没有safepoint的）。而DirectByteBuffer对象本身在JVM堆上，但是字节数组直接从本地内存分配少一次拷贝。从稳定性考虑，NioEndpoint和Nio2Endpoint不直接使用本地内存，因为本地内存不好管理，若内存泄露难以定位。
+使用HeapByteBuffer接受网络数据时，需要吧数据从内核拷贝到一个临时本地内存，再从临时本地内存拷贝到JVM堆（GC会造成堆地址失效），而**本地内存到JVM堆拷贝过程中JVM可以保证不做GC**（Hotspot VM层面，这时是没有safepoint的）。
+
+DirectByteBuffer对象本身在JVM堆上，但是字节数组直接从本地内存分配少一次拷贝。从稳定性考虑，NioEndpoint和Nio2Endpoint不直接使用本地内存，因为本地内存不好管理，若内存泄露难以定位。
 
 **sendfile**
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/15.png)
@@ -846,6 +848,7 @@ public void release(ByteBuffer buffer)
 buffer的获取和释放通过对相应的桶中deque进行操作
 
 对象池的存在会造成**线程同步**的问题，但是却避免了**创建，销毁对象**的开销。从对象池本身设计上来看，需尽量做到**无锁化**。如果内存够大，考虑使用ThreadLocal（注意内存泄漏问题）；必须对**对象池大小做限制（自动扩容，缩容）**. 
+
 CPU在执行系统调用时，会从用户态切换到内核态，在用户态下，使用的是用户空间的内存；内核态下，使用的是内核空间。只有**内核可访问各种硬件资源（磁盘，网卡）**，即系统调用。
 
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/19.png)
