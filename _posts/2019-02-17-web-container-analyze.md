@@ -206,9 +206,13 @@ tomcat和jetty整体结构都是基于组件，通过xml或代码方式灵活选
 ## **tomcat 优化**
 
 - **清理不必要的web应用**,tomcat启动时，会启动webapps文件夹下的所有工程，所以清理不需要启动的工程很有必要
+
 - **清理XML配置文件**，XML解析代价不算小，tomcat启动时会解析所有XML配置文件。所以保持配置文件简洁很重要。
+
 - **清理JAR包**：JVM类加载器在加载类是，需要查找每一个依赖JAR包，WEB应用中lib目录下不应该出现servlet API或者Tomcat自身的JAR
+
 - **清理其他文件**：及时清理日志，删除logs文件夹下不需要的日志文件。还有work文件夹下catalina文件夹（tomcat吧JSP转换为Class文件工作目录，有时修改了代码，重启tomcat没有生效。这时可以尝试删除文件夹，删除后，下次启动后自动生成）
+
 - **禁止tomcat TLD扫描**：为了支持JSP，在应用启动时，tomcat会扫描JAR包里面的TLD文件，加载里面定义的标签库，所以tomcat会在启动日志中说明，扫描web应用下的JAR包，如果没有发现TLD文件，会提示建议配置tomcat不要扫描这些JAR包
     - **禁用TLD扫描**（不使用JSP作为Web页面模板）：打开Tomcat的conf/context.xml文件，在该文件下Context标签下，加上JarScanner和JarScanFilter子标签：
     ```java
@@ -223,27 +227,32 @@ tomcat和jetty整体结构都是基于组件，通过xml或代码方式灵活选
     ```java
     tomcat.util.scan.StandardScanFilter.jarsToSkip=xxx.jar
     ```
+
 - **关闭WebSocket支持**：tomcat会扫描WebSocket注解的API实现，比如@ServerEndpoint注解的类。注解扫描一般是比较慢的。打开conf/context.xml，给context标签添加containerSciFilter的属性
 ```java
 <Context containerSciFilter="org.apache.tomcat.websocket.server.WsSci">
 </Context>
 ```
+
 - **关闭JSP支持**：打开conf/context.xml，给context标签添加containerSciFilter的属性
 ```java
 <Context containerSciFilter="org.apache.jasper.servlet.JasperInitializer">
 </Context>
 ```
+
 - **禁止Servlet注解扫描**：打开web.xml文件设置web-app属性
 ```java
 <web-app metadata-complete="true">  
 </web-app>
 ```
+
 - **配置Web-Fragment扫描**：Servlet3.0引入了web模块部署描述符片段”的web-fragment.xml，这是一个部署描述文件，可以完成web.xml的配置功能。而这个web-fragment.xml文件必须存放在JAR文件的META-INF目录下，而JAR包通常放在WEB-INF/lib目录下，因此Tomcat需要对JAR文件进行扫描才能支持这个功能。打开web.xml文件设置<absolute-ordering>元素直接指定了哪些JAR包需要扫描web fragment
 ```java
 <web-app>
     <absolute-ordering/> // 不需要扫描
 </web-app>
 ```
+
 - **随机数熵源优化**：tomcat7以上版本通过java的SecureRandom类生成随机数。而JVM默认使用阻塞式熵源(安全性较高一些)，可能会导致tomcat启动偏慢。通过设置JVM参数
 ```java
 -Djava.security.egd=file:/dev/./urandom
@@ -252,6 +261,7 @@ tomcat和jetty整体结构都是基于组件，通过xml或代码方式灵活选
 ```java
 securerandom.source=file:/dev/./urandom
 ```
+
 - **并行启动多个web应用**
 tomcat启动默认一个一个启动web应用，通过修改server.xml文件中Host元素的startStopThreads属性设置用多少线程进行来完成并行启动。
 ```java
@@ -260,11 +270,10 @@ tomcat启动默认一个一个启动web应用，通过修改server.xml文件中H
     </Host>
 </Engine>
 ```
- 
+
+
 ## **tomcat非阻塞I/O实现**
-
-tomcat的NioEndPoint组件实现了I/O多路复用模型，
-
+tomcat的NioEndPoint组件实现了I/O多路复用模型
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/tomcat/12.png)
 
 - LimitLatch：连接控制器，控制最大连接数，NIO模式下默认10000，
@@ -307,6 +316,7 @@ public class LimitLatch {
    }
 }
 ```
+
 - Acceptor：在一个单独线程里，在一个死循环里调用accept方法接受新连接，一旦有新连接，accept方法返回一个channel对象，接着把channel对象交给poller去处理。ServerSocketChannel通过accept()接受新的连接，accept()方法返回获得SocketChannel对象，然后将SocketChannel对象封装在一个PollerEvent对象中，并将PollerEvent对象压入Poller的Queue里，这是个典型的生产者-消费者模式，Acceptor与Poller线程之间通过Queue通信。
 ```java
 serverSock = ServerSocketChannel.open();
