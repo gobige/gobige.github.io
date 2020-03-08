@@ -260,8 +260,7 @@ tomcat启动默认一个一个启动web应用，通过修改server.xml文件中H
     </Host>
 </Engine>
 ```
-engine元素里配置表示tomcat配置多少线程启动Host
-
+ 
 ## **tomcat非阻塞I/O实现**
 
 tomcat的NioEndPoint组件实现了I/O多路复用模型，
