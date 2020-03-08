@@ -258,7 +258,7 @@ tomcat启动默认一个一个启动web应用，通过修改server.xml文件中H
 <Engine startStopThreads="0">
     <Host startStopThreads="0">
     </Host>
-</Engine
+</Engine>
 ```
 engine元素里配置表示tomcat配置多少线程启动Host
 
