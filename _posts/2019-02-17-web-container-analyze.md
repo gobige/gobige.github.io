@@ -1040,19 +1040,24 @@ tomcat类加载打破了jvm类加载的双亲委派原则
 
 **WebAppClassLoader**
 我们部署两个web应用，两个web应用都有相同的servlet，tomcat自定义一个类加载器WebAppClassLoader，并给每个Web应用创建一个类加载器实例。context负责创建，维护实例，**不同加载器加载的类认为是不同的类**。
+
 **SharedClassLoader**
 两个web应用之间共享类库，通过增加一个SharedClassLoader来加载，作为WebAppClassLoader父加载器，如果webAppClassLoader没有加载到某个类，就委托父加载器去加载这个类，SharedClassLoader会在指定目录下加载共享类，在返回给webAppClassLoader。
+
 **CatalinaClassloader**
 CatalinaClassloader专门负责加载Tomcat自身的类，和SharedClassLoader是同一个级
-**CommonClassLoader**
-CommonClassLoader作为CatalinaClassloader和SharedClassLoader的父加载器，
 
-CommonClassLoader加载的类可被CatalinaClassloader和SharedClassLoader使用，而CatalinaClassloader和SharedClassLoader加载的类互相隔离，WebAppClassLoader可使用SharedClassLoader加载的类，但各个WebAppClassLoader实例之间相互隔离
+**CommonClassLoader**
+CommonClassLoader作为CatalinaClassloader和SharedClassLoader的父加载器，CommonClassLoader加载的类可被CatalinaClassloader和SharedClassLoader使用，而CatalinaClassloader和SharedClassLoader加载的类互相隔离，WebAppClassLoader可使用SharedClassLoader加载的类，但各个WebAppClassLoader实例之间相互隔离
+
 
 **默认加载路径**
 CommonClassLoader对应<Tomcat>/common/*
+
 CatalinaClassLoader对应 <Tomcat >/server/*
+
 SharedClassLoader对应 <Tomcat >/shared/*
+
 WebAppClassloader对应 <Tomcat >/webapps/<app>/WEB-INF/*目录
 
 JVM有条隐含的默认规则，如果一个类由类加载器A加载，那这个类依赖类也由相同类加载器加载。spring作为第三方JAR包，本身由SharedClassLoader来加载，spring又要加载业务类，但是业务类在web应用目录下，为了解决这个问题，tomcat使用**线程上下文加载器**。他保存在线程私有数据里，当启动web应用时，线程里设置线程上下文加载器，这样spring在启动时就将线程上下文加载器取出来，用来加载bean。同时JDBC也使用上下文类加载器加载不同数据库驱动
