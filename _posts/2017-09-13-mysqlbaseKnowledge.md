@@ -135,6 +135,16 @@ update ignore 发生错误更新继续
 
 如果视图定义中有 分组，联结，子查询，并，聚集函数，distinct，导出计算列不能进行更新
 
+## JOIN的用法 
+- join对查询条件如果是多对多的关系,则进行笛卡尔乘积运算
+- inner join : 内联两张关联表,将符合条件的两张关联表中记录进行展示
+- left join : 左连接查询会返回左表中所有记录，不管右表中有没有关联的数据
+- right join : 右连接查询会返回右表中所有记录，不管左表中有没有关联的数据, 
+- FULL OUTER JOIN   外连接查询能返回左右表里的所有记录，其中左右表里能关联起来的记录被连接后返回
+- LEFT JOIN EXCLUDING INNER JOIN   返回左表有但右表没有关联数据的记录集
+- RIGHT JOIN EXCLUDING INNER JOIN   返回右表有但左表没有关联数据的记录集
+- FULL OUTER JOIN EXCLUDING INNER JOIN 返回左表和右表里没有相互关联的记录集。
+
 ## **存储过程**
 
 **Why use produce**
