@@ -457,10 +457,10 @@ select * from t sys.innodb_lock_waits where locked_table=`'test'.'t'`
 
 **一致性读**
 
-处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/12.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/12.png)
 对比上面两个sql，前者是普通的一致性读，后者是当前读，会用到读锁
 如图：
-处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/13.png)
+![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/13.png)
 
 sessionB在sessionA开启事务后update，如果更新100w次，那么就会生成100w个回滚日志。在第一个sql执行时就会依次执行uodolog，在100w次后，才将1结果返回
 
