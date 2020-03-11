@@ -410,27 +410,40 @@ mysql中我们使用rand()获取随机数,他的流程如下:
 
 
 ### 单行sql哪些情况下会变慢
-1. 条件字段**函数的使用**会导致索引字段的有序性遭到破坏，于是优化器在sql优化时会放弃走该字段的树搜索功能，造成sql语句执行慢
-2. 数据类型转换规则：字符串和数字作比较的话，是将**字符串转换成数字**。因此mysql中隐式转换也会造成sql语句执行慢
-3. **隐式字符编码**转换，如果两种表的字符集使用不统一，那么在两张变做关联查询时，被驱动表的索引字段有可能作隐式转换，从而导致对被驱动表作全表扫描，sql执行慢。解决方案（1统一编码字符集，2通过修改关联表之间连接顺序）
-4. **锁表**可能导致查询语句的长时间不返回，通过show processlist命令，查看当前语句的状态，如果看到**Waiting for table metadata lock**的状态，说明存在线程正在表T上请求或持有**MDL写锁**，该查询语句被阻塞,如图：
 
+**函数的使用**
+
+条件字段**函数的使用**会导致索引字段的有序性遭到破坏，于是优化器在sql优化时会放弃走该字段的树搜索功能，造成sql语句执行慢
+
+**数据类型转换**
+
+数据类型转换规则：字符串和数字作比较的话，是将**字符串转换成数字**。因此mysql中隐式转换也会造成sql语句执行慢
+
+**隐式字符编码**
+
+**隐式字符编码**转换，如果两种表的字符集使用不统一，那么在两张变做关联查询时，被驱动表的索引字段有可能作隐式转换，从而导致对被驱动表作全表扫描，sql执行慢。解决方案（1统一编码字符集，2通过修改关联表之间连接顺序）
+
+**锁表**
+
+通过show processlist命令，查看当前语句的状态，如果看到**Waiting for table metadata lock**的状态，说明存在线程正在表T上请求或持有**MDL写锁**，该查询语句被阻塞,如图：
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/8.png)
-针对这种阻塞的处理方式时找到持有MDL写锁的线程，然后kill掉，那么如何找到该线程呢。我们看到**sleep指令**是无法查找的，只有通过performance_schema和sys系统来查询sys.schema_table_lock_waits表，就可以查找出阻塞process_id（Mysql需开启performance_schema=on）
+- 针对这种阻塞的处理方式时找到持有MDL写锁的线程，然后kill掉，那么如何找到该线程呢。我们看到**sleep指令**是无法查找的，只有通过performance_schema和sys系统来查询sys.schema_table_lock_waits表，就可以查找出阻塞process_id（Mysql需开启performance_schema=on）
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/9.png)
 
-5. **等flush**过程中，会导致查询语句阻塞，通过如果对一个表做flush操作指令为
-```java
-// 只关闭表T 
-flush tables t with read lock;
+**等flush**
 
-// 关闭所有表 
+**等flush**过程中，会导致查询语句阻塞，通过如果对一个表做flush操作指令为
+```java
+ 
+flush tables t with read lock;
+ 
 flush tables with read lock;
 ```
 这两个指令本来是很快的，除非它们也被别的线程阻塞。
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/10.png)
 
-6. **等行锁**
+**等行锁**
+
 ```java
 select * from t where id = 1 lock in share mode;
 ```
@@ -441,13 +454,9 @@ select * from t sys.innodb_lock_waits where locked_table=`'test'.'t'`
 查询堵塞的源头，如图：
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/11.png)
 
-
-那么除了锁造成查询sql慢以外还有没有其他的原因呢
-
 **一致性读**
 
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/12.png)
-
 对比上面两个sql，前者是普通的一致性读，后者是当前读，会用到读锁
 如图：
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/13.png)
@@ -577,7 +586,7 @@ mysql> insert into t values(30,10,30);
 
 	
 #### binlog写入机制
-事务执行过程中,先把日志写到binlog cache,事务提交的时候,再把binlog cache写到binlog中. 系统给binlog cache分配了内存,每个线程一个, binlog_cache_size用于控制单个线程内所占内存大小.每个线程有独立的binlog cache,但是共用同一份binlog文件,如果超过了这个参数大小,就要暂存到磁盘.
+事务执行过程中,先把日志写到binlog cache,事务提交的时候,再把binlog cache写到binlog中. 系统给binlog cache分配了内存,每个线程一个, binlog_cache_size用于控制单个线程内所占内存大小，如果超过了这个参数大小,就要暂存到磁盘.所有线程共用同一份binlog文件。
 
 如图:
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/27.png) 
@@ -588,7 +597,7 @@ write和fsync是由sync_binlog控制的.(比较常见的设置为100~1000中某�
 
 - sync_binlog=0,每次提交事务只write,不fsync;
 - sync_binlog=1,每次提交事务只fsync;
-- sync_binlog=N(N>1),每次提交事务都write,但累积N个事务后才fsync.
+- sync_binlog=N(N>1),每次提交事务都write,但累积N个事务后才fsync.（有利提升I/O效率，但会有丢失日志风险））
 
 #### redolog写入机制
 rodolog是先写到redo log buffer里的,不是每次生成后就持久化到磁盘的,也不是非得事务提交的时候,redo log buffer中日志才持久化到磁盘.
