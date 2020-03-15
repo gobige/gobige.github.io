@@ -620,8 +620,10 @@ rodolog是先写到redo log buffer里的,不是每次生成后就持久化到磁
 注意:事务执行中间过程redo log也会写在redo log buffer中.
 
 
-有一个后台线程,每隔一秒,就会把redo log buffer 中日志,调用write写到文件系统的page cache.然后fsync持久化到磁盘.除此以外,还有两种场景redo log 写入到磁盘中.1.redo log buffer占用空间即将达到innodb_log_buffer_size一半时,会主动进行写盘(只是到达page cache中).2
-另一种是,并行的事务提交的时候,顺带把redo log buffer持久化到磁盘.如果把innodb_flush_log_at_trx_commit参数设置成1,每秒一次的轮询刷盘,再加上崩溃恢复机制,innodb认为redo log在commit时候就不需要fsync了,只会write到文件系统中的page cache.
+有一个后台线程,每隔一秒,就会把redo log buffer 中日志,调用write写到文件系统的page cache.然后fsync持久化到磁盘.除此以外,还有两种场景redo log 写入到磁盘中.
+
+1. redo log buffer占用空间即将达到innodb_log_buffer_size一半时,会主动进行写盘(只是到达page cache中).
+2. 另一种是,并行的事务提交的时候,顺带把redo log buffer持久化到磁盘.如果把innodb_flush_log_at_trx_commit参数设置成1,每秒一次的轮询刷盘,再加上崩溃恢复机制,innodb认为redo log在commit时候就不需要fsync了,只会write到文件系统中的page cache.
 
 如果我们采用双1配置,也就是binglog和redolog刷盘策略都配置1,那么每秒的磁盘TPS就等于4w,如果磁盘能力也就2w左右,那么怎么保证TPS呢?
 
@@ -695,12 +697,8 @@ binlog重放应该使用mysqlbinglog工具解析出来，然后把解析结果�
     1. 一主多从。除了备库外，可以多接几个从库，让从库分担读的压力。（从库还适合做备份）
     2. 通过binlog输出到外部系统，比如hadoop，让外部系统提供统计类查询能力
 3. 大事务，主库上必须等事务执行完成才会写入binlog，再传给备库，如果一个语句执行10分钟，那么从库延迟至少会10分钟。（一次性用delete语句删除太多数据；大表DDL）
-
-**解决方案**
-1. 一主多从。除了备库外，可以多接几个从库，让从库分担读的压力。（从库还适合做备份）
-2. 通过binlog输出到外部系统，比如hadoop，让外部系统提供统计类查询能力
-
-
+ 
+ 
 ### 主备切换策略
 
 ![此处输入图片的描述](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/mysql/32.png) 
