@@ -39,7 +39,7 @@ ParallelScavenge收集器老年代版本，使用标记整理算法
 
 ### CMS
 
-老年代收集器，是一种目的是获取**最短回收停顿时间**为目标，使用标记-清除算法，多线程收集器，整个收集过程分为
+老年代，方法区收集器，获取**最短回收停顿时间**为目标，超过老年代，方法区阙值进行GC,使用标记-清除算法。多线程收集器，整个收集过程分为
 
 1. 初始标记（仅仅标记GC Roots可达对象，速度很快，会stop the world）
 2. 并发标记（进行GCRootTracing过程，用户线程可同时工作）
@@ -59,8 +59,18 @@ ParallelScavenge收集器老年代版本，使用标记整理算法
 
 - 是一款支持**并行和并发**，充分利用多CPU,多核优势，**缩短STW**停顿时间；
 - 具有采用**分代收集；空间整合；可预测停顿**等特点
-- 在Java堆分配上面划分成多个大小相等的独立区域（**region**），新生代和老年代**不再物理隔离**
+- 在Java堆分配上面划分成多个大小相等的独立区域（**region**），新生代，存活区，老年代，大对象（Humongous大小超过region一半大小）**不再物理隔离**，-XX:G1HeapRegionSize配置
 - 通过跟踪，分析Region里垃圾的价值大小，**优先回收价值大的Region**
+
+RSet
+
+每个region初始化时，初始化RSet记录跟踪其他Region指向该Region中对象引用（每512KBregion划分为多个Card），垃圾回收时，很快的判断Region内对象是否存活
+
+GC模式
+
+- young GC，和eden region耗尽时触发
+- mixed GC，越来越多对象晋升到old region时，避免堆内存被耗尽，回收整个eden region，一部分old region。 XX:InitiatingHeapOccupancyPercent配置老年代占整个堆百分比阙值
+- full GC，对象分配过快，mixed来不及回收，老年代填满，触发full GC. serial old执行，长时间暂停
 
 垃圾回收整个过程分为
 - 初始标记 （仅仅标记GC Roots可达对象，速度很快，会stop the world；**标记可用region**，使下一阶段用户线程可用）
@@ -70,6 +80,29 @@ ParallelScavenge收集器老年代版本，使用标记整理算法
 
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/9.png)
 
+
+### ZGC收集器：
+可伸缩的、低延迟的垃圾收集器；停顿时间不会随堆增大而增大，停顿时间不会超过10ms，支持几百M，最大4T堆大小
+
+- Concurent：短暂的STW，大部分时间和应用程序并发执行，标记和移动最慢
+- Region-based：以page为单位进行对象分配和回收
+- Compacting：每次GC，都会对page进行压缩操作，避免碎片化问题
+- NUMA-aware：创建对象根据当前线程在哪个CPU执行，优先靠近CPU内存进行分配
+- Using colored poinrers，ZGC标记标记对象的指针而不是在对象头进行垃圾回收标记
+- Using load barriers：因为标记和移动，为了应用程序获取对象时对的，经过一个读屏障，保证执行GC时，读取数据正确性
+
+GC触发策略
+
+任有空闲内存情况下
+
+- rule_timer:周期性GC，XX:ZCollectionInterval= 1,每隔一段时间ZGC
+- rule_warmup:JVM启动后，一直没GC，在10,20,30个百分点阙值时，分别触发一次GC，收集GC数据为后面GC提供条件依据
+- rule_allocation_rate：根据对象分配速率（估计很快耗尽内存）决定是否GC。
+- rule_proactive：允许吞吐量下降情况下，积极主动GC
+	- 自从上次GC后，堆使用量至少涨10%
+	- 自从上次GC后，过去5分钟没有GC
+
+没有空闲内存情况下:stw,回收一部分内存，让应用程序继续执行
 
 ### GC日志设置
 ```java
@@ -101,6 +134,8 @@ GC发生时间：【GC停顿类型--【GC发生区域（名字跟收集器有关
 - 通过jstack查看线程堆栈信息
 - 看出具体使用CPU高的代码位置；若显示VM-tread则表示垃圾回收线程，很有可能是Full GC频繁导致
 - 使用stat 查看进程GC情况是否是Full GC 频繁；dump除内存，hat分析具体触发Full GC代码位置
+
+Major GC是清理老年代，Full GC是清理整个堆空间
 
 ### GC调优
 

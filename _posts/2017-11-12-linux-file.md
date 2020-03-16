@@ -226,7 +226,7 @@ service iptables save
 
 - kill [pid] 杀死进程
 - kill -KILL [pid] 强制杀死进程
-- kill -s 9 [pid] 彻底杀死进程
+- kill -s 9 [pid] 彻底杀死进程 // 9无条件强制杀死 15 尽量杀死，调用钩子函数
 - showdown 关闭linux服务器
     - showdown -h now 立即关闭linux服务器
 - reboot 重启linux服务器
