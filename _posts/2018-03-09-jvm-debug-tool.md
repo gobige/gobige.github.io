@@ -55,8 +55,12 @@ GCT:GC总耗时
 - 用于生成堆转储快照，查询finalize执行队列，堆和永久代详细信息，jvm发生oom时的dump文件
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/14.png)
 
+例：jmap -dump:live,format=b,file=a.log pid
+
 **jhat：jvm堆转储快照分析工具**
 - 通过内置的HTTP/HTML服务器，配和jmap生成的dump文件，生成分析文件；这个过程是一个大量消耗硬件资源，建议不要在生产环境中使用
+
+例：jhat -port 5000 a.log
 
 **jstack：java堆栈跟踪工具**
 - 用于生成jvm当前时刻线程快照，显示每一条现场正在执行方法堆栈集合，从而可用定位线程可能出现诸如死锁，死循环，请求外部资源长时间等待等问题
@@ -67,6 +71,12 @@ GCT:GC总耗时
 **JConsole：java监视和管理控制台**
 
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/16.png)
+
+
+**JProfile：分析器,hat代替分析插件**
+
+![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/16.png)
+
 
 **VisualVM：多合一故障处理工具**
 VisualVM提供很多插件的扩展，可以做到显示进程和进程配置，监视应用CPU，GC，堆，方法区，提供dump以及堆转储文件分析；方法级程序性能分析，找出调用最多，运行时间最长方法；收集程序运行时配置，线程dump，内存dump
