@@ -2,7 +2,7 @@
 layout: post
 title: '碎片化随笔'
 subtitle: '碎片化学习笔记'
-date: 2020-01-01
+date: 2020-02-29
 categories: 随笔
 author: yates
 cover: 'www.baidu.com'
