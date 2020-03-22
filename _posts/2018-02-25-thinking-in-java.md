@@ -184,3 +184,4 @@ jdk1.1大多数用reader和writer代替了input和outputstream的使用
 
 对象序列化实现了一种轻量级持久性····················
 
+科学计算使用double，float；商业运算使用BigDecimal
