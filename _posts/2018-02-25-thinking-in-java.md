@@ -1,4 +1,4 @@
- ---
+---
 layout: post
 title: '《java编程思想》笔记和随想'
 subtitle: '《java编程思想》笔记和随想'
@@ -10,11 +10,12 @@ tags: java
 ---
 javadoc 只会对public和 protect 访问级别进行文档生成可见，
 
-Modifier	Class	Package	Subclass	World
-public?	Y	Y	Y	Y
-protected	Y	Y	Y	N
-no modifier	Y	Y	N	N
-private	Y	N	N	N
+|Modifier|Class|Package|Subclass|World
+:------:|:----------------:|:---------------:|:----------------:|:--------:|
+|public|	Y|	Y|	Y|	Y
+|protected|	Y|	Y|	Y|	N
+|default|	Y|	Y|	N|	N
+|private|	Y|	N|	N|	N
 
 @see：引用其他类的文档
 @version：版本
@@ -184,3 +185,4 @@ jdk1.1大多数用reader和writer代替了input和outputstream的使用
 
 对象序列化实现了一种轻量级持久性····················
 
+科学计算使用double，float；商业运算使用BigDecimal
