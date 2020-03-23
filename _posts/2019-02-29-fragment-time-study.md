@@ -2,7 +2,7 @@
 layout: post
 title: '碎片化随笔'
 subtitle: '碎片化学习笔记'
-date: 2020-02-29
+date: 2019-02-29
 categories: 随笔
 author: yates
 cover: 'www.baidu.com'
@@ -27,7 +27,6 @@ springboot 2.x默认使用CGLIB，要想使用JDK 配置项  spring.aop.proxy-ta
  
 除了构造注入会导致强依赖以外，一个bean也会强依赖于暴露他的配置类。不要对有@configuration注解的配置类进行field级的依赖注入
 
-hikaricp连接池的使用，spring 事务利用AOP原理进行round的方法增强，增强方法调用内部方法时，必须通过引用XXservice.method方法调用才会是事务生效，否则不生效
 
 幂等
 
