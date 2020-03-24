@@ -8,6 +8,7 @@ author: yates
 cover: ''
 tags: java
 ---
+
 javadoc 只会对public和 protect 访问级别进行文档生成可见，
 
 |Modifier|Class|Package|Subclass|World
