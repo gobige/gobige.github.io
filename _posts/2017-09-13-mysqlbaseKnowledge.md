@@ -1,7 +1,7 @@
 ---
 layout: post
 title: 'Mysql一些基础知识'
-subtitle: 'myiasm和innodb区别'
+subtitle: 'Mysql一些基础知识'
 date: 2017-09-13
 categories: mysql
 author: yates
@@ -9,8 +9,41 @@ cover: 'http://cctv.com'
 tags: mysql
 ---
 
+
 ## 前言
 mysql 一些常用的指令，语法，以及一些库函数
+
+## SQLite Mysql PostgreSQL
+SQLite的优点
+占用空间小：占用不到600KiB的空间。 无需在系统上安装任何外部依赖项即可运行SQLite。
+用户友好： “零配置”数据库，SQLite不会作为服务器进程运行， 永远都不需要停止，启动或重新启动，不需要任何需要管理的配置文件。 
+可移植：整个SQLite数据库存储在单个文件中。该文件可位于任何位置，可通过可移动媒体或文件传输协议共享
+
+SQLite的缺点
+有限的并发性：多个进程可以同时访问和查询，但任何给定时间只有一个进程可以对数据库进行更改。  
+没有用户管理：SQLite直接读取和写入普通磁盘文件唯一适用的访问权限是基础操作系统的典型访问权限。
+安全性：使用服务器的数据库引擎比无服务器的数据库（如SQLite）可以更好地保护客户端应用程序中的错误（并发，锁）。
+
+适用场景
+嵌入式应用程序，测试，磁盘访问替换
+
+PostgreSQL的优点
+SQL合规性：比MySQL还要严格遵守SQL标准
+开源和社区驱动：完全开放源代码的项目
+可扩展：通过其目录驱动的操作及其对动态加载的使用
+
+PostgreSQL的缺点
+内存性能：对于每个新的客户端连接，PostgreSQL都会派生一个大约10MB新进程。
+流行度：帮助管理PostgreSQL数据库的第三方工具仍然较少。经验丰富的Postgres数据库的数据库管理员也少
+
+速度,复杂的复制上面较弱于Mysql
+
+**NULL**
+
+大多数数据库中NULL和空字符串是区别对待的，空字符串和NULL都是一种**值**，Oracle中所有的空字符串都会自动转换成NULL
+SELECT * FROM SOME_TABLE WHERE 1 = NULL；查询数据为0
+
+mysql中 NULL 就是 NULL，是【未知】，1 = NULL 1 != NULL,1就是1，数据库不知道1是不是等于【未知】
 
 ## 数据库操作指令
 
