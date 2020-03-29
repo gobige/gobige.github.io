@@ -1,6 +1,6 @@
 ---
 layout: post
-title: '《java编程思想》笔记和随想'
+title: 'java编程思想 笔记和随想'
 subtitle: '《java编程思想》笔记和随想'
 date: 2018-02-25
 categories: java
