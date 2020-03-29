@@ -2,7 +2,7 @@
 layout: post
 title: '获取配置文件的方式'
 subtitle: '获取配置文件的流'
-date: 2017-11-11
+date: 2017-11-10
 categories: IO
 author: yates
 cover: 'http://cctv.com'

@@ -5,7 +5,7 @@ subtitle: '《java编程思想》笔记和随想'
 date: 2018-02-25
 categories: java
 author: yates																																									
-cover: ''
+cover: 'www.baidu.com'
 tags: java
 ---
 
