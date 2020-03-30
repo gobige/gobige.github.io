@@ -171,6 +171,9 @@ service iptables save
 - ps 显示进程信息
     - ps -u root 显示root用户信息
 - top 实时显示系统状态
+	- 系统统计信息：当前时间；系统运行实际；当前用户数；平均负载（1m,5m,15m）
+	- 进程，cpu统计信息：
+	- 内存信息：swap used 超过0基本确定内存瓶颈问题
 - pstree 以树状图显示所有行程状态
 - free 显示内存状况
 - export 设置显示环境变量
