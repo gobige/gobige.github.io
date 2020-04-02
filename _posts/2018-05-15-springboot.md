@@ -42,3 +42,31 @@ spring对每个bean提供一个scope属性表示bean的作用域，这些bean大
 - @Transactional(isolation = Isolation.DEFAULT,propagation = Propagation.REQUIRED) 设置当前方法作为一个事务处理，参数可设置隔离级别，设置传播行为
 - @ControllerAdvice：作为控制器注入spring容器
 - @ExceptionHandler：指定异常处理方法
+
+
+### spring boot 配置文件加载顺序 
+
+
+#### **项目内配置文件加载顺序**
+
+SpringBoot项目启动会扫描以下位置的application.properties或者application.yml文件作为SpringBoot的默认配置文件，具体的目录位置见下图。
+
+file:./config/ （ 项目根路径下的config文件夹）
+file:./ （项目根路径）
+classpath:/config/ （类路径下的config文件夹）
+classpath:/ （类路径） 
+
+
+#### **外部配置加载顺序SpringBoot也可以从以下位置加载配置**
+
+优先级从高到低，高优先级的配置覆盖低优先级的配置，所有的配置会形成互补配置 。
+
+命令行参数。所有的配置都可以在命令行上进行指定；
+来自java:comp/env的JNDI属性；
+Java系统属性（System.getProperties()）；
+操作系统环境变量 ；
+jar包外部的application-{profile}.properties或application.yml(带spring.profile)配置文件
+jar包内部的application-{profile}.properties或application.yml(带spring.profile)配置文件 再来加载不带profile
+jar包外部的application.properties或application.yml(不带spring.profile)配置文件
+jar包内部的application.properties或application.yml(不带spring.profile)配置文件
+@Configuration注解类上的@PropertySource 
