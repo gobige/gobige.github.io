@@ -102,8 +102,10 @@ arthas其他指令：
 - logger:查看日志配置 logger --name ROOT --level DEBUG:更新日志级别
 - heapdump：dump堆栈信息
 - monitor：查看某个方法的调用情况,调用次数，成功次数，RT
-- watch：方法执行情况，入参，返回值，异常
+- watch：方法执行情况，入参，返回值，异常 
+	- watch com.carhouse.product.core.service.impl.GoodsSearchResult4BServiceImpl selectGoodsList "{params,returnObj}" -x 2
 - trace：方法链路追踪，性能开销，调用链路
+	- trace com.carhouse.api.controller.v3.SupplierStoreController index
 - tt:记录下指定方法每次调用的入参和返回信息，并能对这些不同的时间下调用进行观测
 
 **Class.forName和Classloader区别**
