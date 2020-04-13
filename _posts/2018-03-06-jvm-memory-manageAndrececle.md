@@ -12,7 +12,7 @@ tags: jvm
 ## 前言
 JVM不仅承担Java字节码的分析和执行，同时也内置了自动内存分配管理机制。我们在Java开发过程中，有时过度依赖于JVM内存管理自动化，弱化对内存的管理，这样系统很容易发生JVM异常。所以我们需要深入了解JVM内存分配和回收原理，这样在遇到问题时才能通过日志分析快速定位问题。
 
-### java内存管理之JVM内存模型
+### java内存管理
 
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/1.png)
 
@@ -172,3 +172,5 @@ graph LR
 ``` 
 
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/44.jpg)
+
+
