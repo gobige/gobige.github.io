@@ -232,6 +232,14 @@ Synchronized同步锁就是从**偏向锁**开始的，随着竞争越来越激�
 
 上述2,3,4条件破坏一个就可解决死锁问题
 
+### 活锁
+
+有时线程虽然没有发生阻塞，仍会执行不下去，同时加锁，同时释放锁；通过随机重试时间解决
+
+### 饥饿
+
+线程久久无法访问资源导致无法执行下去的情况
+
 #### 等待通知
 
 **使用notify**
@@ -300,6 +308,11 @@ CAS是实现乐观锁的核心算法，它包含了3个参数：V（需要更新
 - 或者能够确保只有一个线程修改变量的值；
 - 变量不需要与其他的状态变量共同参与不变约束
 
+### Doug Lea用锁的最佳实践
+
+- 永远只在更新对象的成员变量时加锁
+- 永远只在访问可变的成员变量时加锁
+- 永远不在调用其他对象的方法时加锁
 
 **long和double类型变量**
 - long和double的非原子协定：对于这两种变量，运行虚拟机将没有被volatile修饰的64为数据读写操作划分为两次32位操作进行，因此这两种变量不用专门声明为volatile
@@ -1107,6 +1120,8 @@ StampedLock控制锁有三种模式: 写、悲观读以及乐观读。
 - 获取锁时会返回一个**票据stamp**，获取的stamp除了在释放锁时需要校验。
 - 乐观读模式下，stamp还会作为读取共享资源后的二次校验
 
+StampedLock一定不要调用中断操作，中断操作会导致CPU暴涨。如果需要支持中断功能，一定使用可中断的悲观读锁readLockInterruptibly()和写锁writeLockInterruptibly()
+
 
 ### 使用LockSupport 阻塞和唤醒线程
 
@@ -1700,6 +1715,8 @@ public boolean add(E e) {
 读写锁和cow区别
 - **读写锁**在获取到读锁时，写线程是不能操作的，反之，写锁获取的时候，读线程是要阻塞的，从而解决“脏读”等问题，而**cow**是牺牲实时性而保证数据最终一致性，读线程在写线程操作期间，对数据的获取时延时的
 
+- CopyOnWriteArrayList迭代器是只读的，不支持增删改
+
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/8.png)
 
 ### ThreadLocal
@@ -1986,12 +2003,37 @@ JDK自带的工具VisualVM来查看WT/ST比例,根据自己的业务场景，从
 ### futrueTask
 - 获取任务执行结果的异步任务  具有未启动，启动中，已完成三个状态；
 - 通过get获取任务状态，但是会阻塞当前线程，直到任务中断或结束，才会返回结果
-- 通过cancel方法取消任务，未启动状态：任务永远不会执行；已启动状态：cancel(true) 中断线程，阻止任务执行，cancel(false)，中断还未执行任务；已完成状态：返回false
+- 通过cancel方法取消任务，
+	- 未启动状态：任务永远不会执行；
+	- 已启动状态：cancel(true) 中断线程，阻止任务执行，cancel(false)，中断还未执行任务；
+	- 已完成状态：返回false
 
 
 ### JUC提供的原子操作类
 
-这些原子操作类都是使用乐观锁CAS实现，有AtomicBoolean，AtomicInteger，AtomicLong，AtomicIntegerArray，AtomicLongArray，AtomicReferenceArray
+这些原子操作类都是使用乐观锁CAS实现
+
+**原子化基本数据类型**
+
+- AtomicBoolean，AtomicInteger，AtomicLong，AtomicIntegerArray，AtomicLongArray，AtomicReferenceArray
+
+**原子化对象引用类型**
+
+- AtomicReference,AtomicStampedReference,AtomicMarkableReference
+
+**数组**
+
+- AtomicIntegerArray，AtomicLongArray，AtomicReferenceArray 
+
+**累加器**
+
+- DoubleAccumulator，DoubleAdder，LongAccumulator，LongAdder
+
+**对象属性更新器**
+
+- 
+
+
 
 ### CountDownLatch 和 CyclicBarrier
 
