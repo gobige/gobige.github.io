@@ -9,7 +9,52 @@ cover: 'www.baidu.com'
 tags: 随笔
 ---
 
--分布式事务处理，例如转账，A账户校验，金额扣减，生成待处理流水记录-》调用B账户MQ消息生成，后台线程执行三方调用，更新流水记录-》返回
+
+JPA Level 2 Cache：共享缓存
+
+实体Entity使用@Cacheable注解开启二级缓存
+
+SharedCacheMode 
+
+- NONE：关闭二级缓存
+- ALL：对所有entity应用二级缓存
+- DISABLE_SELECTIVE：对所有@Cacheable(true)注解实体适用
+- ENABLE_SELECTIVE：对所有@Cacheable(false)注解实体适用
+- UNSPECIFIED：使用默认
+
+失效缓存
+
+```java
+Cache cache = entityManagerFactory.getCache();
+cache.evict(Student.class, 1);
+```
+
+缓存存储模式 CacheStoreMode
+
+ 
+- BYPASS：读取，提交的时候不增加和不更新到缓存
+- REFRESH：默认
+- USE.：读取，提交的时候更新，增加到缓存
+ 
+    
+缓存读取模式   CacheRetrieveMode
+
+- BYPASS：不从缓存读取
+- USE.：从缓存读取
+
+```java
+Query query = entitymanager.createQuery("select student FROM Student student");
+query.setHint("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
+```       
+
+
+properties:
+  javax:
+	persistence:
+	  cache:
+		retrieveMode: javax.persistence.CacheRetrieveMode.BYPASS
+		
+- 分布式事务处理，例如转账，A账户校验，金额扣减，生成待处理流水记录-》调用B账户MQ消息生成，后台线程执行三方调用，更新流水记录-》返回
 mq消息丢失处理：后台定时任务补偿扫描超时待处理流水记录放入MQ消息
 重复消费处理：消费者第一次消费生成消费流水记录，再次消费时判断请求流水号是否重复，保证幂等性
 
