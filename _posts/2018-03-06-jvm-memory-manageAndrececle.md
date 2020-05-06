@@ -32,7 +32,11 @@ java虚拟机在程序运行中会将内存划分为不同的数据区域，这�
 - 直接内存：NIO存放缓存，受本机内存影响会发生OutOfMemoryError
 
 
-在Java6版本中，永久代在**非堆内存区**；到了Java7版本，永久代的**静态变量和运行时常量池被合并到了堆**中；而到了Java8，永久代被**元空间**取代了（之前永久代类元数据存储在元空间，而**静态变量和运行时常量**还是在堆）
+在Java6版本中，方法区所有数据（除了JIT编译代码在native memory）都在永久代，永久代在**非堆内存区**；
+
+到了Java7版本，runtime constant pool 还是在permGen；SymbolTable 从永久代到了native memory；**StringTable,静态变量**从PermGen移动到 Java Heap ;
+ 
+而到了Java8，永久代被**元空间**取代了（之前永久代类元数据存储在元空间，而**静态变量和常量**还是在堆）
 
 
 **元空间**

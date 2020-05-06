@@ -531,6 +531,9 @@ ValueSpliterator
 EntrySpliterator
 
 
+jdk8默认初始化大小16，树化的大小是8，非树化大小是6
+jdk7 扩容时前插法，jdk8是尾插法，避免并发扩容造成节点死循环
+
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/3.png)
 
 **LinkedHashMap类**
