@@ -77,6 +77,11 @@ public interface Servlet {
 }
 ```
 
+**PostConstruct注解**
+
+在构造函数之后执行，init（）方法之前执行。PreDestroy（）方法在destroy（）方法知性之后执行
+
+
 ServletConfig接口源码
 ```java
 public interface ServletConfig {
