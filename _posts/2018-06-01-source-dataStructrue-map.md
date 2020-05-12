@@ -253,6 +253,24 @@ final Node<K,V> getNode(int hash, Object key) {
 }    
 ```
 
+HashMap扩容 resize() version 1.8
+```java
+
+- oldCap判断
+	- 原数组大小 oldCap 大于 0
+		1. 大于MAX，赋值MAX，return
+		2. newCap 为 oldCap * 2，newThr 为 oldThr * 2；
+	- 原数组阈值 oldThr 大于 0，newCap 为 oldThr；newThr 为 newCap * loadFactor（指定Map初始化大小场景）
+	- 默认初始化数组大小 Cap 为 16，put的时候才进行内存分配，默认扩容阈值 threshold为 16*3/4=12
+- 生成新 node数组，初始化大小 newCap
+- 拷贝赋值新 node数组
+	- old数组当前index元素无 next，直接 (newCap - 1) & hash 赋值
+	- 有next
+		- (e.hash & oldCap) == 0（？index == 0），newTab[j] = loHead; 原来index上node的链表移动
+		- newTab[j + oldCap] = hiHead; 原来index上node的链表移动 *2 到new node数组
+	
+```
+
 根据key删除node或trenode节点：
 1先查找**table数组中node节点**是否有匹配，如果未找到在查找对应hash值位置下节点**下一节点**，如此**循环直到找到或到达链表尽头**，将找到的要**删除node节点的下一个节点**赋值给**当前table数组中位置指针**或**上一个节点的next指针**
 ```java

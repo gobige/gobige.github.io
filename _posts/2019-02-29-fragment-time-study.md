@@ -8,13 +8,17 @@ author: yates
 cover: 'www.baidu.com'
 tags: 随笔
 ---
-
+ 
 instanceof    一个对象实例是否是一个类或接口 或 其子类子接口  的实例。   
 isAssignableFrom   类Class1和 类Class2是否相同 或 类Class1 是 类Class2 的超类或接口。   
 通常调用格式是  
 
 代码中使用 logger.isDebugEnabled()判断，有效优化 字符串拼接使用时的开销
+ 
+软件的本质复杂性存在于复杂的业务需求中。没有架构，所有代码耦合在一起，人类的心智模型不擅长处理复杂性。架构出现时为了管理复杂性，以取得更高的生产力。
 
+不管是MVC还是MVP,MVVM，都存在一个问题，没有处理好业务流程，界面转场。
+ 
 JPA Level 2 Cache：共享缓存
 
 实体Entity使用@Cacheable注解开启二级缓存
