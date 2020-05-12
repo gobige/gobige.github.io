@@ -43,3 +43,70 @@ tags: Spring
 通过配置的security.oauth2.resource.user-info-uri 参数每次调用一次后台接口都会去passport-server请求一次 **oauth/user接口获取用户session信息
 
  org.springframework.security.access.AccessDeniedException: Access is denied
+ 
+ 
+## Spring IOC 源码分析
+
+当我们运行以下代码时：
+
+```Java
+ClassPathXmlApplicationContext applicationContext=new ClassPathXmlApplicationContext("applicationContext.xml");
+```
+Spring会去加载配置文件，创建环境，创建bean。也就是IOC机制
+
+附上一张依赖图
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-08-26-springsource/2.png)
+
+流程
+
+### **调用构造方法**
+
+```Java
+	public ClassPathXmlApplicationContext(
+			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
+			throws BeansException {
+
+		super(parent); // 合并父容器环境environment
+		setConfigLocations(configLocations); // 封装配置文件地址路由为List集合
+		if (refresh) { // refresh 加载
+			refresh();
+		}
+	}
+```
+
+### **refresh过程**
+
+**prepareRefresh 预处理**
+
+- initPropertySources(no excute)	
+- validateRequiredProperties(no excute)
+- reset applicationListeners(emplist)
+- refreshBeanFactory
+	- 生成 DefaultListableBeanFactory
+	- loadBeanDefinitions 加载bean到factory
+		- 创建XmlBeanDefinitionReader 赋值 resourceLoader， environment，entityResolver
+		- loadBeanDefinitions
+			- 读取配置文件application.xml流（每读取一个配置文件就加入threadLocal中，避免多线程重复加载），读取完remove
+- 配置beafactory，如：ClassLoader和BeanPostProcessor
+- invokeBeanFactoryPostProcessors 为bean实例进行扩展处理
+	- doGetBeanNamesForType
+		- isTypeMatch 匹配给定bean名称是否和beanType匹配。自定义bean和环境bean
+- registerBeanPostProcessors
+	- primaryOrder，order，noOrder PostProcessor注册
+- initMessageSource
+	- 查找是否有name为messageSource的bean，如果有放到容器里，如果没有，初始化一个系统默认的放入容器
+- initApplicationEventMulticaster
+	- 查找是否有applicationEventMulticaster的bean，如果有放到容器里，如果没有，初始化一个系统默认的放入容器
+- onRefresh
+- registerListeners
+	- 注册静态和自定义监听器，并且绑定多播事件
+- finishBeanFactoryInitialization
+	- 设置 conversionService
+	- 注册默认bean后置处理器
+	- preInstantiateSingletons 初始化所有非lazy-load的bean
+		- 初始化依赖bean对象	
+- finishRefresh
+	- 清除上下文级别的资源缓存
+	- 上下文初始化生命周期处理器。
+	- 发布最终事件
