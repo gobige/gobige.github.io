@@ -13,6 +13,8 @@ tags: mysql
 
 max_connections：MySQL的最大连接数，每个连接提供连接缓冲区，就会开销越多的内存
 
+max_user_connections：每个数据库用户最大连接数，一般要求两者比值 max_user_connections/max_connections < 1/10 
+
 back_log：MySQL的连接数据达到max_connections时，新的请求将会被存在堆栈中，以等待某一连接释放资源，该堆栈数量即back_log，如果等待连接的数量超过back_log，将不被接受连接资源
 
 wait_timeout：指的是MySQL关闭一个**非交互的连接**之前所需要等待的秒数。
