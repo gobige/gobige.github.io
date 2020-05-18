@@ -64,6 +64,7 @@ tags: mysql
 - 尽量不用Select *（更多cpu消耗，内存，io，带宽）
 - 改写Or为IN（or时间复杂度：**O(n)**,IN时间复杂度**O(Log n)**;IN个数建议**小于20**）
 - 改写Or为Union(不同字段减少merge index)
+- IN 适合主表大子表小，EXIST适合主表小子表大
 - 避免负向查询(NOT,!=,<>,!<,!>,NOT EXISTS,NOT IN,NOT LIKE)
 - 避免%前缀模糊查询（B+tree，索引失效，全表扫描）
 - Count不要使用在可Null的字段上面
