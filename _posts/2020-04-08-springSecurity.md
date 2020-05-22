@@ -110,3 +110,49 @@ Spring会去加载配置文件，创建环境，创建bean。也就是IOC机制
 	- 清除上下文级别的资源缓存
 	- 上下文初始化生命周期处理器。
 	- 发布最终事件
+	
+	
+## Spring AOP 源码分析
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-08-26-springsource/3.jpg)
+
+
+利用Java反射机制，面向切面编程，对代理对象进行增强编程
+
+### AOP配置文件解析流程分析
+
+AOP配置文件首先通过 DefaultBeanDefinitionDocumentReader.parseBeanDefinitions 方法进行解析XML元素
+
+- BeanDefinitionParserDelegate.parseCustomElement 1获取命名空间URI  2根据namespaceUri获取对应处理类handler
+- NamespaceHandlerSupport.parse  对元素进行解析
+- BeanDefinitionParser.parse(不同配置方式，不同实现类进行解析，) ConfigBeanDefinitionParser.parse 进行元素解析
+	- 通过configureAutoProxyCreator(parserContext, element)方法，生成AspectJAwareAdvisorAutoProxyCreator类的BeanDefinition，注册到IOC容器，作为AOP代理对象
+	- 通过parsePointcut(elt, parserContext) 方法，产生一个AspectJExpressionPointcut的BeanDefinition对象，解析自定义切入点表达式
+	- 通过parseAspect(elt, parserContext)方法，解析 aop:aspect 标签进行封装。
+		- parseAdvice 获取设置增强类的method方法，创建用于创建增强类的实例的工厂
+### 代理对象创建分析
+
+AbstractAutoProxyCreator#postProcessAfterInitialization入口
+
+- 使用动态代理技术，产生代理对象
+- 调用AbstractAutoProxyCreator#wrapIfNecessary方法
+	- 查找代理类相关的advisor对象集合，从IOC中查找
+	- 通过jdk动态代理或CGLIB动态代理，产生代理对象
+		- 调用AbstractAutoProxyCreator#createProxy方法
+			- 创建代理对象，获取所有关联的Advisor集合
+				- 通过 JdkDynamicAopProxy#getProxy 获取所有代理接口，调用JDK动态代理
+	- 将代理类放入缓存中
+
+### 代理对象执行流程分析
+
+- 调用JdkDynamicAopProxy#invoke：
+	- 获取针对该目标对象素有增强器（advisor），按照顺序进行链式调用
+		- AdvisedSupport#getInterceptorsAndDynamicInterceptionAdvice调用链调用过程
+			- 通过DefaultAdviceChainFactory#getInterceptorsAndDynamicInterceptionAdvice 获取目标类中指定方法 MethodInterceptor集合，该集合是由Advisor转换而来
+				- 创建DefaultAdvisorAdapterRegistry实例，并创建MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter适配器
+					- 变量所有的Advisor集合，使用Pointcut类的ClassFilter().matches()进行匹配，还有使用Pointcut().getMethodMatcher()进行匹配，如果匹配上则将advisor转成MethodInterceptor
+					- 如果需要根据参数动态匹配（比如重载）则拦截器链中新增InterceptorAndDynamicMethodMatcher
+	- 如果调用链为空，直接通过反射调用目标对象方法，也就是不对方法进行任何增强
+	- 创建ReflectiveMethodInvocation实例对调用链进行调用，开始执行AOP拦截过程
+		- 如果执行到链条的末尾，则直接调用连接点，即直接调用目标方法
+		- 本文配置文件会调用AspectJAfterAdvice、MethodBeforeAdviceInterceptor
