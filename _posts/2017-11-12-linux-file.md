@@ -173,6 +173,10 @@ service iptables save
 - top 实时显示系统状态
 	- 系统统计信息：当前时间；系统运行实际；当前用户数；平均负载（1m,5m,15m）
 	- 进程，cpu统计信息：
+		- VIRT：进程虚拟内存大小，包含没有真正物理分配
+		- RES：常驻内存大小，进程实际使用物理内存大小，不包括Swap和共享内存
+		- SHR：共享内存大小，与其他进程共享内存，加载动态链接库及程序代码段
+		- %MEM：进程使用物理内存占系统总内存百分比
 	- 内存信息：swap used 超过0基本确定内存瓶颈问题
 - pstree 以树状图显示所有行程状态
 - free 显示内存状况
@@ -212,7 +216,10 @@ service iptables save
     - t：显示进程中线程的统计信息
     - cswch/s：每秒主动任务上下文切换数量
     - nvcswch/s：每秒被动任务上下文切换数量
-	
+- iostat：提供了每个磁盘的使用率、IOPS、吞吐量等各种常见的性能指标
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/10.png)
+
 **用户信息查看**
 
 - last 显示系统开机以来每月初登入者信息
