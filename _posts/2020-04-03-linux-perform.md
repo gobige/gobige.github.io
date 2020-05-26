@@ -8,26 +8,6 @@ author: yates
 cover: 'www.baidu.com'
 tags: Linux
 ---
- ---
-layout: post
-title: 'Linux性能优化'
-subtitle: 'Linux性能优化'
-date: 2020-04-03
-categories: Linux
-author: yates
-cover: 'www.baidu.com'
-tags: Linux
----
----
-layout: post
-title: 'Linux性能优化'
-subtitle: 'Linux性能优化'
-date: 2020-04-03
-categories: Linux
-author: yates
-cover: 'www.baidu.com'
-tags: Linux
----
 
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/2.png)
 
