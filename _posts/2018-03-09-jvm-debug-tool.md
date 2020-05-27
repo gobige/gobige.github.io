@@ -66,6 +66,12 @@ GCT:GC总耗时
 - 用于生成jvm当前时刻线程快照，显示每一条现场正在执行方法堆栈集合，从而可用定位线程可能出现诸如死锁，死循环，请求外部资源长时间等待等问题
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/15.png)
 
+高内存占用，高CPU占用排除
+- 使用top找出最占cpu或内存的进程id（shift+p）
+- top -H -p pid 查找占用高的线程id
+- printf "%x\n" tid 线程id转换为16进制表达式  16param
+- jstack tid |grep "16param" -A 30 查看堆栈情况
+
 除了上述命令行工具，jdk还提供了两个强大的外部可视化工具JConsole，VisualVM
 
 **JConsole：java监视和管理控制台**
