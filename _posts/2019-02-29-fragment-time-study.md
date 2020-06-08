@@ -9,7 +9,12 @@ cover: 'www.baidu.com'
 tags: 随笔
 ---
  
+logging.level.com.carhouse.setting.core: DEBUG 打印sql日志
+	
+server.servlet.context-path：springmvc 添加 默认请求路由 前缀
+
 instanceof    一个对象实例是否是一个类或接口 或 其子类子接口  的实例。   
+
 isAssignableFrom   类Class1和 类Class2是否相同 或 类Class1 是 类Class2 的超类或接口。   
 通常调用格式是  
 
