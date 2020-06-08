@@ -41,11 +41,22 @@ tags: linux
 
 linux文件权限以分组划分，组下面有用户，用户和组对应关系是多对多
 
-从左到右一串字母分别代表
-- 0：文件类型 d（目录文件）
+**第一个字段** 从左到右一串字母分别代表
+
+- 0：文件类型 
+    - d：目录文件
+    - -：普通文件
+    - l：指令
 - 1-3：属主权限 分别对应rwx，读，写，执行
 - 4-6：属组权限 分别对应rwx，读，写，执行
-- 7-9：其他用户权限 分别对应rwx，读，写，执行  
+- 7-9：其他用户权限分别对应rwx，读，写，执行  
+
+**第二个字段** 硬链接数目
+**第三个字段** 所属用户
+**第四个字段** 所属组
+**第五个字段** 文件大小
+**第六个字段** 文件修改日期
+**第五个字段** 文件名
 
 **更改文件权限**
 
@@ -94,6 +105,15 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
 - tail head指令倒装
     - tail -f 取出文件后多少行
 
+**文件编辑**
+
+- vim <file>：vim文本编辑器
+    - i：insert
+    - esc：退出编辑
+    - :w ：保存
+    - :wq：保存退出
+    - q!：强制退出
+
 **文件对比，识别，查找，创建，统计**
 
 - 文件对比
@@ -119,18 +139,44 @@ linux文件权限以分组划分，组下面有用户，用户和组对应关系
 - dump 备份文件
 - restore 还原备份文件
 
+**程序运行**
+
+- ./filename：运行程序
+- nohup：后台挂起运行程序
+    - nohup comand > out.file 2>&1 &（1标准输出2标准错误输出 合并到out.file）
+- systemctl：以服务运行程序
 
 **磁盘相关**
 
 - df 列出文件系统整体磁盘使用量
     - df -h 显示磁盘容量以较为容易方式展示
 
-yum check-update 查看可更新软件列表
+**软件包安装**
+
+wget <download.xxxx.cn>：下载工具
+
+下载的tar，zip包要配置path路径才能使用
+
+**CentOS**
+安装rpm安装包：rpm -i xxx.rpm
 rpm -qa |grep <name> 查看是否存在安装
+rpm -e：删除软件包
+yum check-update 查看可更新软件列表
 yum list <name> 检索包含name的列表
 yum install <package> 安装指定软件命令
 yum update <package> 更新指定软件
 yum remove <package> 删除软件包命令
+
+下载服务端配置文件：/etc/yum.repos.d/CentOS-Base.repo
+
+**Ubuntu**
+deb安装包：dpkg -i xxx.deb
+dpkg -l：查看安装软件列表
+dpkg-r：删除软件包
+apt-get install <package>安装指定软件命令
+
+下载服务端配置文件：/etc/apt/sources.list
+
 
 
 **网络相关**
@@ -165,6 +211,126 @@ service iptables save
 
 
 **系统相关**
+
+- passwd ：修改密码
+    - passwd yates：修改指定用户密码
+- useradd：新建用户，在etc/passwd文件存储
+
+**进程**
+
+创建进程的系统调用叫fork，父进程创建子进程。对应fork调用返回值，如果当前进程是子进程，返回0，父进程返回子进程号。通过if语句判断，若是子进程调用**execve系统调用**来执行另一个程序。父进程通过**waitpid系统调用**，查看子进程运行情况
+
+**进程内存空间**
+
+- **数据段**：进程运行中产生数据的部分
+- **堆**：动态分配的变量，长期保存
+
+brk和mmap 分配堆内内存
+
+程序运行起来，会在**/proc**下面有对应进程号，一系列文件
+
+**sigaction系统调用**，注册一个信号处理函数
+
+msgget创建一个新队列，**msgsnd**将消息发送到消息队列，接收方使用**msgrcv**从队列中取消息；通信信息比较大时，使用**shmget**创建共享内存块方式。通过**shmat**将共享内存映射到自己内存空间。当共享内存产生竞争时，通过**sem_wait**获取信号量，**sem_post**释放信号
+
+Glibc：提供丰富的API，除了字符串处理，数学运算等用户态服务，封装了操作系统提供系统服务。
+
+**线程的数据**：
+
+- 线程栈上本地数据：局部变量；ulimit -a查看栈大小，ulimit -s修改栈配置
+- 整个进程全局变量：共享变量
+- 线程私有数据：pthread_key_create函数创建
+
+Mutex锁：pthread_mutex_init初始化mutex锁，pthread_mutex_lock获取锁，pthread_mutex_unlock释放锁
+
+**进程数据结构**
+
+Linux内核通过一个链表将所有task_struct串起来
+
+**task_struct**
+
+**任务ID**
+```java
+pid_t pid; // process id
+pid_t tgid;// thread group ID
+struct task_struct *group_leader; 
+```
+
+**信号处理**
+
+定义哪些信号阻塞不处理，哪些信号等待处理，哪些通过信号处理函数进行处理
+
+**任务状态**
+
+```java
+volatile long state;    // -1 unrunnable, 0 runnable, >0 stopped
+int exit_state;
+unsigned int flags;
+```
+
+- 可中断睡眠状态：浅睡眠状态，等待信号到来，处理信号。例如kill信号
+- 不可中断睡眠状态：深度睡眠，不可被信号唤醒，死等I/O操作完成。
+- 可以终止的新睡眠状态：可响应致命信号，如：kill
+
+**进程调度**
+
+调度实体，优先级，调度器类，调度策略，可使用CPU，是否运行队列
+
+**实时进程比普通进程优先级高**
+
+**调度实体**
+
+```java
+struct sched_entity se;
+struct sched_rt_entity rt;
+struct sched_dl_entity dl;
+```
+
+进程根据自己是实时的，还是普通的类型，通过调度实体变量将自己挂载某数据结构里。如：普通进程，通过sched_entity(包含了vruntime和权重load_weight等参数)挂载红黑树。
+
+每个CPU都有自己的 **struct rq** 结构，包括一个实时进程队列**rt_rq**和一个CFS运行队列**cfs_rq，CFS的队列是一棵红黑树，树的每一个节点都是一个sched_entity，每个sched_entity都属于一个task_struct，task_struct里面有指针指向这个进程属于哪个调度类
+
+
+主动调度的过程，也即一个运行中的进程主动调用__schedule让出CPU。在__schedule里面会做两件事情，第一是选取下一个进程，第二是进行上下文切换。而上下文切换又分用户态进程空间的切换和内核态的切换。
+
+**抢占式调度和主动式调度**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/26.png)
+
+
+**运行统计信息**
+
+utime,stime,nvcsw,nivcsw,start_time,real_start_time
+
+**进程亲缘关系**
+
+parent，children，sibling（当前进程插入到兄弟链表中）
+
+**进程权限**
+
+Objective和Subjective：谁能操纵我，我能操纵谁
+
+**内存管理**
+
+```java
+struct mm_struct   *mm;
+struct mm_struct   *active_mm;
+```
+
+**文件与文件系统**
+```java
+/* Filesystem information: */
+struct fs_struct                *fs;
+/* Open file information: */
+struct files_struct             *files;
+```
+
+**内核栈和进程运行紧密相关。**
+
+- 用户态，应用程序至少一次函数调用，32位系统传递参数使用函数栈，64位前6参数用寄存器，其他用函数栈
+- 内核态，32位和64位都使用内核栈。前者使用thread_info 和 task_struct 进行关联，后者使用 Per-CPU变量变量
+
+
+
 
 **系统信息查看**
 
