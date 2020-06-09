@@ -720,8 +720,17 @@ Linux 4.15.0-1035-azure (ubuntu) 	01/06/19 	_x86_64_	(2 CPU)
 13:21:41      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 
 
-Bandwidth 可以用 ethtool
 
+### 查看具体端口网络占用情况
+
+iftop -P
+
+### 查看端口号被哪个进程占用
+
+lsof -i:8080
+
+
+Bandwidth 可以用 ethtool
 ？？？ ethtool eth0 | grep Speed
 ```
 

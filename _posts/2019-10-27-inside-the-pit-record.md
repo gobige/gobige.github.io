@@ -10,7 +10,28 @@ tags: 编码
 ---
 
 # 记录一些实践中踩过的坑
- 
+
+## jstack 无效
+
+某些时候使用jstack查看Java进程线程栈情况会报错
+```java
+Unable to open socket file: target process not responding or HotSpot VM not loaded
+The -F option can be used when the target process is not responding
+```
+用Jps查看进程存在，tmp/hsperfdata_root目录下的，该进程id也存在
+
+**原因**：
+
+jdk16_21/24开始，jvm启动时产生进程号的临时文件目录优先使用-Djava.io.tmpdir指定的目录，没有指定-Djava.io.tmpdir参数才使用/tmp/hsperfdata_$USER。
+正好tomcat指定了-Djava.io.tmpdir=${tomcat_home}/tmp/。而jps、jstack从/tmp/hsperfdata_$USER目录读取不到pid信息，所以才报错。
+
+**解决方案**
+
+1. 重启该Java进程
+2. 鉴于如果是线上出现问题需要排查，重启进程明显不现实；所以修改tomcat的Djava.io.tmpdir参数，统一使用/tmp目录。修改catalina.sh添加 CATALINA_TMPDIR=/tmp
+
+
+
 ## 资源文件在java工程中的目录问题
 这个问题是一老友问的我。情况是这样的，我们一般的java工程目录都是分为java，test,resource目录，一般资源，配置文件都是放在resource下，老友把**资源文件放在java目录**和
 和java源文件放在一起，通过**代码读取配置文件中的数据，怎么也读取不到**，于是问我为什么，我看了下这个问题，然后自己试了试，确实是不行的。想了想，然后在target目录下把编译好的class
