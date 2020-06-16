@@ -216,121 +216,6 @@ service iptables save
     - passwd yates：修改指定用户密码
 - useradd：新建用户，在etc/passwd文件存储
 
-**进程**
-
-创建进程的系统调用叫fork，父进程创建子进程。对应fork调用返回值，如果当前进程是子进程，返回0，父进程返回子进程号。通过if语句判断，若是子进程调用**execve系统调用**来执行另一个程序。父进程通过**waitpid系统调用**，查看子进程运行情况
-
-**进程内存空间**
-
-- **数据段**：进程运行中产生数据的部分
-- **堆**：动态分配的变量，长期保存
-
-brk和mmap 分配堆内内存
-
-程序运行起来，会在**/proc**下面有对应进程号，一系列文件
-
-**sigaction系统调用**，注册一个信号处理函数
-
-msgget创建一个新队列，**msgsnd**将消息发送到消息队列，接收方使用**msgrcv**从队列中取消息；通信信息比较大时，使用**shmget**创建共享内存块方式。通过**shmat**将共享内存映射到自己内存空间。当共享内存产生竞争时，通过**sem_wait**获取信号量，**sem_post**释放信号
-
-Glibc：提供丰富的API，除了字符串处理，数学运算等用户态服务，封装了操作系统提供系统服务。
-
-**线程的数据**：
-
-- 线程栈上本地数据：局部变量；ulimit -a查看栈大小，ulimit -s修改栈配置
-- 整个进程全局变量：共享变量
-- 线程私有数据：pthread_key_create函数创建
-
-Mutex锁：pthread_mutex_init初始化mutex锁，pthread_mutex_lock获取锁，pthread_mutex_unlock释放锁
-
-**进程数据结构**
-
-Linux内核通过一个链表将所有task_struct串起来
-
-**task_struct**
-
-**任务ID**
-```java
-pid_t pid; // process id
-pid_t tgid;// thread group ID
-struct task_struct *group_leader; 
-```
-
-**信号处理**
-
-定义哪些信号阻塞不处理，哪些信号等待处理，哪些通过信号处理函数进行处理
-
-**任务状态**
-
-```java
-volatile long state;    // -1 unrunnable, 0 runnable, >0 stopped
-int exit_state;
-unsigned int flags;
-```
-
-- 可中断睡眠状态：浅睡眠状态，等待信号到来，处理信号。例如kill信号
-- 不可中断睡眠状态：深度睡眠，不可被信号唤醒，死等I/O操作完成。
-- 可以终止的新睡眠状态：可响应致命信号，如：kill
-
-**进程调度**
-
-调度实体，优先级，调度器类，调度策略，可使用CPU，是否运行队列
-
-**实时进程比普通进程优先级高**
-
-**调度实体**
-
-```java
-struct sched_entity se;
-struct sched_rt_entity rt;
-struct sched_dl_entity dl;
-```
-
-进程根据自己是实时的，还是普通的类型，通过调度实体变量将自己挂载某数据结构里。如：普通进程，通过sched_entity(包含了vruntime和权重load_weight等参数)挂载红黑树。
-
-每个CPU都有自己的 **struct rq** 结构，包括一个实时进程队列**rt_rq**和一个CFS运行队列**cfs_rq，CFS的队列是一棵红黑树，树的每一个节点都是一个sched_entity，每个sched_entity都属于一个task_struct，task_struct里面有指针指向这个进程属于哪个调度类
-
-
-主动调度的过程，也即一个运行中的进程主动调用__schedule让出CPU。在__schedule里面会做两件事情，第一是选取下一个进程，第二是进行上下文切换。而上下文切换又分用户态进程空间的切换和内核态的切换。
-
-**抢占式调度和主动式调度**
-![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/26.png)
-
-
-**运行统计信息**
-
-utime,stime,nvcsw,nivcsw,start_time,real_start_time
-
-**进程亲缘关系**
-
-parent，children，sibling（当前进程插入到兄弟链表中）
-
-**进程权限**
-
-Objective和Subjective：谁能操纵我，我能操纵谁
-
-**内存管理**
-
-```java
-struct mm_struct   *mm;
-struct mm_struct   *active_mm;
-```
-
-**文件与文件系统**
-```java
-/* Filesystem information: */
-struct fs_struct                *fs;
-/* Open file information: */
-struct files_struct             *files;
-```
-
-**内核栈和进程运行紧密相关。**
-
-- 用户态，应用程序至少一次函数调用，32位系统传递参数使用函数栈，64位前6参数用寄存器，其他用函数栈
-- 内核态，32位和64位都使用内核栈。前者使用thread_info 和 task_struct 进行关联，后者使用 Per-CPU变量变量
-
-
-
 
 **系统信息查看**
 
@@ -418,3 +303,193 @@ lrzsz是一款在linux里可代替ftp上传和下载的程序：  yum install lr
 
 - echo $PATH  显示系统环境变量配置
 - export PATH=$PATH:/usr/{name} 临时添加添加新的系统环境变量。etc/profil文件添加才能永久添加，然后使用source指令生效配置)
+
+
+**进程**
+
+创建进程的系统调用叫fork，父进程创建子进程。对应fork调用返回值，如果当前进程是子进程，返回0，父进程返回子进程号。通过if语句判断，若是子进程调用**execve系统调用**来执行另一个程序。父进程通过**waitpid系统调用**，查看子进程运行情况
+
+**进程内存空间**
+
+- **数据段**：进程运行中产生数据的部分
+- **堆**：动态分配的变量，长期保存
+
+brk和mmap 分配堆内内存
+
+程序运行起来，会在**/proc**下面有对应进程号，一系列文件
+
+**sigaction系统调用**，注册一个信号处理函数
+
+msgget创建一个新队列，**msgsnd**将消息发送到消息队列，接收方使用**msgrcv**从队列中取消息；通信信息比较大时，使用**shmget**创建共享内存块方式。通过**shmat**将共享内存映射到自己内存空间。当共享内存产生竞争时，通过**sem_wait**获取信号量，**sem_post**释放信号
+
+Glibc：提供丰富的API，除了字符串处理，数学运算等用户态服务，封装了操作系统提供系统服务。
+
+**线程的数据**：
+
+- 线程栈上本地数据：局部变量；ulimit -a查看栈大小，ulimit -s修改栈配置
+- 整个进程全局变量：共享变量
+- 线程私有数据：pthread_key_create函数创建
+
+Mutex锁：pthread_mutex_init初始化mutex锁，pthread_mutex_lock获取锁，pthread_mutex_unlock释放锁
+
+**进程数据结构**
+
+Linux内核通过一个链表将所有task_struct串起来
+
+### **task_struct**
+
+**任务ID**
+```java
+pid_t pid; // process id
+pid_t tgid;// thread group ID
+struct task_struct *group_leader; 
+```
+
+**信号处理**
+
+定义哪些信号阻塞不处理，哪些信号等待处理，哪些通过信号处理函数进行处理
+
+**任务状态**
+
+```java
+volatile long state;    // -1 unrunnable, 0 runnable, >0 stopped
+int exit_state;
+unsigned int flags;
+```
+
+- 可中断睡眠状态：浅睡眠状态，等待信号到来，处理信号。例如kill信号
+- 不可中断睡眠状态：深度睡眠，不可被信号唤醒，死等I/O操作完成。
+- 可以终止的新睡眠状态：可响应致命信号，如：kill
+
+**进程调度**
+
+调度实体，优先级，调度器类，调度策略，可使用CPU，是否运行队列
+
+**实时进程比普通进程优先级高**
+
+**调度实体**
+
+```java
+struct sched_entity se;
+struct sched_rt_entity rt;
+struct sched_dl_entity dl;
+```
+
+进程根据自己是实时的，还是普通的类型，通过调度实体变量将自己挂载某数据结构里。如：普通进程，通过sched_entity(包含了vruntime和权重load_weight等参数)挂载红黑树。
+
+每个CPU都有自己的 **struct rq** 结构，包括一个实时进程队列**rt_rq**和一个CFS运行队列**cfs_rq，CFS的队列是一棵红黑树，树的每一个节点都是一个sched_entity，每个sched_entity都属于一个task_struct，task_struct里面有指针指向这个进程属于哪个调度类
+
+
+主动调度的过程，也即一个运行中的进程主动调用__schedule让出CPU。在__schedule里面会做两件事情，第一是选取下一个进程，第二是进行上下文切换。而上下文切换又分用户态进程空间的切换和内核态的切换。
+
+**抢占式调度和主动式调度**
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/26.png)
+
+
+**运行统计信息**
+
+utime,stime,nvcsw,nivcsw,start_time,real_start_time
+
+**进程亲缘关系**
+
+parent，children，sibling（当前进程插入到兄弟链表中）
+
+**进程权限**
+
+Objective和Subjective：谁能操纵我，我能操纵谁
+
+**内存管理**
+
+```java
+struct mm_struct   *mm;
+struct mm_struct   *active_mm;
+```
+
+**文件与文件系统**
+```java
+/* Filesystem information: */
+struct fs_struct                *fs;
+/* Open file information: */
+struct files_struct             *files;
+```
+
+**内核栈和进程运行紧密相关。**
+
+- 用户态，应用程序至少一次函数调用，32位系统传递参数使用函数栈，64位前6参数用寄存器，其他用函数栈
+- 内核态，32位和64位都使用内核栈。前者使用thread_info 和 task_struct 进行关联，后者使用 Per-CPU变量变量
+
+## **fork创建进程，**
+
+**先copy_process，复制结构。**
+
+- 调用alloc_task_struct_node分配task_struct结构
+- 调用alloc_thread_stack_node来创建内核栈
+- 调用arch_dup_task_struct的，将task_struct进行复制
+- 调用setup_thread_stack设置thread_info
+
+copy_creds权限赋值
+
+- 调用prepare_creds，从内存中分配一个新的struct cred结构，然后调用memcpy复制一份父进程的cred
+- 将新进程的“我能操作谁”和“谁能操作我”两个权限都指向新的cred
+
+copy_process重新设置进程运行的统计量
+
+然后copy_process开始设置调度相关的变量
+
+- 设置进程的实际运行时间和虚拟运行时间等为0
+- 设置进程的状态p
+- 初始化优先级
+- 设置调度类
+- 调用调度类的task_fork函数
+
+**唤醒新进程**
+
+- 将进程的状态设置为TASK_RUNNING
+
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-11-12-linux-relation/27.png)
+
+## 线程的创建
+
+**用户态创建线程**
+
+Glibc库的一个函数 pthread_create进程线程创建
+
+- 设置的线程栈大小。如果没有传入线程属性，就取默认值
+- pthread结构维护线程的结构
+- ALLOCATE_STACK，创建线程栈
+	- 设置线程属性栈的大小
+	- 末尾有一块空间guardsize为了防止栈的访问越界，一旦访问到这里就报错
+	- 线程栈是在进程的堆里面创建，get_cached_stack作为线程栈不断 申请和清除 使用的内存缓存块
+	- 如果没有缓存，调用__mmap创建
+	- 线程栈自顶向下生长
+	- 计算出guard内存位置，调用setup_stack_prot设置这块受保护内存
+	- 填充pthread这个结构里面的成员变量
+	- 将线程栈放到stack_used链表，一旦线程结束，先缓存起来，放到stack_cache链表，等其他线程创建使用
+
+**内核态创建任务**
+
+## 内存管理
+
+- 虚拟内存空间的管理，每个进程看到的是独立的、互不干扰的虚拟地址空间
+- 物理内存的管理，物理内存地址只有内存管理模块能够使用
+- 内存映射，需要将虚拟内存和物理内存映射、关联起来
+
+**分段机制、分页机制以及从虚拟地址到物理地址的映射方式**
+
+- 虚拟内存空间的管理，将虚拟内存分成大小相等的页
+- 物理内存的管理，将物理内存分成大小相等的页
+- 内存映射，将虚拟内存也和物理内存也映射起来，并且在内存紧张的时候可以换出到硬盘中
+
+**物理内存组织方式**
+
+- 平坦内存模型：物理地址连续，页也是连续，每个页大小一样。任何一个地址，直接除一下每页的大小，容易直接算出在哪一页（多个CPU访问内存经过总线**SMP**，总线称为瓶颈）
+- 非连续内存模型 NUMA：每个CPU有自己本地内存，CPU访问本地内存不用过总线，速度快很多,称为NUMA节点。本地内存不足时，向另外的NUMA节点申请内存，访问延时比较长
+
+DMA：CPU只需向DMA控制器下达指令，让DMA控制器来处理外设和内存之间数据的传送，数据传送完毕再把信息反馈给CPU
+
+- 如有多个CPU，就有多个节点。每个节点用struct pglist_data表示，放在一个数组里面。
+- 每个节点分为多个区域，每个区域用struct zone表示，也放在一个数组里面。
+- 每个区域分为多个页。为了方便分配，空闲页放在struct free_area里面，使用伙伴系统进行管理和分配，每一页用struct page表示。
+- kswapd负责物理页面的换入换出；
+- Slub Allocator将从伙伴系统申请的大内存块切成小块，分配给其他系统
+
