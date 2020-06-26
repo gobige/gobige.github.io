@@ -22,7 +22,7 @@ The -F option can be used when the target process is not responding
 
 **原因**：
 
-jdk16_21/24开始，jvm启动时产生进程号的临时文件目录优先使用-Djava.io.tmpdir指定的目录，没有指定-Djava.io.tmpdir参数才使用/tmp/hsperfdata_$USER。
+jdk1.6 21/24开始，jvm启动时产生进程号的临时文件目录优先使用-Djava.io.tmpdir指定的目录，没有指定-Djava.io.tmpdir参数才使用/tmp/hsperfdata_$USER。
 正好tomcat指定了-Djava.io.tmpdir=${tomcat_home}/tmp/。而jps、jstack从/tmp/hsperfdata_$USER目录读取不到pid信息，所以才报错。
 
 **解决方案**
@@ -169,7 +169,7 @@ mq的编写 一定要分清什么事次要的可以放后的,而不是所有的�
 RabbitMQ在使用的时候，因为有重试的机制。那么在消费者调用其他模块服务的时，服务一定要可靠（简单，稳定，不会有太多复杂逻辑），而且带事务回滚，如果失败会不断重试，如果没有回滚会导致许多脏数据，如果调用无法回滚的如：三方接口，那么一定要在mq里面进行异常处理，避免不断重试
 
 ### **GIT**
-git rebase 是一个危险命令，因为它**改变了历史，我们应该谨慎使用。除非你可以肯定该feature分支只有你自己使用，否则请谨慎操作。结论：只要你的分支上需要 rebase 的所有 commits 历史还没有被 push 过，就可以安全地使用 git-rebase来操作。
+git rebase 是一个危险命令，因为它**改变了历史**，我们应该谨慎使用。除非你可以肯定该feature分支只有你自己使用，否则请谨慎操作。结论：只要你的分支上需要 rebase 的所有 commits 历史还没有被 push 过，就可以安全地使用 git-rebase来操作。
 
 ### **Maven**
 idea java文件显示J不显示C,用maven引入方式
