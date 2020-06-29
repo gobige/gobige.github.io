@@ -342,20 +342,92 @@ Soundex 返回串的soundex值
 
 **自连 左连 右连 内联 外联**
 
-**导出整个数据库(导出文件默认是存在mysql\bin目录下)**
+## mysql 备份
 
-mysqldump -u 用户名 -p 数据库名 > 导出的文件名
+### mysqldump
 
-**导出一个表**
+```java
+-A //全库备份  mysqldump -A >full.sql
+-B //单库备份  mysqldump -B mytest  >mytest-20200629bak.sql
+   //单表备份   mysqldump mytest test1  >test1-20200629bak.sql
+-d // 仅表结构
+-t // 仅表数据
+--compact // 无用信息隐藏
+-R --routines // 存储过程，函数
+--triggers // 存储过程，函数
+--master-data-{1|2} // (需开启binlog日志，my.conf配置)备份后时刻binlog位置 2 注释 1非注释  mysqldump mytest test1 --master-data=2 >test-binlog.sql
+--flush-logs // 刷新binlog日志
+--triggers // 触发器备份
+```
 
-mysqldump -u 用户名 -p 数据库名 表名> 导出的文件名
+备份
+```java
+mysqldump -B -R --triggers --compact --master-data=2 mytest > 20200629bak.sql
+```
 
-**导出一个数据库结构**
+备份恢复
+```java
+source .\mytest-20200629bak.sql
+```
 
-mysqldump -u user_name -p -d –add-drop-table database_name > outfile_name.sql
-    -d 没有数据 –add-drop-table 在每个create语句之前增加一个drop table
 
+### binlog日志
 
-**带语言参数导出**
+获取binlog文件列表
+```java
+show binary logs
+```
 
-mysqldump -u root -p –default-character-set=latin1 –set-charset=gbk –skip-opt database_name > outfile_name.sql
+查看当前正在写入的binlog文件
+```java
+show master status
+```
+
+查看二进制文件中事务
+```java
+SHOW BINLOG EVENTS IN 'mysql-bin.000001'
+
+SHOW BINLOG EVENTS IN 'mysql-bin.000001' FROM 194 LIMIT 2
+```
+
+提取指定的binlog日志
+```java
+a、提取指定的binlog日志  
+# mysqlbinlog /opt/data/APP01bin.000001  
+# mysqlbinlog /opt/data/APP01bin.000001|grep insert  
+
+??? unknown variable 'default-character-set=utf8'  加 --no-defaults 参数
+
+输出结果解码
+# mysqlbinlog  --base64-output=decode-rows -v  /opt/mysql/var/mysql-bin.000004|more
+
+b、提取指定position位置的binlog日志  
+# mysqlbinlog --start-position="120" --stop-position="332" /opt/data/APP01bin.000001  
+  
+c、提取指定position位置的binlog日志并输出到压缩文件  
+# mysqlbinlog --start-position="120" --stop-position="332" /opt/data/APP01bin.000001 |gzip >extra_01.sql.gz  
+  
+d、提取指定position位置的binlog日志导入数据库  
+# mysqlbinlog --start-position="120" --stop-position="332" /opt/data/APP01bin.000001 | mysql -u root -p  
+  
+e、提取指定开始时间的binlog并输出到日志文件  
+# mysqlbinlog --start-datetime="2014-12-15 20:15:23" /opt/data/APP01bin.000002 --result-file=extra02.sql  
+  
+f、提取指定位置的多个binlog日志文件  
+# mysqlbinlog --start-position="120" --stop-position="332" /opt/data/APP01bin.000001 /opt/data/APP01bin.000002|more  
+  
+g、提取指定数据库binlog并转换字符集到UTF8  
+# mysqlbinlog --database=test --set-charset=utf8 /opt/data/APP01bin.000001 /opt/data/APP01bin.000002 >test.sql  
+  
+h、远程提取日志，指定结束时间   
+# mysqlbinlog -urobin -p -h192.168.1.116 -P3306 --stop-datetime="2014-12-15 20:30:23" --read-from-remote-server mysql-bin.000033 |more  
+  
+i、远程提取使用row格式的binlog日志并输出到本地文件  
+# mysqlbinlog -urobin -p -P3606 -h192.168.1.177 --read-from-remote-server -vv inst3606bin.000005 >row.sql
+```
+
+## 把归档日志生成sql文件
+ mysqlbinlog --no-defaults --start-datetime="2020-6-29 14:06:00"  mysql-bin.000001 --result-file=binlog.sql
+ 
+## 执行sql文件增量数据恢复
+source C:\mysql-5.7.18\data\binlog.sql
