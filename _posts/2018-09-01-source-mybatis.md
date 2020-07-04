@@ -53,7 +53,7 @@ mybatis调用大体可分为上面7步：
 
 第一步：
 此步的解析请移步
-http://muyibeyond.cn/2017/11/11/stream-file-get.html
+http://muyibeyond.cn/2017-11-10/stream-file-get.html
 
 第二步：
 通过得到的流装载封装到XPathParser对象中，使用XMLConfigBuilder对XPathParser解析（XPathParser把流数据转换成XNODE，从configuration根元素开始，通过对一个个节点的eval得到各个node封装到XNODE对象，属性，变量，XPATH）

@@ -266,8 +266,8 @@ HashMap扩容 resize() version 1.8
 - 拷贝赋值新 node数组
 	- old数组当前index元素无 next，直接 (newCap - 1) & hash 赋值
 	- 有next
-		- (e.hash & oldCap) == 0（？index == 0），newTab[j] = loHead; 原来index上node的链表移动
-		- newTab[j + oldCap] = hiHead; 原来index上node的链表移动 *2 到new node数组
+		- (e.hash & oldCap) == 0（若为0，则使用loHead与loTail，将元素移至新table的原索引处），newTab[j] = loHead; 原来index上node的链表移动
+		- (若不为0，则使用hiHead与hiHead，将元素移至新table的两倍索引处) newTab[j + oldCap] = hiHead; 原来index上node的链表移动 *2 到new node数组
 	
 ```
 
@@ -555,7 +555,8 @@ jdk7 扩容时前插法，jdk8是尾插法，避免并发扩容造成节点死�
 ![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/3.png)
 
 **LinkedHashMap类**
-继承HashMap,下面是linkedHashMap的结构(可以看出来LinkedHashMap完全是一个链表的结构，而且是双向链表，**查询的时候会比hashMap慢**)
+**继承HashMap**,下面是linkedHashMap的结构(可以看出来LinkedHashMap只是在HashMap基础上增加了双向指针形成可遍历的双向链表，**只有get方法时候会根据accessOrder类型来调整指针的引用**，其他方法都是复用HashMap的方法)
+因为遍历使用了额外指针，空间局部性原理，所以从原理上讲遍历没有本身HashMap数组遍历快
 
 ```java
     // 实现了一个新的entry类，继承hashMap的node类
