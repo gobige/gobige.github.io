@@ -11,6 +11,10 @@ tags: 编码
 
 # 记录一些实践中踩过的坑
 
+## SpringMVC中的 RequestParam 传输数据类型
+
+Collection集合时，不能传输自定义类，只能还是Integer，String类型
+
 ## jstack 无效
 
 某些时候使用jstack查看Java进程线程栈情况会报错
