@@ -710,25 +710,17 @@ clear方法就和arraylist和vector一样的效率了
 ```
 
 **ArrayList和LinkList对比**
-
-插入：
-
-- 头部插入：LinkedList快
-- 中部插入：ArrayList快，省去了遍历的过程
-- 尾部插入：ArrayList快，省去了遍历的过程
+ 
+插入，删除：
 
 
-删除：
-
-- 头部删除：LinkedList快
-- 中部删除：ArrayList快，省去了遍历的过程
-- 尾部删除：ArrayList快，省去了遍历的过程
-
+LinkList从原理上来讲应该比ArrayList快（如果只是头部，尾部操作），但还是**局部性原理**（影响高速缓存加载）原因，基准测试**大多数情况下**ArrayList会比
+LinkList快，而如果是指定位置插入，删除，ArrayList会明显比LinkList快
+ 
+ 
 
 遍历：
  
-- List中，增强for循环使用方便，但性能较差，不适合处理超大量级的数据。
-
-- List中，迭代器的遍历速度要比增强for循环快很多
-
-- List中，fori最快。
+- ArrayList因为局部性原理遍历比LinkedList快
+- List中，迭代器的遍历速度 和 增强for循环差不多，因为**foreach语法糖本身是调用迭代器进行遍历**
+- List中，fori遍历最快（少了很多代码，相对应少了很多指令）
