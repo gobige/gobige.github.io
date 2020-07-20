@@ -139,7 +139,11 @@ Major GC是清理老年代，Full GC是清理整个堆空间
 
 ### GC调优
 
-引起FULL GC原因，老年代不够用了，永久代元空间不够用了，system.gc
+引起FULL GC原因
+
+- 老年代不够用了，大对象，对象晋升，达到阈值
+- 永久代元空间不够用了，达到阈值扩容
+- system.gc
 
 **减少线程数量**
 减少线程数量有利于减少GC roots Scanning，降低单次young gc时间
@@ -163,6 +167,7 @@ Major GC是清理老年代，Full GC是清理整个堆空间
 ```java
 java -XX:+PrintFlagsFinal -version | grep HeapSize // 查看JVM堆内存分配
 
+-XX:+HeapDumpBeforeFullGC -XX:+HeapDumpAfterFullGC // full gc前，full gc后做heap dump
 -XX:PretenureSizeThreshold  // 大对象直接分配老年代阈值
 -XX:+UseAdaptiveSizePolicy // JVM动态调整Java堆中各个区域大小以及进入老年代年龄，-XX：NewRatio和-XX：SurvivorRatio会失效，JDK8默认开启
 ```
