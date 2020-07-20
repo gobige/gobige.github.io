@@ -163,6 +163,7 @@ Major GC是清理老年代，Full GC是清理整个堆空间
 ```java
 java -XX:+PrintFlagsFinal -version | grep HeapSize // 查看JVM堆内存分配
 
+-XX:PretenureSizeThreshold  // 大对象直接分配老年代阈值
 -XX:+UseAdaptiveSizePolicy // JVM动态调整Java堆中各个区域大小以及进入老年代年龄，-XX：NewRatio和-XX：SurvivorRatio会失效，JDK8默认开启
 ```
 
