@@ -55,6 +55,7 @@ ParallelScavenge收集器老年代版本，使用标记整理算法
 
 
 ### G1收集器：
+
 新生代，老年代收集器
 
 - 是一款支持**并行和并发**，充分利用多CPU,多核优势，**缩短STW**停顿时间；
@@ -62,9 +63,20 @@ ParallelScavenge收集器老年代版本，使用标记整理算法
 - 在Java堆分配上面划分成多个大小相等的独立区域（**region**），新生代，存活区，老年代，大对象（Humongous大小超过region一半大小）**不再物理隔离**，-XX:G1HeapRegionSize配置
 - 通过跟踪，分析Region里垃圾的价值大小，**优先回收价值大的Region**
 
-RSet
+**RSet**：个region初始化时，初始化RSet记录跟踪其他Region指向该Region中对象引用（每512KBregion划分为多个Card），垃圾回收时，很快的判断Region内对象是否存活
+**CSets**：垃圾回收过程中会被回收的区域集合。
 
-每个region初始化时，初始化RSet记录跟踪其他Region指向该Region中对象引用（每512KBregion划分为多个Card），垃圾回收时，很快的判断Region内对象是否存活
+```java
+-XX:+UseG1GC // 使用G1回收器
+-XX:MaxGCPauseMillis=n  // 设置最大GC停顿时间
+-XX:InitiatingHeapOccupancyPercent=n   // 并发GC周期时的堆内存占用百分比
+-XX:NewRatio=n  // 新生代与老生代大小比例
+-XX:ParallelGCThreads=n  // 垃圾收集器在并行阶段使用的线程数
+-XX:ConcGCThreads=n  // 并发垃圾收集器使用的线程数量
+```
+设置应用的暂停时间：根据选择一个回收价值高的region进行回收。
+
+G1比较适合内存稍大一点的应用
 
 GC模式
 
@@ -80,6 +92,11 @@ GC模式
 
 ![请输入图片地址](http://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2018-03-19-jvm/9.png)
 
+
+
+- 服务端多核CPU、JVM内存占用较大的应用（至少大于4G）
+- 应用在运行过程中会产生大量内存碎片、需要经常压缩空间
+- 想要更可控、可预期的GC停顿周期；防止高并发下应用雪崩现象
 
 ### ZGC收集器：
 可伸缩的、低延迟的垃圾收集器；停顿时间不会随堆增大而增大，停顿时间不会超过10ms，支持几百M，最大4T堆大小
@@ -105,6 +122,7 @@ GC触发策略
 没有空闲内存情况下:stw,回收一部分内存，让应用程序继续执行
 
 ### GC日志设置
+
 ```java
 -XX:+PrintGC 输出GC日志
 -XX:+PrintGCDetails 输出GC的详细日志
@@ -126,6 +144,38 @@ GC发生时间：【GC停顿类型--【GC发生区域（名字跟收集器有关
 - GC停顿类型，分为minorygc和fullGC，而发生FullGC的原因可能是分配担保失败，也可能是程序中调用system.gc发生
 - GC发生区域，一般会根据使用的收集器区分新生代，老年代区域
 - 花费时间，收集器会给出具体时间数据，user-用户消耗cpu时间，sys-代表内核消耗cpu时间，real-操作开始到结束的墙钟时间（包含非运算使劲按等待消耗，如io，线程阻塞）
+
+### G1 GC日志解读
+
+```java
+[GC pause (G1 Evacuation Pause) (young), 0.0077244 secs]  // 垃圾回收类型，花费时间
+   [Parallel Time: 4.1 ms, GC Workers: 8] // 并行收集 STW花费时间；垃圾收集开启线程数，CPU小于8，最大设置为8，其他 number * 5/8
+      [GC Worker Start (ms): Min: 470282.4, Avg: 470282.6, Max: 470283.1, Diff: 0.6] // 第一个（min）/最后一个（max）垃圾线程工作开始时间
+      [Ext Root Scanning (ms): Min: 0.0, Avg: 0.6, Max: 2.2, Diff: 2.2, Sum: 4.7] // 扫描GCroot集合时间
+      [Update RS (ms): Min: 0.0, Avg: 0.8, Max: 1.2, Diff: 1.2, Sum: 6.3] // 垃圾收集线程处理 垃圾收集 前没有处理好的日志缓冲区
+         [Processed Buffers: Min: 0, Avg: 5.4, Max: 11, Diff: 11, Sum: 43] // 处理多少个日志缓冲区
+      [Scan RS (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.1] // 扫描每个新生代分区的RSet，找出有多少指向当前分区的引用来自CSet。
+      [Code Root Scanning (ms): Min: 0.0, Avg: 0.2, Max: 1.3, Diff: 1.3, Sum: 1.6] // 扫描代码中的root节点（局部变量）花费的时间
+      [Object Copy (ms): Min: 1.3, Avg: 2.2, Max: 2.6, Diff: 1.3, Sum: 17.5] // 将当前分区中存活的对象拷贝到新的分区
+      [Termination (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.0] // 当一个垃圾收集线程完成任务时，它就会进入一个临界区，并尝试帮助其他垃圾线程完成任务,尝试terminate（min），开始terminate(max)
+         [Termination Attempts: Min: 1, Avg: 6.4, Max: 10, Diff: 9, Sum: 51] // 获取其他线程任务次数
+      [GC Worker Other (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.2] // 垃圾收集线程在完成其他任务的时间
+      [GC Worker Total (ms): Min: 3.3, Avg: 3.8, Max: 3.9, Diff: 0.7, Sum: 30.4] // 每个垃圾收集线程的最小、最大、平均、差值和总共时间
+      [GC Worker End (ms): Min: 470286.3, Avg: 470286.4, Max: 470286.4, Diff: 0.0] // 最早/最晚结束垃圾回收线程时间
+   [Code Root Fixup: 0.1 ms] // 释放用于管理并行垃圾收集活动的数据结构
+   [Code Root Purge: 0.0 ms] // 清理更多的数据结构
+   [Clear CT: 0.9 ms] // 清理card table
+   [Other: 2.7 ms]
+      [Choose CSet: 0.0 ms] // 选择要进行回收的分区放入CSet
+      [Ref Proc: 1.5 ms] // 处理Java中的各种引用
+      [Ref Enq: 0.0 ms] // 遍历所有的引用，将不能回收的放入pending列表
+      [Redirty Cards: 1.0 ms] // 回收过程中被修改的card将会被重置为dirty
+      [Humongous Register: 0.0 ms]// 巨型对象可以在新生代收集的时候被回收——通过G1ReclaimDeadHumongousObjectsAtYoungGC 设置，默认为true
+      [Humongous Reclaim: 0.0 ms] // 确保巨型对象可以被回收、释放该巨型对象所占的分区，重置分区类型，并将分区还到free列表，并且更新空闲空间大小。
+      [Free CSet: 0.1 ms] // 将要释放的分区还回到free列表
+   [Eden: 105.0M(105.0M)->0.0B(105.0M) Survivors: 9216.0K->9216.0K Heap: 220.4M(256.0M)->115.4M(256.0M)]
+ [Times: user=0.00 sys=0.00, real=0.01 secs] 
+```
 
 ### CPU过高排查步骤
 
@@ -162,10 +212,25 @@ Major GC是清理老年代，Full GC是清理整个堆空间
 - 增大堆内存空间
 - 选择合适GC回收器
 
+Ergonomics就是负责自动的调解gc暂停时间和吞吐量之间的平衡，开启了UseAdaptiveSizePolicy，jvm自己进行自适应调整引发的full gc
+
+TLAB 分配
+
+TLAB，全称Thread Local Allocation Buffer, 即：线程本地分配缓存。
+这是一块线程专用的内存分配区域。TLAB占用的是eden区的空间。在TLAB启用的情况下（默认开启），JVM会为每一个线程在eden区分配一块TLAB区域而不用线程同步（大对象无法进行TLAB分配）
+
+
 **设置Eden，Survivor区比例**
 
 ```java
 java -XX:+PrintFlagsFinal -version | grep HeapSize // 查看JVM堆内存分配
+-XX:+DoEscapeAnalysis  // 开启逃逸分析 
+-XX:-DoEscapeAnalysis  //  关闭逃逸分析
+-XX:-UseTLAB	 // 关闭线程本地分配缓存区
+-XX:+EliminateAllocations	// 开启标量替换
+-XX:-EliminateAllocations   // 关闭标量替换
+	
+
 
 -XX:+HeapDumpBeforeFullGC -XX:+HeapDumpAfterFullGC // full gc前，full gc后做heap dump
 -XX:PretenureSizeThreshold  // 大对象直接分配老年代阈值
