@@ -42,7 +42,7 @@ spring对每个bean提供一个scope属性表示bean的作用域，这些bean大
 - @Transactional(isolation = Isolation.DEFAULT,propagation = Propagation.REQUIRED) 设置当前方法作为一个事务处理，参数可设置隔离级别，设置传播行为
 - @ControllerAdvice：作为控制器注入spring容器
 - @ExceptionHandler：指定异常处理方法
-
+- @Transactional：Spring声明式事务处理方式；不添加rollbackFor时，默认RuntimeException才会回滚，rollbackFor=Exception.class
 
 ### spring boot 配置文件加载顺序 
 
