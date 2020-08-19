@@ -11,9 +11,42 @@ tags: 编码
 
 # 记录一些实践中踩过的坑
 
+## Ribbon 配置负载策略
+
+Ribbon配置负载策略有几种方式
+
+**全局配置**
+```java
+@Configuration
+class MyselfRule {
+
+	//配置负载均衡的策略为随机，默认算法为轮询算法
+	@Bean
+	public IRule lbRule() {
+		return new RandomRule();
+	}
+}
+```
+
+**单服务配置**
+
+```java
+
+
+```
+
+
+## 启动服务，卡住，日志输出暂停
+
+断点导致，但是又没跳转
+
+Collection集合时，不能传输自定义类，只能还是Integer，String类型
+RequestParam 参数命名 要和client feign一致，不然会出现收发数据为null情况
+
 ## SpringMVC中的 RequestParam 传输数据类型
 
 Collection集合时，不能传输自定义类，只能还是Integer，String类型
+RequestParam 参数命名 要和client feign一致，不然会出现收发数据为null情况
 
 ## jstack 无效
 

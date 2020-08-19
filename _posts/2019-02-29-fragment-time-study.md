@@ -8,7 +8,22 @@ author: yates
 cover: 'www.baidu.com'
 tags: 随笔
 ---
+
+
+在普通DDL执行语句后面加上 ,ALGORITHM=INPLACE, LOCK=NONE; 使用onlineDDL，5.6版本以上才有
+
+String字符串和char字符数组：String字符串是不可变的；内存中存在直到被GC清理，char字符数组可以通过设置为空白和零。所以在密码存储方面场景来说字符数组更合适，不过还是应该加密
+
+timestamp 记录的时间，时区自动处理，能够支持时间范围：1000-9999
+datetime 记录固定时间，不会变化，能够支持时间范围：1970-2038
+
+
+mysql数据库时间类型 有datetime和timestamp
+
+- 设置默认时间设置： DEFAULT CURRENT_TIMESTAMP 
+- 设置时间自动更新： ON UPDATE CURRENT_TIMESTAMP
  
+
 logging.level.com.carhouse.setting.core: DEBUG 打印sql日志
 	
 server.servlet.context-path：springmvc 添加 默认请求路由 前缀
