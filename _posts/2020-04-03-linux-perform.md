@@ -41,9 +41,9 @@ tags: Linux
 
 **相关工具**
 
-- stress：（stress --cpu 1 --timeout 600）linux系统压力测试工具模拟异常进程
+- stress：（stress - -cpu 1 - -timeout 600）linux系统压力测试工具模拟异常进程
 - sysstat：常用的 Linux 性能工具
-	- pidstat：（pidstat -u 5 1 间隔 5S输出 cpu1的数据）常用进程性能分析工具，实时查看进程CPU,内存，I/O，上下文切换指标
+	- pidstat：（pidstat -u 5 1 间隔 5S 输出 cpu1的数据 输出一次）常用进程性能分析工具，实时查看进程CPU,内存，I/O，上下文切换指标
 	- mpstat：（mpstat -P ALL 5 监控所哟CPU，每5S输出一组数据）多核cpu性能分析工具，用于查看每个CPU性能指标
 
 ```java
