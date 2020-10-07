@@ -15,15 +15,16 @@ tags: mysql
 basedir=C:\Program Files\MySQL\MySQL Server 5.6（mysql所在目录）
 datadir=C:\Program Files\MySQL\MySQL Server 5.6\data （mysql所在目录\data）
 
-cmd下执行指令
+cmd下执行指令 (双“-” 线)
 3.mysqld --initialize 初始化
-4.mysqld --install MySQL --defaults-file="D:\MySQL\mysql5.7\my.ini"
+4.mysqld --install MySQL --defaults-file="D:\dev\mysql-5.7.9-winx64\my.ini"
 
 5.安装好后我们继续执行启动服务的命令：net start MySQL此时会提示服务启动成功
 
 6.安装好后我们继续执行启动服务的命令：net start MySQL此时会提示服务启动成功，因为安装好的MySQL是没有密码的，此时继续执行命令：mysql -u root -p然后回车，
-会提示输入密码，因为没有密码我们继续按回车，这里可能会有如下错误信息：mysql ERROR 1045 (28000): Access denied for user，此错误的解决方法如下：打开
-my.ini配置文件，在最后一行加上skip-grant-tables然后保存，回到cmd重启Mysql，停止服务命令：net stop MySQL，然后再启动服务：net start MySQL，
+会提示输入密码，因为没有密码我们继续按回车，这里可能会有如下错误信息：mysql ERROR 1045 (28000): Access denied for user
+
+- 解决方法如下：打开my.ini配置文件，在最后一行加上skip-grant-tables然后保存，回到cmd重启Mysql，停止服务命令：net stop MySQL，然后再启动服务：net start MySQL，
 
 7.修改数据库密码update mysql.user set authentication_string=password('root') where user='root' and Host ='localhost';
 
