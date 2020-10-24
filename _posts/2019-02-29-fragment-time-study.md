@@ -10,6 +10,8 @@ tags: 随笔
 ---
 
 
+Spring Bean 加载顺序：Constructor >> @Autowired >> @PostConstruct
+
 在普通DDL执行语句后面加上 ,ALGORITHM=INPLACE, LOCK=NONE; 使用onlineDDL，5.6版本以上才有
 
 String字符串和char字符数组：String字符串是不可变的；内存中存在直到被GC清理，char字符数组可以通过设置为空白和零。所以在密码存储方面场景来说字符数组更合适，不过还是应该加密
