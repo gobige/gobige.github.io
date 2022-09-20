@@ -43,6 +43,8 @@ spring对每个bean提供一个scope属性表示bean的作用域，这些bean大
 - @ControllerAdvice：作为控制器注入spring容器
 - @ExceptionHandler：指定异常处理方法
 - @Transactional：Spring声明式事务处理方式；不添加rollbackFor时，默认RuntimeException才会回滚，rollbackFor=Exception.class
+- @Autowired：实现字段方式的注入，@Resource是JSR-250提供的；前者默认是byType可以使用@Qualifier指定Name，@Resource默认ByName如果找不到则ByType
+
 
 ### spring boot 配置文件加载顺序 
 
