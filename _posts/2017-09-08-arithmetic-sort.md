@@ -50,6 +50,7 @@ public static int[] directSort(int[] arr) {
         return arr;
     }
 ```
+![插入排序](https://images2017.cnblogs.com/blog/849589/201710/849589-20171015225645277-1151100000.gif)
 
 #### 二分法插入排序
 思路：二分法插入排序的思想和直接插入一样，只是找到插入位置的方式不同，通过在已排完序中使用二分法查找插入位置，可以减少比较的次数。
@@ -119,6 +120,8 @@ public static int[] shellSort(int[] arr) {
 }
 ```
 
+![gif](https://images2018.cnblogs.com/blog/849589/201803/849589-20180331170017421-364506073.gif)
+
 #### 选择排序
 思路：每次从数组中取出最小的一个数字放到另一个数组中，同时删除获取的这个数字（优化方案：只在一个数组中进行该排序）
 
@@ -140,6 +143,8 @@ public static int[] shellSort(int[] arr) {
     }
 ```
 
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015224719590-1433219824.gif)
+
 #### 冒泡排序
 思路：在一个数组中，从第一个值开始，与下一位进行对比，如果大于下一位，则进行位置交换；然后继续下一位的对比，整个过程就像气泡从水底向水面游动，到水面时气泡时最大的,故此得名。
 ```java
@@ -158,6 +163,8 @@ public static int[] bubbleSort(int[] arr) {
     return arr;
 }
 ```
+
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015223238449-2146169197.gif)
 
 #### 快速排序
 先来了解几个概念
@@ -203,6 +210,8 @@ public static void quickSort(int[] arrays, int start, int end) {
 }
 ```
 
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015230936371-1413523412.gif)
+
 #### 堆排序
 堆：堆是具有以下性质的完全二叉树：每个结点的值都大于或等于其左右孩子结点的值，称为大顶堆；或者每个结点的值都小于或等于其左右孩子结点的值，称为小顶堆。
 
@@ -211,6 +220,8 @@ public static void quickSort(int[] arrays, int start, int end) {
 ```java
 TODO
 ```
+
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015231308699-356134237.gif)
 
 #### 归并排序
 思路：将无序的分成若干个子序列，每个子序列进行排序，然后进行合并，最终得到排序完后的序列。（这也是一种采用了分而治之思想的方法）
@@ -281,6 +292,9 @@ private static void merge(int arrays[], int left, int right, int mid, int[] temp
     }
 }
 ```
+
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015230557043-37375010.gif)
+
 #### 计数排序（针对正整数,比较耗空间）
 思路：
 计算数组每个数值出现的次数，放入一个临时数组中temp1，数组下标为数组的值，数组值为出现个数；
@@ -338,7 +352,7 @@ public static int[] countSort(int[] arrays) {
 }
 ```
 
-
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015231740840-6968181.gif)
 
 #### 基数排序
 思路：基数排序和计数排序类型，都是分类排序，特点在于基数排序，对一组数组，将所有数值补位一样长度的值，进行个位对比排序，然后进行十位对比排序，...，直到最高位排序完成
@@ -427,6 +441,8 @@ private static int getNumberOfDigits(int num) {
 	 return String.valueOf(num).length();
  }
 ```
+
+![gif](http://images2017.cnblogs.com/blog/849589/201710/849589-20171015232453668-1397662527.gif)
 
 #### 桶排序
 思路：桶排序将[0,1)区间划分为n个相同的大小的子区间，这些子区间被称为桶；每个桶单独进行计数排序，然后再遍历每个桶。
