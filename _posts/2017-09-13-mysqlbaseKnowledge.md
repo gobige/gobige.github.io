@@ -280,14 +280,14 @@ select **CONCAT**(f_name, " ", l_name) from table
 
 **字符串处理**
 
-LTrim ---左去除空格
-RTrim---右去除空格
-Left(str,len) ---返回str左边几个字符
-Right(str,len) ---返回str右边几个字符
-LOCATE(substr,str)  ---找出串的一个子串
-Upper()----文本转大写
-Lower()----文本转小写
-Soundex 返回串的soundex值
+- LTrim ---左去除空格
+- RTrim---右去除空格
+- Left(str,len) ---返回str左边几个字符
+- Right(str,len) ---返回str右边几个字符
+- LOCATE(substr,str)  ---找出串的一个子串
+- Upper()----文本转大写
+- Lower()----文本转小写
+- Soundex 返回串的soundex值
 
 **统计**
 
