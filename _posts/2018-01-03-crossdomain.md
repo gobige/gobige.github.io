@@ -58,7 +58,7 @@ public class UserController {
 - 真正后端：http://actual-api.com:9000
 - 我们用 Nginx 统一代理到 http://my-app.com 下：
 
-、、、java
+```java
 server {
     listen 80;
     server_name my-app.com;
@@ -75,7 +75,7 @@ server {
         proxy_set_header Host $host;
     }
 }
-、、、
+``` 
  
 
 ### 基于 Cookie 登录态的 CSRF 跨站请求伪造攻击
