@@ -1315,7 +1315,7 @@ final boolean transferForSignal(Node node) {
 
 ### ConcurrentHashmap
 
-hashtable和hashmap
+**hashtable和hashmap**
 - 线程安全
 	- Hashtable（线程安全，性能差）
  	- HashMap（非线程安全，性能高）
@@ -1343,6 +1343,7 @@ hashtable和hashmap
 
 **ConcurrentHashmap重要的变量**
 
+在 ConcurrentHashMap 中，所有的读操作（get）是完全不需要加锁的。（table 是 volitile关键字类型，可见性）
 ```java
 
 concurrenthashmap的Node元素内key对象和value对象,table,等变量都加了volitile关键字
@@ -1362,6 +1363,24 @@ sun.misc.Unsafe U 在ConcurrentHashMapde的实现中可以看到大量的U.compa
 - 无锁化黑科技（CAS）：如果某个数组位置是空的（没人占坑），线程甚至不需要加锁，而是直接利用 CPU 底层的硬件级原子指令 CAS (Compare and Swap) 瞬间把数据放进去，速度堪比光速。
 - 锁升级（Synchronized）：只有当发生哈希冲突、桶内已经有链表或红黑树时，才会使用 synchronized 锁住链表的头节点，进行后续的写入。
 
+
+```java
+// 错误示范：这依然是线程不安全的！
+public void grabProduct(String userId) {
+    // 假设每个用户限购 1 件
+    if (!purchaseMap.containsKey(userId)) { // 步骤 1：检查
+        purchaseMap.put(userId, "已购买");   // 步骤 2：写入
+    }
+}
+
+虽然 containsKey 和 put 单独拿出来都是线程安全的，但它们组合在一起的 “检查-再执行（Check-Then-Act）” 并不是原子的！
+
+// 正确示范：利用 putIfAbsent
+// 如果 key 不存在则放入，并返回 null；如果存在，则返回已存在的值。整个过程在底层是加锁原子的。
+if (purchaseMap.putIfAbsent(userId, "已购买") != null) {
+    throw new BusinessException("您已经购买过该商品！");
+}
+```java
 
 **几个重要的方法**
 ```java
@@ -1799,6 +1818,21 @@ public boolean add(E e) {
 
 ### ThreadLocal
 在线程安全方面除了用synchronize和lock来控制临界区资源，这种方式无疑都会造成线程的阻塞，而我们上面提到的cow思想，其实java也提供了threadLocal这个类
+
+**threadLocal使用场景：**
+- threadLocal解决“**跨层参数传递**”问题：避免在方法调用链中层层传递相同的参数（如用户信息、链路 ID）。**
+- 非**线程安全**工具类的隔离（如 SimpleDateFormat）：（多个线程共享同一个 SimpleDateFormat 实例去解析或格式化时间，高并发下会发生时间错乱甚至抛出异常。而每次用都 new 一个，或者加 synchronized 锁。在高并发下频繁创建对象或锁竞争会导致性能骤降。）
+-  分布式链路追踪（TraceId / SpanId）
+-  数据库连接与事务控制（Spring 声明式事务底层）
+	-  为什么 Spring 的 @Transactional 能够保证同一个方法内的多次数据库操作（比如三次 DAO.update()）都在同一个数据库连接和同一个事务中运行？
+	- Spring 事务管理器（TransactionManager）在事务开始时，会从数据库连接池中获取一个 Connection。
+	- Spring 会把这个 Connection 存入一个名为 TransactionSynchronizationManager 的工具类中，其底层核心就是一个 ThreadLocal。
+	- 后续同一个线程执行的所有 SQL 操作，都会去这个 ThreadLocal 中直接获取同一个 Connection，从而保证了多步 SQL 在同一个事务内提交或回滚。
+
+**避坑指南：ThreadLocal 最大的两个致命痛点**
+如果ThreadLocal使用完进行remove，有可能会导致
+- 内存泄漏
+- 数据紊乱
 
 threadLocal通过以当前ThreadLocal为key，把value存放在ThreadLocalMap容器里面，而ThreadLocalMap是当前Thread的成员变量，如下
 
