@@ -1314,6 +1314,8 @@ final boolean transferForSignal(Node node) {
 
 
 ### ConcurrentHashmap
+
+hashtable和hashmap
 - 线程安全
 	- Hashtable（线程安全，性能差）
  	- HashMap（非线程安全，性能高）
@@ -1352,6 +1354,14 @@ sizeCtl volatile int sizeCtl; 标识table数组大小，**当值为负数时：*
 sun.misc.Unsafe U 在ConcurrentHashMapde的实现中可以看到大量的U.compareAndSwapXXXX的方法去修改ConcurrentHashMap的一些属性。这些方法实际上是利用了CAS算法保证了线程安全性
 
 ````
+
+**JDK 8 的方案：CAS + Synchronized（极致的细粒度）**
+到了 JDK 8，工程师抛弃了繁重的 Segment，直接将锁的粒度细化到了“哈希桶的头节点（Node）”。
+- 结构：回归了“数组 + 链表 + 红黑树”的扁平化结构。
+- 锁粒度：桶级锁（Node级）。现在，只有当两个线程计算出的哈希槽完全一致（落入同一个数组下标）时，才会发生锁竞争。如果数组长度是 1024，那理论上就可以支持 1024 个线程同时并发写入！
+- 无锁化黑科技（CAS）：如果某个数组位置是空的（没人占坑），线程甚至不需要加锁，而是直接利用 CPU 底层的硬件级原子指令 CAS (Compare and Swap) 瞬间把数据放进去，速度堪比光速。
+- 锁升级（Synchronized）：只有当发生哈希冲突、桶内已经有链表或红黑树时，才会使用 synchronized 锁住链表的头节点，进行后续的写入。
+
 
 **几个重要的方法**
 ```java
