@@ -1314,17 +1314,31 @@ final boolean transferForSignal(Node node) {
 
 
 ### ConcurrentHashmap
+- 线程安全
+	- Hashtable（线程安全，性能差）
+ 	- HashMap（非线程安全，性能高）
+- 结构
+	- Hashtable：自始至终采用 “**数组 + 链表**” 的传统结构
+	- HashMap（JDK 8+ 优化）：采用了 “**数组 + 链表 + 红黑树**” 的结构
+- null值
+	- Hashtable：极度**排斥 null**。无论是 Key 还是 Value，只要传入 null，直接抛出 **NullPointerException** 异常。
+	- HashMap：包容 null。它允许 **至多一条记录的 Key 为 null**（因为 Key 必须唯一，这个 null 键会被强行固定放在数组的第 0 个桶中），并且允许多条记录的 Value 为 null。
+
+ 
 **HashMap获得线程安全的实现方式**
 
-- 使用Hashtable
+- 使用Hashtable（put，set，remove等方法加synchronize）
 - 对hashMap对象加锁 synchronize关键字
 - Collections.synchronizedMap() 其实现也是使用synchronize关键字对象加锁
 - concurrenthashmap 性能，线程安全都能保证，推荐
 
-JDK1.7中，ConcurrentHashMap使用了分段锁Segment减小了锁粒度,提高了并发度
+**现代高并发替代方案**：
+- 如果业务需要线程安全的 Map，绝对不要用 Hashtable，而应该使用 java.util.concurrent 包下的  ConcurrentHashMap。它采用了更细粒度的分词锁Segment，减小了锁粒度/CAS机制，性能远超 Hashtable。
+
 
 
 在理解concurrentHashmap之前我希望你看过hashmap的源码，因为concurrenthashmap大体的结构，插入去除思想跟hashMap是差不多的，这里我只会解析不同的地方 [HashMap源码解析入口](http://muyibeyond.cn/2018/06/01/source-dataStructrue-map.html)
+
 **ConcurrentHashmap重要的变量**
 
 ```java
