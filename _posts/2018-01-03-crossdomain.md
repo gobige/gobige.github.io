@@ -27,14 +27,55 @@ tags:
 
 ### 跨域解决方案
 
-- 通过jsonp跨域
-- document.domain + iframe跨域
-- location.hash + iframe
-- window.name + iframe跨域
-- postMessage跨域
-- 跨域资源共享（CORS）
-- nginx代理跨域
-- nodejs中间件代理跨域
-- WebSocket协议跨域
+**跨域时，请求其实已经发出去了，服务器也接收并正常响应了，只是当数据传回浏览器时，被浏览器给拦截并报错了。**
+
+**CORS（跨域资源共享） 最标准的做法**
+浏览器说“除非后端（B 小区）的响应头里，加上这张“同意书”（Header）。
+、、、java
+# 允许来自 http://localhost:8080 的网页请求我（也可以写 * 代表允许所有人，但不安全）
+Access-Control-Allow-Origin: http://localhost:8080
+# 允许他们使用 GET, POST, OPTIONS 等方法
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+# 允许他们携带 Cookie
+Access-Control-Allow-Credentials: true
+、、、
+
+、、、java
+Spring 框架，只需在 Controller 类或方法上加一个注解即可：
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:8080") // ⭐ 允许该源跨域访问
+public class UserController {
+    @GetMapping("/info")
+    public User getInfo() {
+        return new User("Mr.Chen");
+    }
+}
+、、、
+
+**nginx代理跨域**
+- 前端地址：http://my-app.com
+- 真正后端：http://actual-api.com:9000
+- 我们用 Nginx 统一代理到 http://my-app.com 下：
+
+、、、java
+server {
+    listen 80;
+    server_name my-app.com;
+
+    # 1. 分发前端静态资源
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+    }
+
+    # 2. 💡 拦截所有带 /api/ 的请求，悄悄转发给后端，浏览器毫不知情！
+    location /api/ {
+        proxy_pass http://actual-api.com:9000/; # 后端真实地址
+        proxy_set_header Host $host;
+    }
+}
+、、、
+ 
 
 ### 未完待续....
