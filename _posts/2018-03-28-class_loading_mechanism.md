@@ -203,10 +203,21 @@ public abstract class ClassLoader {
 
 双亲委派模型工作过程是如果一个类加载器收到类加载请求，首先不会自己去尝试加载这个类，而是将加载请求**委派给父类加载器**，如果父类无法加载该请求，才自己去尝试加载。
 
-双亲委派模型确保了java程序的稳定运作，避免了自定义类和基础类由于全限定名的一样导致的关系错乱，保证了java类型体系的行为。
+双亲委派模型确保了java程序的稳定运作，避免了自定义类和基础类由于全限定名的一样导致的关系错乱，保证 Java 核心 API 的安全和唯一性
 
-双亲委派模型破坏，程序动态性，osgi，jndi
+### 为什么会有双亲委派模型破坏行为
 
+双亲委派的模型因为在某些特定的复杂业务场景下，它成了阻碍技术实现的绊脚石。
+
+场景一：为了打破“上层无法调用下层”的限制（SPI 机制）
+- Java 定义了数据库连接的标准接口 java.sql.Driver，这个接口在 rt.jar 中，由最顶层的 Bootstrap ClassLoader（启动类加载器） 加加载。但是，具体数据库厂商实现的驱动（如 MySQL 的 com.mysql.cj.jdbc.Driver）是作为第三方 Jar 包放在项目的 Classpath 下的，只能由最底层的 Application ClassLoader（系统/应用类加载器） 来加载。由于双亲委派的隔离，顶层的 Bootstrap ClassLoader 根本找不到底层的 MySQL 驱动类！
+- 如何打破：Thread.currentThread().getContextClassLoader()，允许父类加载器通过线程上下文类加载器
+
+场景二：为了解决“同名类多版本共存”的冲突（Web 容器，如 Tomcat）
+- Spring 4.x，Spring 3.x 很多类的全限定名（包名+类名）是完全一模一样的（比如 org.springframework.beans.BeanFactory），但内部的代码实现和支持的方法完全不同。一个应用加载后，另外一个应用被迫使用已经加载的类加载器进行加载，导致 NoSuchMethodError
+- 如何打破：为每个部署的 Web 应用都创建了一个独立的 WebAppClassLoader。当 WebAppClassLoader 收到加载类请求时（比如加载 Spring 的类）：它会先尝试自己去加载应用目录（WEB-INF/lib 或 classes）下的类。只有当自己找不到时，才会委派给父加载器（Shared 或 Common ClassLoader）
+
+场景三：为了实现“热插拔”与“热部署”（动态模块化，如 OSGi）
 
 ## 即时编译
 
