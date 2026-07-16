@@ -16,8 +16,9 @@ Spring Bean 加载顺序：Constructor >> @Autowired >> @PostConstruct
 
 String字符串和char字符数组：String字符串是不可变的；内存中存在直到被GC清理，char字符数组可以通过设置为空白和零。所以在密码存储方面场景来说字符数组更合适，不过还是应该加密
 
-timestamp 记录的时间，时区自动处理，能够支持时间范围：1000-9999
-datetime 记录固定时间，不会变化，能够支持时间范围：1970-2038
+timestamp 记录的时间，时区自动处理，能够支持时间范围：1970-2038
+
+datetime 记录固定时间，不会变化，能够支持时间范围：1000-9999
 
 
 mysql数据库时间类型 有datetime和timestamp
