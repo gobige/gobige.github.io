@@ -9,7 +9,23 @@ cover: 'http://cctv.com'
 tags: 框架
 ---
 
- 
+### spring自动装配机制：
+
+先看类型，后看名；子类向上能兼容，多候选时靠修饰（@Qualifier / @Primary）。
+
+### **为什么@Autowired会实效**
+
+- ❌ 错误示范：在构造函数中使用 @Autowired 属性
+- ✅ 解决方式二：改用构造函数注入（Spring 官方推荐）
+如果直接将依赖对象作为构造函数的参数，Spring 会先准备好被引用的参数对象，再调用构造函数：
+
+### spring 创建bean的生命周期中，执行顺序
+
+- 调用构造函数（Instantiation）：Spring 首先必须调用该类的构造函数来创建对象的实例。在构造函数执行期间，@Autowired 标注的属性尚未被注入，值均为 null。
+- 依赖注入（Populate Bean）：对象实例创建完成后，Spring 才会通过反射将 @Autowired 引用的对象注入到该属性中。
+- 初始化回调（@PostConstruct）：所有 @Autowired 属性注入完成后，Spring 会调用被 @PostConstruct 标记的方法。
+
+
 ### **Spring MVC**
 spring对每个bean提供一个scope属性表示bean的作用域，这些bean大多是无状态对象。single类型的无状态bean都是线程安全的，例如每个dao提供的方法都只是对数据的CURD，每个数据库connection都作为函数局部变量，处于栈中，属于线程私有的内存区域，用完即回收。每个controller被多个线程执行，springmvc对请求拦截粒度时基于每个方法（而struct2时基于类，也就是多例controller，频繁创建，回收，影响性能）。spring没有对bean的多线程安全作出任何保证和措施，所以我们在bean的设计中声明任何有状态的实例变量和类变量，如果非得有，则要使用ThreadLocal变量私有化或使用synchronized，lock，cas等实现线程同步方法
 
@@ -71,4 +87,6 @@ SpringBoot项目启动会扫描以下位置的application.properties或者applic
 - jar包内部的application-{profile}.properties或application.yml(带spring.profile)配置文件 再来加载不带profile
 - jar包外部的application.properties或application.yml(不带spring.profile)配置文件
 - jar包内部的application.properties或application.yml(不带spring.profile)配置文件
-- @Configuration注解类上的@PropertySource 
+- @Configuration注解类上的@PropertySource
+
+
