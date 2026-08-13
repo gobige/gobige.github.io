@@ -9,6 +9,16 @@ cover: ''
 tags: source
 ---
 
+
+---
+
+### MyBatis 的一级缓存和二级缓存有什么区别？金融信贷场景使用需要注意什么
+
+**标准答案**
+
+- **一级缓存**：SqlSession 级别，同一个 SqlSession 内执行相同 SQL 直接命中缓存，默认开启；SqlSession 关闭或执行增删改时缓存清空。
+- **二级缓存**：Mapper Namespace 级别，跨 SqlSession 共享，需手动开启，可集成第三方缓存。
+  
 **mybatis调用实例**
 ```java
 public static void main(String[] args) {
