@@ -9,6 +9,49 @@ cover: 'http://cctv.com'
 tags: 框架
 ---
 
+
+
+### 使用Java反射进行类的加载，无法进入Spring容器的管理，无法使用autowire注入的其他管理的bean
+
+反射创建的对象默认不受 Spring 管理，通过工具类手动注入 Bean 依赖，保证业务代码中`@Resource`、`@Autowired`注解正常生效。
+
+- 手动注入Spring依赖，保证反射创建的对象可使用@Autowired注解SpringContextUtil.autowireBean(processor);
+
+---
+
+### 反射加载类每次都需要进行加载，产生消耗，怎么优化
+用`ConcurrentHashMap`做进程内缓存**单例缓存**，仅实例化一次，彻底消除重复反射创建的性能损耗。
+
+---
+
+### 反射导致类加载器不一致问题，类冲突ClassCastException
+
+坑：项目采用多模块部署、Spring Boot 热部署时，`Class.forName()`默认使用系统类加载器，可能加载不到业务模块的类，或出现两个全限定名相同但类加载器不同的类，触发`ClassCastException`。
+
+- 解决：显式指定当前线程的上下文类加载器加载类，保证与业务类使用同一类加载器。
+
+---
+
+### 反射加载的类异常捕获的问题
+
+反射调用时，业务抛出的原生异常会被包装为`InvocationTargetException`，直接打印堆栈看不到真实异常原因，线上排查困难。
+
+- 解决：捕获`InvocationTargetException`后，通过`getTargetException()`提取原始业务异常再抛出或记录日志，保证异常栈完整
+
+---
+
+### Spring Boot 自动配置原理是什么？@SpringBootApplication 包含哪些核心注解
+
+**标准答案**
+自动配置原理：基于 Spring SPI 机制，启动时扫描`META-INF/spring.factories`文件中的自动配置类，根据`@Conditional`系列条件注解判断是否生效，将符合条件的配置类自动注入 Spring 容器，实现零配置启动。
+
+`@SpringBootApplication`是组合注解，核心包含三个注解：
+
+1. `@SpringBootConfiguration`：本质是`@Configuration`，标记为配置类，可定义 Bean。
+2. `@EnableAutoConfiguration`：开启自动配置，导入自动配置选择器，加载 spring.factories 中的配置类。
+3. `@ComponentScan`：默认扫描启动类所在包及其子包的组件，注册到容器中。
+
+---
 ### spring自动装配机制：
 
 先看类型，后看名；子类向上能兼容，多候选时靠修饰（@Qualifier / @Primary）。
