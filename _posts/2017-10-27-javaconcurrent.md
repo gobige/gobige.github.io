@@ -76,12 +76,10 @@ new Thread，线程进入新建状态，调用start方法，启动线程，使�
 
 理解Java线程各种状态和生命周期对于诊断多线程Bug很有帮助，分析线程dump，stack信息，查看线程状态，调用栈和锁信息。
 
-<span style="color: red;">
+- <span style="color: red;">如果发现大量线程处于 BLOCKED 状态：说明代码里有严重的锁竞争（死锁、或者 synchronized 块里写了耗时的远程 RPC 调用）。</span>
+- <span style="color: red;">如果发现大量线程处于 TIMED_WAITING 状态，且卡在网络 I/O 处：说明后端调用第三方接口（如银行网关）时没有设置合理的 ReadTimeout，或者对方响应极慢，导致你的线程全部在原地干等。</span>
+- <span style="color: red;">如果发现大量线程处于 WAITING 状态：通常是正常的线程池空闲状态，如果数量异常庞大，需要检查线程池的最大线程数和核心线程数配置是否合理，防止内存溢出（OOM）。</span>
 
-- 如果发现大量线程处于 BLOCKED 状态：说明代码里有严重的锁竞争（死锁、或者 synchronized 块里写了耗时的远程 RPC 调用）。
-- 如果发现大量线程处于 TIMED_WAITING 状态，且卡在网络 I/O 处：说明后端调用第三方接口（如银行网关）时没有设置合理的 ReadTimeout，或者对方响应极慢，导致你的线程全部在原地干等。
-- 如果发现大量线程处于 WAITING 状态：通常是正常的线程池空闲状态，如果数量异常庞大，需要检查线程池的最大线程数和核心线程数配置是否合理，防止内存溢出（OOM）。
-</span>
 
 **线程上下文切换优化**
 
