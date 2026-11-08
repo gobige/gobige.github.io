@@ -31,7 +31,9 @@ tags:
 **跨域时，请求其实已经发出去了，服务器也接收并正常响应了，只是当数据传回浏览器时，被浏览器给拦截并报错了。**
 
 **CORS（跨域资源共享） 最标准的做法**
-浏览器说“除非后端（B 小区）的响应头里，加上这张“同意书”（Header）。
+
+后端在响应头中加上 Access-Control-Allow-Origin: * 等白名单配置（最推荐、最标准）
+
 ```java
 # 允许来自 http://localhost:8080 的网页请求我（也可以写 * 代表允许所有人，但不安全）
 Access-Control-Allow-Origin: http://localhost:8080
