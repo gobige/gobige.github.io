@@ -2018,7 +2018,8 @@ private boolean cleanSomeSlots(int i, int n) {
 
 **threadLocalMap的结构**
 
-threadLocalMap和hashmap这些map不一样的地方是threadLocalMap只是普通的散列表，通过**开放定址法**解决hash冲突（threadLocal的hash算法分布式比较均匀的），而hashmap是使用**分离链表法**解决hash冲突
+
+threadLocalMap和hashmap这些map不一样的地方是threadLocalMap只是普通的散列表，通过 <span style="color: red;">**开放定址法**</span>解决hash冲突（threadLocal的hash算法分布式比较均匀的），而hashmap是使用**分离链表法**解决hash冲突
 
 - 开发定址法 关键字散列到的数组单元已经被另外一个关键字占用的时候，就会尝试在数组中寻找其他的单元，直到找到一个空的单元
 
