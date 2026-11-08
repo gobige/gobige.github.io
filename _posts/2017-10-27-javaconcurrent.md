@@ -197,7 +197,7 @@ Synchronized是**JVM**实现的一种**内置锁**，锁的获取和释放是由
 **synchronized流程**
 多个线程同时访问时，先被存放在**EntryList** 集合，设置**block状态**，线程获取到对象的Monitor（底层操作系统的Mutex Lock）后，**持有Mutex**；若线程调用**wait()**方法，**释放Mutex**，线程会进入**WaitSet集合**，等待被唤醒
 
-![]([https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/performance/5.png](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/Gemini_Generated_Image_9b9hyf9b9hyf9b9h.jpeg))
+![](https://yatesblog.oss-cn-shenzhen.aliyuncs.com/img/2017-10-27-javaconcurrent/Gemini_Generated_Image_9b9hyf9b9hyf9b9h.jpeg)
 
 java对象实例在堆内存被分为三个部分：
 
