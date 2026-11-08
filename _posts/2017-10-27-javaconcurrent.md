@@ -9,6 +9,31 @@ cover: 'http://cctv.com'
 tags: java并发
 ---
 
+但在现代主流的业务开发（Business Development）中，程序员确实越来越少直接手写底层 JUC 代码（如手动创建 ThreadPoolExecutor、管理 CountDownLatch、使用 ReentrantLock 加锁或手写并发同步队列）。这种转变背后，主要有以下几个核心原因：
+
+#### 1. 业务并发的“降维打击”：从 JVM 级并发走向分布式架构
+
+- 过去单体应用时代，高并发主要靠单机多线程抗（如 JVM 内部的锁、并发容器、线程池调优）。
+- 现在的做法：现代系统基本都是微服务架构，高并发和解耦更多靠分布式组件来解决。
+
+#### 2. 框架层的“偷懒”与声明式抽象
+
+现代主流框架（如 Spring Boot、Spring Cloud）把绝大多数复杂的线程管理和异步逻辑封装成了开箱即用的声明式注解或高级组件。
+以前多线程并发查询并汇总结果，需要手写 Future、CountDownLatch 或 CyclicBarrier 来控制等待。复杂且对开发人员水平要求较高；现在（Reactive Streams / WebFlux），甚至日常开发中简单的并发聚合直接交给成熟的业务中台或编排引擎（如 LiteFlow 等规则/流程引擎）。
+
+#### 3. 异步编程模型的演进（从“阻塞等待”到“非阻塞/响应式”）
+
+传统的 JUC 工具（如 BlockingQueue、Lock、CountDownLatch）本质上是基于线程阻塞（Blocking）模型的。线程在等待时会被挂起（Park），这会带来线程上下文切换（Context Switch）的开销。
+
+- 现代高并发更推崇非阻塞、事件驱动或响应式模型。
+- 通过 CompletableFuture 的链式调用（thenCombine、thenApplyAsync）或者 Kotlin 协程（Coroutines），开发者可以用同步的思维写异步的代码，彻底告别了手写线程同步原语的繁琐和易错性。
+
+#### 4. 安全性与心智负担的考量
+JUC 的底层（如 AQS、CAS、各种锁、并发集合）极度考验开发者的功底。
+手写 ReentrantLock + Condition 稍有不慎就会死锁、内存可见性问题或漏掉 finally 释放锁。
+
+虽然业务代码中直接 new 它们的机会少了，但作为后端工程师，理解 AQS、内存模型（JMM）、锁优化和并发容器原理，依然是排查线上性能瓶颈、进行高并发系统设计以及理解底层中间件源码的绝对核心基本功。
+
 ### 一些概念
 
 **同步，异步**
