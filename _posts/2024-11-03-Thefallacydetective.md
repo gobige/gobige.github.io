@@ -1,3 +1,13 @@
+---
+layout: post
+title: '谬论侦探'
+subtitle: '读书笔记'
+date: 2024-11-03
+categories: book
+author: yates
+cover: 'http://cctv.com'
+tags: logic
+---
 
 ## avoiding question 回避问题
  
