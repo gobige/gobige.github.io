@@ -2,7 +2,7 @@
 layout: post
 title: 'Kubernetes'
 subtitle: 'Kubernetes学习'
-date: 2019-02-29
+date: 2020-03-20
 categories: 容器
 author: yates
 cover: 'www.baidu.com'
